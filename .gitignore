@@ -1,0 +1,9 @@
+*.pyc
+*.png
+*.jpg
+*.jpeg
+\.devcontainer/
+\.github/
+package-lock.json
+devcontainer.json
+dependabot.yml

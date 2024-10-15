@@ -1,0 +1,11 @@
+version: '3'
+services:
+  builder:
+    build:
+      context: qa_tools
+      dockerfile: Dockerfile
+    volumes:
+      # Mount the root folder that contains .git
+      - .:/workspace:cached
+      - ./qa_tools:/app
+    command: sleep infinity
