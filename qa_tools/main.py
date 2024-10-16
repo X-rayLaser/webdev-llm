@@ -13,7 +13,25 @@ base_dir = "/data/builds"
 index_html_path = "/app/index.html"
 
 
-def preprocess(source_tree: List[Dict[str, str]]) -> Tuple[str, str]:
+def null_js_renderer(js_code, js_path, props):
+    return js_code
+
+
+def react_root_renderer(js_code, js_path, props):
+    if js_path.endswith("index.js"):
+        return js_code
+
+    component_name = parse_name(js_code)
+    props_str = props_to_string(props)
+    index_js = render_indexjs(component_name=component_name, 
+                              component_definition=js_code,
+                              props_str=props_str)
+    
+    index_js = fix_imports(index_js)
+    return index_js
+
+
+def preprocess(source_tree: List[Dict[str, str]], js_renderer=None) -> Tuple[str, str]:
     """Extract a javascript code and css code from an in-memory representation of source code files
 
     source_tree is a list of source files where each file is of the form:
@@ -35,6 +53,8 @@ def preprocess(source_tree: List[Dict[str, str]]) -> Tuple[str, str]:
     if not source_tree:
         raise NoSourceFilesError
 
+    js_renderer = js_renderer or null_js_renderer
+
     try:
         all_js_entries = [item for item in source_tree if item["file_path"].endswith(".js")]
         all_css_entries = [item for item in source_tree if item["file_path"].endswith(".css")]
@@ -45,20 +65,27 @@ def preprocess(source_tree: List[Dict[str, str]]) -> Tuple[str, str]:
         raise NoJsCodeError
 
     js_entry = all_js_entries[0]
+    js_path = js_entry["file_path"]
 
     try:
-        js_file = js_entry["content"]
+        js_code = js_entry["content"]
         css_code = all_css_entries[0]["content"] if all_css_entries else ""
     except KeyError:
         raise MalformedFileEntryError
 
-    if not js_file.strip():
+    if not js_code.strip():
         raise EmptyJavascriptFileError
 
-    js_code = fix_imports(js_file)
+    js_code = fix_css_imports(js_code, all_css_entries)
 
-    if all_css_entries:
-        file_path = all_css_entries[0]["file_path"]
+    props = js_entry.get("props")
+    js_code = js_renderer(js_code, js_path, props)
+    return js_code, css_code
+
+
+def fix_css_imports(js_code, css_entries):
+    if css_entries:
+        file_path = css_entries[0]["file_path"]
         import_path = f"./{file_path}"
         css_import1 = f'import "{import_path}";\n'
         css_import2 = f"import '{import_path}';\n"
@@ -67,7 +94,7 @@ def preprocess(source_tree: List[Dict[str, str]]) -> Tuple[str, str]:
         if not has_css_import:
             js_code = f'import "./{file_path}";\n' + js_code
 
-    return js_code, css_code
+    return js_code
 
 
 def fix_import_line(match):
@@ -117,13 +144,7 @@ class SimpleReactBuilder:
     def __init__(self, build_directory):
         self.build_directory = build_directory
 
-    def build(self, js_code, css_code="", props=None):
-        component_name = parse_name(js_code)
-        props_str = props_to_string(props)
-        index_js = render_indexjs(component_name=component_name,
-                                  component_definition=js_code,
-                                  props_str=props_str)
-
+    def build(self, index_js, css_code="", props=None):
         self._prepare_source_dir(index_js)
         self._prepare_output_dir(css_code)
         return self._build_artifacts()
@@ -183,7 +204,7 @@ def build(src_tree, props=None):
     build_directory = os.path.join(base_dir, build_id)
     builder = SimpleReactBuilder(build_directory)
     
-    js_code, css_code = preprocess(src_tree)
+    js_code, css_code = preprocess(src_tree, js_renderer=react_root_renderer)
 
     stdout, stderr = builder.build(js_code, css_code, props)
 
