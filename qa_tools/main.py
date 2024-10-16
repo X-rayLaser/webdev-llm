@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, List, Dict, Tuple
 import uuid
 import subprocess
 import re
@@ -13,12 +13,50 @@ base_dir = "/data/builds"
 index_html_path = "/app/index.html"
 
 
-def preprocess(src_tree):
-    files = src_tree["files"]
-    js_file = files[0]
-    js_code = fix_imports(js_file["source"])
-    css_file = files[1]
-    css_code = css_file["source"]
+def preprocess(source_tree: List[Dict[str, str]]) -> Tuple[str, str]:
+    """Extract a javascript code and css code from an in-memory representation of source code files
+
+    source_tree is a list of source files where each file is of the form:
+    { "content": <the source code as string>, "file_path": <path of the source file> }
+
+    Raises NoSourceFilesError exception for empty source_tree.
+
+    Raises NoJsCodeError exception when source_tree does not contain any Javascript files.
+
+    Raises EmptyJavascriptFileError exception when source_tree contains empty/blank Javascript file.
+
+    Raises MalformedFileEntryError exception when source_tree contains 
+    file with missing fields "content" or "file_path".
+    
+    Returns a tuple containing 2 strings: javascript code and css code.
+
+    If css code is missing, second item in the tuple will be an empty string.
+    """
+    if not source_tree:
+        raise NoSourceFilesError
+
+    try:
+        all_js_entries = [item for item in source_tree if item["file_path"].endswith(".js")]
+        all_css_entries = [item for item in source_tree if item["file_path"].endswith(".css")]
+    except KeyError:
+        raise MalformedFileEntryError
+
+    if not all_js_entries:
+        raise NoJsCodeError
+
+    js_entry = all_js_entries[0]
+
+    try:
+        js_file = js_entry["content"]
+        css_code = all_css_entries[0]["content"] if all_css_entries else ""
+    except KeyError:
+        raise MalformedFileEntryError
+
+    if not js_file.strip():
+        raise EmptyJavascriptFileError
+
+    js_code = fix_imports(js_file)
+
     return js_code, css_code
 
 
@@ -45,6 +83,14 @@ class NoSourceFilesError(BadSourceCodeError):
 
 
 class NoJsCodeError(BadSourceCodeError):
+    pass
+
+
+class EmptyJavascriptFileError(BadSourceCodeError):
+    pass
+
+
+class MalformedFileEntryError(BadSourceCodeError):
     pass
 
 
@@ -129,7 +175,7 @@ def build(src_tree, props=None):
     
     js_code, css_code = preprocess(src_tree)
 
-    stdout, stderr = builder.build(js_code, css_code)
+    stdout, stderr = builder.build(js_code, css_code, props)
 
     artifacts = builder.load_artifacts()
     return {
