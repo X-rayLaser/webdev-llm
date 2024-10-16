@@ -127,6 +127,57 @@ class TestPreprocess(unittest.TestCase):
         self.assertEqual(result_js, expected_js)
         self.assertEqual(result_css, expected_css)
 
+    def test_existing_import_for_css_does_not_add_duplicate(self):
+        """Test that the function does not add a duplicate import statement for CSS files already imported in JavaScript."""
+        source_tree = [
+            { "content": 'import "./some_style.css";\nconsole.log("Hello World");', "file_path": "script.js" },
+            { "content": "body { background-color: black; }", "file_path": "some_style.css" }
+        ]
+
+        expected_js = 'import "./some_style.css";\nconsole.log("Hello World");'  # No duplicate import should be added
+        expected_css = "body { background-color: black; }"
+
+        result_js, result_css = preprocess(source_tree)
+
+        self.assertEqual(result_js, expected_js)  # Should remain unchanged
+        self.assertEqual(result_css, expected_css)
+
+    def test_existing_import_in_single_quotes_for_css_does_not_add_duplicate(self):
+        """The existing import statetemt is using single quotes rather than double quotes"""
+        source_tree = [
+            { "content": "import './some_style.css';\nconsole.log('Hello World');", "file_path": "script.js" },
+            { "content": "body { background-color: black; }", "file_path": "some_style.css" }
+        ]
+
+        # No duplicate import should be added
+        expected_js = "import './some_style.css';\nconsole.log('Hello World');"
+        expected_css = "body { background-color: black; }"
+
+        result_js, result_css = preprocess(source_tree)
+
+        self.assertEqual(result_js, expected_js)  # Should remain unchanged
+        self.assertEqual(result_css, expected_css)
+
+    def test_js_file_imports_css_not_in_source_tree_leaves_imports_unchanged(self):
+        """Test that the function leaves existing import statements for CSS files unchanged
+        if they are not present in source_tree."""
+        source_tree = [
+            {
+                "content": 'import "./style1.css";\nimport "./style2.css";\nconsole.log("Hello World");',
+                "file_path": "script.js"
+            }
+            # No actual CSS files in the source_tree
+        ]
+
+        # No changes expected
+        expected_js = 'import "./style1.css";\nimport "./style2.css";\nconsole.log("Hello World");'
+        expected_css = ""  # No CSS file in source_tree, so this should be empty
+
+        result_js, result_css = preprocess(source_tree)
+
+        self.assertEqual(result_js, expected_js)  # Should remain unchanged
+        self.assertEqual(result_css, expected_css)  # Should be an empty string
+
 
 if __name__ == '__main__':
     unittest.main()

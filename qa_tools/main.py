@@ -59,7 +59,13 @@ def preprocess(source_tree: List[Dict[str, str]]) -> Tuple[str, str]:
 
     if all_css_entries:
         file_path = all_css_entries[0]["file_path"]
-        js_code = f'import "./{file_path}";\n' + js_code
+        import_path = f"./{file_path}"
+        css_import1 = f'import "{import_path}";\n'
+        css_import2 = f"import '{import_path}';\n"
+        has_css_import = css_import1 in js_code or css_import2 in js_code
+
+        if not has_css_import:
+            js_code = f'import "./{file_path}";\n' + js_code
 
     return js_code, css_code
 
