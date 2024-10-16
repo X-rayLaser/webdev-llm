@@ -1,7 +1,7 @@
 import unittest
 from main import (
-    preprocess, NoSourceFilesError, NoJsCodeError, EmptyJavascriptFileError,
-    MalformedFileEntryError
+    preprocess, clear_imports, NoSourceFilesError, NoJsCodeError,
+    EmptyJavascriptFileError, MalformedFileEntryError
 )
 
 
@@ -177,6 +177,40 @@ class TestPreprocess(unittest.TestCase):
 
         self.assertEqual(result_js, expected_js)  # Should remain unchanged
         self.assertEqual(result_css, expected_css)  # Should be an empty string
+
+
+class TestClearImports(unittest.TestCase):
+
+    def test_remove_specific_import_from_statements(self):
+        """Test that clear_imports correctly removes the specified name from import statements."""
+
+        # Test cases
+        code_samples = [
+            ("import { Stuff, OtherEntity } from 'lib';", "import { OtherEntity } from 'lib';"),
+            ("import { OtherEntity, Stuff } from 'lib';", "import { OtherEntity } from 'lib';"),
+            ("import { OtherEntity, Stuff, AnotherEntity } from 'lib';", "import { OtherEntity, AnotherEntity } from 'lib';"),
+            ("import { Stuff } from 'lib';", ""),  # Entire line should be removed
+            ("import {Stuff} from 'lib';", ""),  # Entire line should be removed
+            ("import {Stuff } from 'lib';", ""),  # Entire line should be removed
+            ("import { Stuff} from 'lib';", ""),  # Entire line should be removed
+            ("import {  Stuff  } from 'lib';", ""),  # Entire line should be removed
+            (" import  { Stuff }   from   'lib'; ", ""),  # Entire line should be removed
+            ("import Stuff from 'lib';", ""),  # Entire line should be removed
+            ("import { Stuff, SomeStuff } from 'lib';", "import { SomeStuff } from 'lib';"),  # Only Stuff should be removed
+            ("import Stuff, { SomeStuff } from 'lib';", "import { SomeStuff } from 'lib';"),
+            ("import Stuff, { Stuff, SomeStuff } from 'lib';", "import { SomeStuff } from 'lib';"),
+            ("import Stuff, { Stuff } from 'lib';", ""),
+            ("import SomeStuff, { Stuff, OtherEntity } from 'lib';", "import SomeStuff, { OtherEntity } from 'lib';"),
+            ("import SomeStuff, { Stuff } from 'lib';", "import SomeStuff from 'lib';"),
+            ("import { Entity as entity } from 'lib';", "import { Entity as entity } from 'lib';"),
+            ("import { Foo as foo,   Bar as bar } from 'lib';", "import { Foo as foo, Bar as bar } from 'lib';"),
+            ("import * as name from 'lib';", "import * as name from 'lib';"),
+            ("import Stuff, * as name from 'lib';", "import * as name from 'lib';")
+        ]
+
+        for code, expected in code_samples:
+            with self.subTest(code=code):
+                self.assertEqual(clear_imports(code, "Stuff"), expected)
 
 
 if __name__ == '__main__':

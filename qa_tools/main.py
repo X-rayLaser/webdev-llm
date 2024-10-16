@@ -27,7 +27,9 @@ def react_root_renderer(js_code, js_path, props):
                               component_definition=js_code,
                               props_str=props_str)
     
-    index_js = fix_imports(index_js)
+    index_js = clear_imports(index_js, to_remove="ReactDOM")
+    index_js = clear_imports(index_js, to_remove="React")
+    
     return index_js
 
 
@@ -97,17 +99,83 @@ def fix_css_imports(js_code, css_entries):
     return js_code
 
 
-def fix_import_line(match):
-    text = match.group(0)
-    text = text.replace(', React', "").replace('React,', "").replace('React', "")
-    text = text.replace("  ", " ")
-    if text.startswith('import from'):
+def clear_bracket_imports(imports_str, to_remove):
+    import_list = [name.strip() for name in imports_str.split(',')]
+    import_list = [name for name in import_list if name and name != to_remove]
+    return ', '.join(import_list) if import_list else ''
+
+
+def clear_default_and_named_import(regex, text, to_remove):
+    matches = re.findall(regex, text)
+    default_import, imports_str, lib_str = matches[0]
+    new_import_str = clear_bracket_imports(imports_str, to_remove)
+    default_import = "" if default_import == to_remove else default_import
+
+    if default_import and new_import_str:
+        return 'import {}, {{ {} }} from {}'.format(default_import, new_import_str.strip(), lib_str)
+
+    if default_import:
+        return 'import {} from {}'.format(default_import, lib_str)
+    
+    if new_import_str:
+        return 'import {{ {} }} from {}'.format(new_import_str, lib_str)
+    
+    return ""
+
+
+def clear_default_with_namespace_import(regex, text, to_remove):
+    matches = re.findall(regex, text)
+    default_import, name_space, lib_str = matches[0]
+    if default_import == to_remove:
+        return f'import * as {name_space} from {lib_str}'
+    return text
+
+
+def clear_named_import(regex, text, to_remove):
+    matches = re.findall(regex, text)
+    imports_str, lib_str = matches[0]
+    new_import_str = clear_bracket_imports(imports_str, to_remove)
+
+    if not new_import_str:
+        return ""
+
+    return 'import {{ {} }} from {}'.format(new_import_str, lib_str)
+
+
+def clear_default_import(regex, text, to_remove):
+    matches = re.findall(regex, text)
+    if matches and matches[0] == to_remove:
         return ""
     return text
 
 
-def fix_imports(code):
-    pattern = re.compile('import .* from .*')
+def clear_imports(code, to_remove="React"):
+
+    def fix_import_line(match):
+        text = match.group(0).strip()
+
+        default_and_named_import = 'import\s+([a-zA-Z]+)\s*,\s*{(.*)}\s+from\s+(.*)'
+
+        if re.search(default_and_named_import, text):
+            return clear_default_and_named_import(default_and_named_import, text, to_remove)
+
+        default_and_namespace_import = 'import\s+([a-zA-Z]+)\s*,\s*\* as ([a-zA-Z]+)\s+from\s+(.*)'
+
+        if re.search(default_and_namespace_import, text):
+            return clear_default_with_namespace_import(default_and_namespace_import, text, to_remove)
+
+        named_import = 'import\s+{(.*)}\s+from\s+(.*)'
+        
+        if re.search(named_import, text):
+            return clear_named_import(named_import, text, to_remove)
+
+        default_import = 'import\s+([a-zA-Z]+)\s+from'
+        if re.search(default_import, text):
+            return clear_default_import(default_import, text, to_remove)
+
+        return text
+
+    pattern = re.compile('\s*import .* from .*')
     return pattern.sub(fix_import_line, code)
 
 
