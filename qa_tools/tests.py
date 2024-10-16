@@ -56,7 +56,7 @@ class TestPreprocess(unittest.TestCase):
             { "content": "body { background-color: black; }", "file_path": "style.css" }
         ]
 
-        expected_js = "console.log('Hello World');"
+        expected_js = 'import "./style.css";\n' + "console.log('Hello World');"
         expected_css = "body { background-color: black; }"
 
         result_js, result_css = preprocess(source_tree)
@@ -87,7 +87,7 @@ class TestPreprocess(unittest.TestCase):
             { "content": "body { background-color: black; }", "file_path": "style.css" }
         ]
 
-        expected_js = "console.log('First JS');"
+        expected_js = 'import "./style.css";\n' + "console.log('First JS');"
         expected_css = "body { background-color: black; }"
 
         result_js, result_css = preprocess(source_tree)
@@ -104,13 +104,28 @@ class TestPreprocess(unittest.TestCase):
             { "content": "body { font-size: 16px; }", "file_path": "style3.css" }
         ]
 
-        expected_js = "console.log('JS Code');"
+        expected_js = 'import "./style1.css";\n' + "console.log('JS Code');"
         expected_css = "body { background-color: black; }"  # First CSS file
 
         result_js, result_css = preprocess(source_tree)
 
         self.assertEqual(result_js, expected_js)
         self.assertEqual(result_css, expected_css)  # Should return the first CSS file
+
+    def test_add_missing_import_for_css_in_js_file(self):
+        """Test that the function adds a missing import statement for CSS files to the JavaScript content."""
+        source_tree = [
+            { "content": 'console.log("Hello World");', "file_path": "script.js" },
+            { "content": "body { background-color: black; }", "file_path": "some_style.css" }
+        ]
+
+        expected_js = 'import "./some_style.css";\nconsole.log("Hello World");'  # CSS import should be added
+        expected_css = "body { background-color: black; }"
+
+        result_js, result_css = preprocess(source_tree)
+
+        self.assertEqual(result_js, expected_js)
+        self.assertEqual(result_css, expected_css)
 
 
 if __name__ == '__main__':

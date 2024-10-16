@@ -57,6 +57,10 @@ def preprocess(source_tree: List[Dict[str, str]]) -> Tuple[str, str]:
 
     js_code = fix_imports(js_file)
 
+    if all_css_entries:
+        file_path = all_css_entries[0]["file_path"]
+        js_code = f'import "./{file_path}";\n' + js_code
+
     return js_code, css_code
 
 

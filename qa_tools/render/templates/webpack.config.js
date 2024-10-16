@@ -1,4 +1,5 @@
 const path = require('path');
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 
 module.exports = {
     mode: 'development',
@@ -11,6 +12,7 @@ module.exports = {
       filename: 'main.js',
       path: '{{ build_path }}/artifacts'
     },
+    plugins: [new MiniCssExtractPlugin()],
     module: {
       rules: [
         {
@@ -25,6 +27,9 @@ module.exports = {
               ]
             }
           }
+        }, {
+          test: /\.css$/i,
+          use: [MiniCssExtractPlugin.loader, "css-loader"],
         }
       ]
     },
