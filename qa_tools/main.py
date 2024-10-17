@@ -5,7 +5,7 @@ import re
 import os
 import shutil
 from collections import namedtuple
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from render import render_indexjs, render_webpack_config
 
@@ -66,8 +66,8 @@ def preprocess(source_tree: List[Dict[str, str]], js_renderer=None) -> Tuple[str
     try:
         all_js_entries = [item for item in source_tree if item["file_path"].endswith(".js")]
         all_css_entries = [item for item in source_tree if item["file_path"].endswith(".css")]
-    except KeyError:
-        raise MalformedFileEntryError
+    except KeyError as e:
+        raise MalformedFileEntryError(*e.args)
 
     if not all_js_entries:
         raise NoJsCodeError
@@ -79,11 +79,11 @@ def preprocess(source_tree: List[Dict[str, str]], js_renderer=None) -> Tuple[str
         js_code = js_entry["content"]
         css_code = all_css_entries[0]["content"] if all_css_entries else ""
         css_path = all_css_entries[0]["file_path"] if all_css_entries else ""
-    except KeyError:
-        raise MalformedFileEntryError
+    except KeyError as e:
+        raise MalformedFileEntryError(*e.args)
 
     if not js_code.strip():
-        raise EmptyJavascriptFileError
+        raise EmptyJavascriptFileError(js_path)
 
     js_code = fix_css_imports(js_code, all_css_entries)
 
@@ -187,23 +187,28 @@ def clear_imports(code, to_remove="React"):
 
 
 class BadSourceCodeError(Exception):
-    pass
+    def detail(self):
+        return "Bad format of source_tree"
 
 
 class NoSourceFilesError(BadSourceCodeError):
-    pass
+    def detail(self):
+        return "No source files provided"
 
 
 class NoJsCodeError(BadSourceCodeError):
-    pass
+    def detail(self):
+        return 'Expected at least one file entry with ".js" extension'
 
 
 class EmptyJavascriptFileError(BadSourceCodeError):
-    pass
+    def detail(self):
+        return f'Found blank file: "{self.args[0]}"'
 
 
 class MalformedFileEntryError(BadSourceCodeError):
-    pass
+    def detail(self):
+        return f'Malformed file entry: missing required field "{self.args[0]}"'
 
 
 def parse_name(code):
@@ -304,4 +309,7 @@ class BuildSpec(BaseModel):
 @app.post("/build-component/")
 async def build_component(spec: BuildSpec):
     src_tree = spec.source_tree
-    return build(src_tree)
+    try:
+        return build(src_tree)
+    except BadSourceCodeError as e:
+        raise HTTPException(status_code=400, detail=e.detail())

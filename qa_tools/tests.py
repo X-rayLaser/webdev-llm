@@ -232,8 +232,44 @@ body {
 """
 
 class AppTests(unittest.TestCase):
+    def setUp(self):
+        self.client = TestClient(app)
+    
+    def test_build_fails_because_of_malformed_source_tree_entry(self):
+        data = {
+            "source_tree": [{
+                "file_path": "script.js"
+            }]
+        }
+
+        response = self.client.post("/build-component/", json=data)
+        self.assertEqual(400, response.status_code)
+        self.assertEqual(f'Malformed file entry: missing required field "content"',
+                         response.json()["detail"])
+
+    def test_build_fails_without_source_files_provided(self):
+        data = { "source_tree": [] }
+        response = self.client.post("/build-component/", json=data)
+        self.assertEqual(400, response.status_code)
+        self.assertEqual("No source files provided", response.json()["detail"])
+
+    def test_build_fails_without_javascript_file(self):
+        data = {
+            "source_tree": [{ "content": "body { color: red; }", "file_path": "styles.css"}],
+        }
+        response = self.client.post("/build-component/", json=data)
+        self.assertEqual(400, response.status_code)
+        self.assertEqual('Expected at least one file entry with ".js" extension', response.json()["detail"])
+
+    def test_build_fails_with_empty_javascript_file(self):
+        data = {
+            "source_tree": [{ "content": "  ", "file_path": "script.js"}],
+        }
+        response = self.client.post("/build-component/", json=data)
+        self.assertEqual(400, response.status_code)
+        self.assertEqual(f'Found blank file: "script.js"', response.json()["detail"])
+
     def test_successful_build(self):
-        client = TestClient(app)
         data = {
             "source_tree": [{
                 "content": component,
@@ -243,7 +279,7 @@ class AppTests(unittest.TestCase):
                 "file_path": "styles.css"
             }]
         }
-        response = client.post("/build-component/", json=data)
+        response = self.client.post("/build-component/", json=data)
         self.assertEqual(200, response.status_code)
 
         response_json = response.json()
