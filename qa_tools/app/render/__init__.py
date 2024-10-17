@@ -1,7 +1,7 @@
 from jinja2 import Environment, PackageLoader, select_autoescape
 
 env = Environment(
-    loader=PackageLoader("render"),
+    loader=PackageLoader("app.render"),
     autoescape=select_autoescape()
 )
 

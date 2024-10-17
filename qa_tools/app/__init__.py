@@ -7,7 +7,7 @@ import shutil
 from collections import namedtuple
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from render import render_indexjs, render_webpack_config
+from app.render import render_indexjs, render_webpack_config
 
 app = FastAPI()
 
