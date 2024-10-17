@@ -246,9 +246,10 @@ class SimpleReactBuilder:
         os.makedirs(source_dir)
 
         save_to_file(indexjs_path, source.js_code)
-        
-        css_path = os.path.join(source_dir, source.css_path)
-        save_to_file(css_path, source.css_code)
+
+        if source.css_code:
+            css_path = os.path.join(source_dir, source.css_path or "main.css")
+            save_to_file(css_path, source.css_code)
 
         webpack_config = render_webpack_config(build_path=self.build_directory)
         webpack_config_path = os.path.join(source_dir, "webpack.config.js")
@@ -256,6 +257,11 @@ class SimpleReactBuilder:
 
     def _prepare_output_dir(self, source: ReactAppSource):
         os.makedirs(self.output_dir)
+
+        if not source.css_code:
+            css_path = os.path.join(self.output_dir, "main.css")
+            save_to_file(css_path, "")
+
         index_html_output_path = os.path.join(self.output_dir, "index.html")
         shutil.copyfile(index_html_path, index_html_output_path)
 
