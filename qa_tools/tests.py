@@ -220,22 +220,26 @@ class TestClearImports(unittest.TestCase):
 
 
 component = """
-
 function MainComponent(props) {
     return <div>Hello, world</div>;
 }
 """
 
+styles = """
+body {
+    color: red;
+}
+"""
 
 class AppTests(unittest.TestCase):
-    def test(self):
+    def test_successful_build(self):
         client = TestClient(app)
         data = {
             "source_tree": [{
                 "content": component,
                 "file_path": "component.js"
             }, {
-                "content": "body { color: red }",
+                "content": styles,
                 "file_path": "styles.css"
             }]
         }
@@ -243,8 +247,16 @@ class AppTests(unittest.TestCase):
         self.assertEqual(200, response.status_code)
 
         response_json = response.json()
-        assert response_json["success"], response_json["stdout"]
+        self.assertTrue(response_json["success"])
 
+        files = sorted(list(response_json["artifacts"].keys()))
+
+        self.assertEqual(["index.html", "main.css", "main.js"], files)
+
+        self.assertIn("MainComponent", response_json["artifacts"]["main.js"])
+        self.assertIn(styles, response_json["artifacts"]["main.css"])
+        self.assertIn('href="main.css"', response_json["artifacts"]["index.html"])
+        
 
 if __name__ == '__main__':
     unittest.main()
