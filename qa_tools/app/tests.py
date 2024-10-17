@@ -1,6 +1,6 @@
 import unittest
 
-from main import (
+from app import (
     preprocess, clear_imports, NoSourceFilesError, NoJsCodeError,
     EmptyJavascriptFileError, MalformedFileEntryError
 )
