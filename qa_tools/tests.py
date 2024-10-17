@@ -1,6 +1,8 @@
 import unittest
+from fastapi.testclient import TestClient
+
 from main import (
-    preprocess, clear_imports, NoSourceFilesError, NoJsCodeError,
+    preprocess, clear_imports, app, NoSourceFilesError, NoJsCodeError,
     EmptyJavascriptFileError, MalformedFileEntryError
 )
 
@@ -59,10 +61,12 @@ class TestPreprocess(unittest.TestCase):
         expected_js = 'import "./style.css";\n' + "console.log('Hello World');"
         expected_css = "body { background-color: black; }"
 
-        result_js, result_css = preprocess(source_tree)
+        result_js, result_css, js_path, css_path = preprocess(source_tree)
         
         self.assertEqual(result_js, expected_js)
         self.assertEqual(result_css, expected_css)
+        self.assertEqual(js_path, "script.js")
+        self.assertEqual(css_path, "style.css")
 
     def test_source_tree_with_no_css_file_returns_empty_string_for_css(self):
         """Test that source_tree with a JS file but no CSS file returns empty string for CSS."""
@@ -73,10 +77,11 @@ class TestPreprocess(unittest.TestCase):
         expected_js = "console.log('Hello World');"
         expected_css = ""  # No CSS file, so CSS output should be an empty string
 
-        result_js, result_css = preprocess(source_tree)
+        result_js, result_css, js_path, css_path = preprocess(source_tree)
 
         self.assertEqual(result_js, expected_js)
         self.assertEqual(result_css, expected_css)
+        self.assertEqual(css_path, "")
 
     def test_source_tree_with_multiple_js_files_returns_first_js(self):
         """Test that source_tree with multiple JS files returns content of the first JS file."""
@@ -90,7 +95,7 @@ class TestPreprocess(unittest.TestCase):
         expected_js = 'import "./style.css";\n' + "console.log('First JS');"
         expected_css = "body { background-color: black; }"
 
-        result_js, result_css = preprocess(source_tree)
+        result_js, result_css, *rest = preprocess(source_tree)
 
         self.assertEqual(result_js, expected_js)  # Should return the first JS file
         self.assertEqual(result_css, expected_css)
@@ -107,10 +112,11 @@ class TestPreprocess(unittest.TestCase):
         expected_js = 'import "./style1.css";\n' + "console.log('JS Code');"
         expected_css = "body { background-color: black; }"  # First CSS file
 
-        result_js, result_css = preprocess(source_tree)
+        result_js, result_css, js_path, css_path = preprocess(source_tree)
 
         self.assertEqual(result_js, expected_js)
         self.assertEqual(result_css, expected_css)  # Should return the first CSS file
+        self.assertEqual(css_path, "style1.css")
 
     def test_add_missing_import_for_css_in_js_file(self):
         """Test that the function adds a missing import statement for CSS files to the JavaScript content."""
@@ -122,7 +128,7 @@ class TestPreprocess(unittest.TestCase):
         expected_js = 'import "./some_style.css";\nconsole.log("Hello World");'  # CSS import should be added
         expected_css = "body { background-color: black; }"
 
-        result_js, result_css = preprocess(source_tree)
+        result_js, result_css, *rest = preprocess(source_tree)
 
         self.assertEqual(result_js, expected_js)
         self.assertEqual(result_css, expected_css)
@@ -137,7 +143,7 @@ class TestPreprocess(unittest.TestCase):
         expected_js = 'import "./some_style.css";\nconsole.log("Hello World");'  # No duplicate import should be added
         expected_css = "body { background-color: black; }"
 
-        result_js, result_css = preprocess(source_tree)
+        result_js, result_css, *rest = preprocess(source_tree)
 
         self.assertEqual(result_js, expected_js)  # Should remain unchanged
         self.assertEqual(result_css, expected_css)
@@ -153,7 +159,7 @@ class TestPreprocess(unittest.TestCase):
         expected_js = "import './some_style.css';\nconsole.log('Hello World');"
         expected_css = "body { background-color: black; }"
 
-        result_js, result_css = preprocess(source_tree)
+        result_js, result_css, *rest = preprocess(source_tree)
 
         self.assertEqual(result_js, expected_js)  # Should remain unchanged
         self.assertEqual(result_css, expected_css)
@@ -173,7 +179,7 @@ class TestPreprocess(unittest.TestCase):
         expected_js = 'import "./style1.css";\nimport "./style2.css";\nconsole.log("Hello World");'
         expected_css = ""  # No CSS file in source_tree, so this should be empty
 
-        result_js, result_css = preprocess(source_tree)
+        result_js, result_css, *rest = preprocess(source_tree)
 
         self.assertEqual(result_js, expected_js)  # Should remain unchanged
         self.assertEqual(result_css, expected_css)  # Should be an empty string
@@ -211,6 +217,33 @@ class TestClearImports(unittest.TestCase):
         for code, expected in code_samples:
             with self.subTest(code=code):
                 self.assertEqual(clear_imports(code, "Stuff"), expected)
+
+
+component = """
+
+function MainComponent(props) {
+    return <div>Hello, world</div>;
+}
+"""
+
+
+class AppTests(unittest.TestCase):
+    def test(self):
+        client = TestClient(app)
+        data = {
+            "source_tree": [{
+                "content": component,
+                "file_path": "component.js"
+            }, {
+                "content": "body { color: red }",
+                "file_path": "styles.css"
+            }]
+        }
+        response = client.post("/build-component/", json=data)
+        self.assertEqual(200, response.status_code)
+
+        response_json = response.json()
+        assert response_json["success"], response_json["stdout"]
 
 
 if __name__ == '__main__':

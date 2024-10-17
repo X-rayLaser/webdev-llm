@@ -4,13 +4,18 @@ import subprocess
 import re
 import os
 import shutil
+from collections import namedtuple
 from fastapi import FastAPI
+from pydantic import BaseModel
 from render import render_indexjs, render_webpack_config
 
 app = FastAPI()
 
 base_dir = "/data/builds"
 index_html_path = "/app/index.html"
+
+
+ReactAppSource = namedtuple("ReactAppSource", ["js_code", "css_code", "js_path", "css_path"])
 
 
 def null_js_renderer(js_code, js_path, props):
@@ -27,6 +32,7 @@ def react_root_renderer(js_code, js_path, props):
                               component_definition=js_code,
                               props_str=props_str)
     
+    # todo: insert all hooks into index.js template; remove all hooks from user sent component file
     index_js = clear_imports(index_js, to_remove="ReactDOM")
     index_js = clear_imports(index_js, to_remove="React")
     
@@ -48,7 +54,7 @@ def preprocess(source_tree: List[Dict[str, str]], js_renderer=None) -> Tuple[str
     Raises MalformedFileEntryError exception when source_tree contains 
     file with missing fields "content" or "file_path".
     
-    Returns a tuple containing 2 strings: javascript code and css code.
+    Returns a named tuple of type ReactAppSource.
 
     If css code is missing, second item in the tuple will be an empty string.
     """
@@ -72,6 +78,7 @@ def preprocess(source_tree: List[Dict[str, str]], js_renderer=None) -> Tuple[str
     try:
         js_code = js_entry["content"]
         css_code = all_css_entries[0]["content"] if all_css_entries else ""
+        css_path = all_css_entries[0]["file_path"] if all_css_entries else ""
     except KeyError:
         raise MalformedFileEntryError
 
@@ -82,7 +89,7 @@ def preprocess(source_tree: List[Dict[str, str]], js_renderer=None) -> Tuple[str
 
     props = js_entry.get("props")
     js_code = js_renderer(js_code, js_path, props)
-    return js_code, css_code
+    return ReactAppSource(js_code, css_code, js_path, css_path)
 
 
 def fix_css_imports(js_code, css_entries):
@@ -212,9 +219,9 @@ class SimpleReactBuilder:
     def __init__(self, build_directory):
         self.build_directory = build_directory
 
-    def build(self, index_js, css_code="", props=None):
-        self._prepare_source_dir(index_js)
-        self._prepare_output_dir(css_code)
+    def build(self, source: ReactAppSource):
+        self._prepare_source_dir(source)
+        self._prepare_output_dir(source)
         return self._build_artifacts()
 
     def load_artifacts(self):
@@ -228,24 +235,24 @@ class SimpleReactBuilder:
 
         return artifacts
 
-    def _prepare_source_dir(self, index_js):
+    def _prepare_source_dir(self, source: ReactAppSource):
         source_dir = os.path.join(self.build_directory, "source")
         indexjs_path = os.path.join(source_dir, "index.js")
         os.makedirs(source_dir)
 
-        save_to_file(indexjs_path, index_js)
+        save_to_file(indexjs_path, source.js_code)
+        
+        css_path = os.path.join(source_dir, source.css_path)
+        save_to_file(css_path, source.css_code)
 
         webpack_config = render_webpack_config(build_path=self.build_directory)
         webpack_config_path = os.path.join(source_dir, "webpack.config.js")
         save_to_file(webpack_config_path, webpack_config)
 
-    def _prepare_output_dir(self, css_code):
+    def _prepare_output_dir(self, source: ReactAppSource):
         os.makedirs(self.output_dir)
         index_html_output_path = os.path.join(self.output_dir, "index.html")
         shutil.copyfile(index_html_path, index_html_output_path)
-
-        css_path = os.path.join(self.output_dir, "styles.css")
-        save_to_file(css_path, css_code)
 
     def _build_artifacts(self):
         cwd = os.path.join(self.build_directory, "source")
@@ -272,13 +279,29 @@ def build(src_tree, props=None):
     build_directory = os.path.join(base_dir, build_id)
     builder = SimpleReactBuilder(build_directory)
     
-    js_code, css_code = preprocess(src_tree, js_renderer=react_root_renderer)
+    source = preprocess(src_tree, js_renderer=react_root_renderer)
 
-    stdout, stderr = builder.build(js_code, css_code, props)
+    stdout, stderr = builder.build(source)
 
     artifacts = builder.load_artifacts()
+
+    stdout = stdout.decode(encoding="utf-8")
+    stderr = stderr.decode(encoding="utf-8")
+    success = "successfully" in stdout.lower()
+
     return {
+        'success': success,
         'stdout': stdout,
         'stderr': stderr,
         'artifacts': artifacts
     }
+
+
+class BuildSpec(BaseModel):
+    source_tree: List[Dict[str, str]]
+
+
+@app.post("/build-component/")
+async def build_component(spec: BuildSpec):
+    src_tree = spec.source_tree
+    return build(src_tree)
