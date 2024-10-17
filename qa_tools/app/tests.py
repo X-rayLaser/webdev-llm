@@ -1,9 +1,9 @@
 import unittest
-
-from app import (
-    preprocess, clear_imports, NoSourceFilesError, NoJsCodeError,
-    EmptyJavascriptFileError, MalformedFileEntryError
+from app.utils import clear_imports
+from app.exceptions import (
+    NoSourceFilesError, NoJsCodeError, EmptyJavascriptFileError, MalformedFileEntryError
 )
+from app.builders import preprocess
 
 
 class TestPreprocess(unittest.TestCase):

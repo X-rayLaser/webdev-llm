@@ -81,6 +81,20 @@ def clear_imports(code, to_remove="React"):
     return pattern.sub(fix_import_line, code)
 
 
+def fix_css_imports(js_code, css_entries):
+    if css_entries:
+        file_path = css_entries[0]["file_path"]
+        import_path = f"./{file_path}"
+        css_import1 = f'import "{import_path}";\n'
+        css_import2 = f"import '{import_path}';\n"
+        has_css_import = css_import1 in js_code or css_import2 in js_code
+
+        if not has_css_import:
+            js_code = f'import "./{file_path}";\n' + js_code
+
+    return js_code
+
+
 def parse_name(code):
     return 'MainComponent'
 
