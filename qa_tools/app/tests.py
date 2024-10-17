@@ -1,7 +1,8 @@
 import unittest
-from app.utils import clear_imports
+from app.utils import clear_imports, parse_name
 from app.exceptions import (
-    NoSourceFilesError, NoJsCodeError, EmptyJavascriptFileError, MalformedFileEntryError
+    NoSourceFilesError, NoJsCodeError, EmptyJavascriptFileError,
+    MalformedFileEntryError, ComponentNotFoundError
 )
 from app.builders import preprocess
 
@@ -216,6 +217,40 @@ class TestClearImports(unittest.TestCase):
         for code, expected in code_samples:
             with self.subTest(code=code):
                 self.assertEqual(clear_imports(code, "Stuff"), expected)
+
+
+class TestComponentNameExtraction(unittest.TestCase):
+    def test_extracting_name_from_code_without_any_function_definition(self):
+        
+        with self.assertRaises(ComponentNotFoundError):
+            parse_name("console.log('hello')")
+
+    def test_extracting_name_from_code_with_function_definition_without_capitalization(self):
+        with self.assertRaises(ComponentNotFoundError):
+            parse_name("function hello() { console.log('hello'); }")
+
+    def test_extracting_name_from_code_with_proper_component(self):
+        cases = [
+            ("function Hello() { return <div>Hello</div>; }", "Hello"),
+            ("   function   Hello(){return <div>Hello</div>}  ", "Hello"),
+            ("function Hello(){ return (<div>Text</div>);}", "Hello"),
+            ("function  Hello(props) \n{ \nreturn (<div>Text</div>);\n}\n", "Hello"),
+            ("function  Hello({ prop1, prop2, prop3=4 }) \n{ \nreturn (<div>Text</div>);\n}\n", "Hello"),
+            ("function HelloWorld23(){ return (<div>Text</div>);}", "HelloWorld23"),
+            ("const Hello = () => <div>Text</div>", "Hello"),
+            ("const Hello=()=><div>Text</div>", "Hello"),
+            ("const Hello = (props) => <div>Text</div>", "Hello"),
+            ("const Hello = props => <div>Text</div>", "Hello"),
+            ("const Hello = ({prop1, prop2}) => <div>Text</div>", "Hello"),
+            ("const Hello = ({ prop }) => <div>Text</div>", "Hello"),
+            ("let Hello = () => <div>Text</div>", "Hello"),
+            ("let Hello     =()=><div>Text</div>", "Hello"),
+        ]
+
+        for code, expected in cases:
+            with self.subTest(code=code):
+                self.assertEqual(parse_name(code), expected)
+
 
 
 if __name__ == '__main__':

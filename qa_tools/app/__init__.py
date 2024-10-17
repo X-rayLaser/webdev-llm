@@ -1,9 +1,10 @@
-from typing import Union, List, Dict, Tuple
-from collections import namedtuple
+from typing import List, Dict
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from app.builders import build
 from app.exceptions import BadSourceCodeError
+
+
 app = FastAPI()
 
 

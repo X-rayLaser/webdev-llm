@@ -21,3 +21,8 @@ class EmptyJavascriptFileError(BadSourceCodeError):
 class MalformedFileEntryError(BadSourceCodeError):
     def detail(self):
         return f'Malformed file entry: missing required field "{self.args[0]}"'
+
+
+class ComponentNotFoundError(BadSourceCodeError):
+    def detail(self):
+        return "Component not found in javascript code"

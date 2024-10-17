@@ -1,4 +1,5 @@
 import re
+from .exceptions import ComponentNotFoundError
 
 
 def clear_bracket_imports(imports_str, to_remove):
@@ -96,7 +97,17 @@ def fix_css_imports(js_code, css_entries):
 
 
 def parse_name(code):
-    return 'MainComponent'
+    matcher = re.compile("function\s+([A-Z][a-zA-Z0-9]*)\(.*\)\s*\{.*\s*return.*\s*\}")
+    arrow_matcher = re.compile("((const|let)\s+([A-Z][a-zA-Z0-9]*)\s*=.*=>)")
+    matches = matcher.findall(code)
+    if not matches:
+        matches = arrow_matcher.findall(code)
+        if not matches:
+            raise ComponentNotFoundError
+        _, _, name = matches[-1]
+        return name
+    
+    return matches[-1]
 
 
 def props_to_string(props: dict) -> str:
