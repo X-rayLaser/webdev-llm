@@ -1,5 +1,12 @@
 version: '3'
 services:
+  django:
+    build:
+      context: django
+      dockerfile: Dockerfile
+    volumes:
+      - .:/workspace:cached
+      - ./django:/django
   builder:
     build:
       context: qa_tools
