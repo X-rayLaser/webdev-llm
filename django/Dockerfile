@@ -18,3 +18,5 @@ RUN python -m venv venv
 
 WORKDIR /django
 RUN . /home/user/venv/bin/activate && pip install -r requirements.txt
+
+ENTRYPOINT "./entrypoint.sh"
