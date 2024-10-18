@@ -232,16 +232,21 @@ class TestComponentNameExtraction(unittest.TestCase):
     def test_extracting_name_from_code_with_proper_component(self):
         cases = [
             ("function Hello() { return <div>Hello</div>; }", "Hello"),
+            ("function Hello ( ) { return <div>Hello</div>; }", "Hello"),
             ("   function   Hello(){return <div>Hello</div>}  ", "Hello"),
             ("function Hello(){ return (<div>Text</div>);}", "Hello"),
             ("function  Hello(props) \n{ \nreturn (<div>Text</div>);\n}\n", "Hello"),
+            ("function  Hello  ( props ) \n{ \nreturn (<div>Text</div>);\n}\n", "Hello"),
             ("function  Hello({ prop1, prop2, prop3=4 }) \n{ \nreturn (<div>Text</div>);\n}\n", "Hello"),
+
+            ("function  Hello({ prop1,\n prop2 }) \n{ \nreturn (<div>Text</div>);\n}\n", "Hello"),
             ("function HelloWorld23(){ return (<div>Text</div>);}", "HelloWorld23"),
             ("const Hello = () => <div>Text</div>", "Hello"),
             ("const Hello=()=><div>Text</div>", "Hello"),
             ("const Hello = (props) => <div>Text</div>", "Hello"),
             ("const Hello = props => <div>Text</div>", "Hello"),
             ("const Hello = ({prop1, prop2}) => <div>Text</div>", "Hello"),
+            ("const Hello = ({  prop1,\n  prop2 }) => <div>Text</div>", "Hello"),
             ("const Hello = ({ prop }) => <div>Text</div>", "Hello"),
             ("let Hello = () => <div>Text</div>", "Hello"),
             ("let Hello     =()=><div>Text</div>", "Hello"),
@@ -251,6 +256,25 @@ class TestComponentNameExtraction(unittest.TestCase):
             with self.subTest(code=code):
                 self.assertEqual(parse_name(code), expected)
 
+    def test_must_extract_last_name_from_code_with_multiple_definitions(self):
+        code = """
+function Hello() {
+    return <div></div>
+}
+
+const World = props => <div>Text</div>;
+"""
+        self.assertEqual(parse_name(code), "World")
+
+    def test_must_extract_the_first_exported_component(self):
+        code = """
+export function Hello() {
+    return <div></div>
+}
+
+const World = props => <div>Text</div>;
+"""
+        self.assertEqual(parse_name(code), "Hello")
 
 
 if __name__ == '__main__':

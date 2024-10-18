@@ -16,7 +16,7 @@ body {
 """
 
 buggy_component = """
-functioon MainComponent(props) {
+function MainComponent(props) {
     return <div>Hello, world
 }
 """

@@ -97,17 +97,43 @@ def fix_css_imports(js_code, css_entries):
 
 
 def parse_name(code):
-    matcher = re.compile("function\s+([A-Z][a-zA-Z0-9]*)\(.*\)\s*\{.*\s*return.*\s*\}")
-    arrow_matcher = re.compile("((const|let)\s+([A-Z][a-zA-Z0-9]*)\s*=.*=>)")
-    matches = matcher.findall(code)
-    if not matches:
-        matches = arrow_matcher.findall(code)
-        if not matches:
-            raise ComponentNotFoundError
-        _, _, name = matches[-1]
-        return name
+    export_regex = r"(?P<export_prefix>export\s+)?"
+    name_regex = "[A-Z][a-zA-Z0-9]*"
+    func_regex = r"function\s+" + f"(?P<func_name>{name_regex})" + "\s*\(.*\)\s*\{.*\}"
+    arrow_regex = r"((const|let)\s+" + f"(?P<arrow_func_name>{name_regex})" + "\s*=.*=>)"
+    regex = export_regex + f"({func_regex}|{arrow_regex})"
+
+    candidates = []
+
+    while True:
+        m = re.search(regex, code, flags=re.DOTALL)
+        if m:
+            _, end = m.span()
+
+            if end == 0:
+                raise ComponentParseError
+
+            code = code[end:]
+
+            if m.groupdict()["func_name"]:
+                name = m.group("func_name")
+            elif m.groupdict()["arrow_func_name"]:
+                name = m.group("arrow_func_name")
+            else:
+                raise ComponentParseError
+            if m.groupdict()["export_prefix"]:
+                return name
+            candidates.append(name)
+        else:
+            break
     
-    return matches[-1]
+    if not candidates:
+        raise ComponentNotFoundError
+    return candidates[-1]
+
+
+class ComponentParseError(Exception):
+    pass
 
 
 def props_to_string(props: dict) -> str:
