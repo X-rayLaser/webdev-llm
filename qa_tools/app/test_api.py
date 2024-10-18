@@ -21,6 +21,28 @@ function MainComponent(props) {
 }
 """
 
+three_components = """
+function First(props) {
+    return <div>Hello</div>;
+}
+
+export const SecondOne = props => <div>World</div>;
+
+function ThirdOne() {
+    return <div>Hello, world</div>;
+}
+"""
+
+code_without_component = """
+function startsWithLowerCaseLetter(props) {
+    return <div>Hello, world</div>;
+}
+
+export function sameIssue(props) {
+    return <div>Hello, world</div>;
+}
+"""
+
 class AppTests(unittest.TestCase):
     def setUp(self):
         self.client = TestClient(app)
@@ -76,6 +98,15 @@ class AppTests(unittest.TestCase):
         response_json = response.json()
         self.assertFalse(response_json["success"])
 
+    def test_build_failes_due_to_missing_components_in_js_file(self):
+        data = {
+            "source_tree": [{ "content": code_without_component, "file_path": "script.js"}],
+        }
+        response = self.client.post("/build-component/", json=data)
+        self.assertEqual(400, response.status_code)
+        self.assertEqual(f'Component not found in javascript code',
+                         response.json()["detail"])
+
     def test_successful_build(self):
         data = {
             "source_tree": [{
@@ -114,6 +145,24 @@ class AppTests(unittest.TestCase):
         self.assertTrue(response_json["success"])
         files = sorted(list(response_json["artifacts"].keys()))
         self.assertEqual(["index.html", "main.css", "main.js"], files)
+        self.assertIn("", response_json["artifacts"]["main.css"])
+
+    def test_successful_build_with_multiple_components(self):
+        data = {
+            "source_tree": [{
+                "content": three_components,
+                "file_path": "component.js"
+            }]
+        }
+
+        response = self.client.post("/build-component/", json=data)
+        self.assertEqual(200, response.status_code)
+        response_json = response.json()
+        self.assertTrue(response_json["success"])
+        files = sorted(list(response_json["artifacts"].keys()))
+        self.assertEqual(["index.html", "main.css", "main.js"], files)
+
+        self.assertIn("SecondOne", response_json["artifacts"]["main.js"])
         self.assertIn("", response_json["artifacts"]["main.css"])
 
 
