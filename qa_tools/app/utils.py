@@ -99,8 +99,14 @@ def fix_css_imports(js_code, css_entries):
 def parse_name(code):
     export_regex = r"(?P<export_prefix>export\s+)?"
     name_regex = "[A-Z][a-zA-Z0-9]*"
-    func_regex = r"function\s+" + f"(?P<func_name>{name_regex})" + "\s*\(.*\)\s*\{.*\}"
-    arrow_regex = r"((const|let)\s+" + f"(?P<arrow_func_name>{name_regex})" + "\s*=.*=>)"
+    func_name_regex = f"(?P<func_name>{name_regex})"
+    arrow_func_name_regex = f"(?P<arrow_func_name>{name_regex})"
+    parentheses_regex = "\s*\(.*\)\s*"
+    func_body_regex = "\{.*\}"
+    arrow_func_def = "\s*=.*=>"
+
+    func_regex = r"function\s+" + func_name_regex + parentheses_regex + func_body_regex
+    arrow_regex = r"(const|let)\s+" + arrow_func_name_regex + arrow_func_def
     regex = export_regex + f"({func_regex}|{arrow_regex})"
 
     candidates = []
