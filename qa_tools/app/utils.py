@@ -113,26 +113,26 @@ def parse_name(code):
 
     while True:
         m = re.search(regex, code, flags=re.DOTALL)
-        if m:
-            _, end = m.span()
-
-            if end == 0:
-                raise ComponentParseError
-
-            code = code[end:]
-
-            if m.groupdict()["func_name"]:
-                name = m.group("func_name")
-            elif m.groupdict()["arrow_func_name"]:
-                name = m.group("arrow_func_name")
-            else:
-                raise ComponentParseError
-            if m.groupdict()["export_prefix"]:
-                return name
-            candidates.append(name)
-        else:
+        if not m:
             break
-    
+
+        _, end = m.span()
+
+        if end == 0:
+            raise ComponentParseError
+
+        code = code[end:]
+
+        if m.groupdict()["func_name"]:
+            name = m.group("func_name")
+        elif m.groupdict()["arrow_func_name"]:
+            name = m.group("arrow_func_name")
+        else:
+            raise ComponentParseError
+        if m.groupdict()["export_prefix"]:
+            return name
+        candidates.append(name)
+
     if not candidates:
         raise ComponentNotFoundError
     return candidates[-1]
