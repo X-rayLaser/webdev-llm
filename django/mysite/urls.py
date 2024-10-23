@@ -17,10 +17,12 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from assistant.views import ServerViewSet
+from assistant.views import ServerViewSet, PresetViewSet
 
 router = DefaultRouter()
 router.register(r'servers', ServerViewSet)
+router.register(r'presets', PresetViewSet)
+
 
 urlpatterns = [
     path('api/', include(router.urls)),
