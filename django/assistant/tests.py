@@ -1,7 +1,7 @@
 from rest_framework.test import APITestCase
 from rest_framework import status
 from django.urls import reverse
-from .models import Server, Preset
+from .models import Configuration, Server, Preset
 
 
 class ServerAPITests(APITestCase):
@@ -114,3 +114,72 @@ class PresetAPITests(APITestCase):
         response = self.client.delete(reverse('preset-detail', args=[self.preset.id]))
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(Preset.objects.count(), 0)
+
+
+class ConfigurationAPITests(APITestCase):
+    def setUp(self):
+        self.preset = Preset.objects.create(name="Test Preset", temperature=0.7, top_k=40,
+                                            top_p=0.9, min_p=0.1, repeat_penalty=1.2, n_predict=50)
+        self.llm_server = Server.objects.create(name="LLM Server", url="http://llm-server.com")
+        self.build_server = Server.objects.create(name="Build Server", url="http://build-server.com")
+        
+        self.config = self.create_config_object("Test Configuration")
+        self.url = reverse('configuration-list')
+
+    def test_create_configuration(self):
+        config_data = {
+            "name": "Another Configuration",
+            "preset": self.preset.name,
+            "llm_server": self.llm_server.name,
+            "build_servers": [self.build_server.name],
+            "lint_servers": [],
+            "test_servers": [],
+            "interaction_servers": [],
+            "autorun": False,
+            "max_iterations": 1
+        }
+        response = self.client.post(self.url, config_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.json())
+        self.assertEqual(Configuration.objects.count(), 2)
+
+    def test_list_configurations(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+
+    def test_retrieve_configuration(self):
+        response = self.client.get(reverse('configuration-detail', args=[self.config.id]))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['name'], self.config.name)
+
+    def test_update_configuration(self):
+        new_llm_server = Server.objects.create(name="Different LLM Server", url="http://llm.com")
+        updated_data = {
+            "name": "Updated Configuration",
+            "preset": self.preset.name,
+            "llm_server": new_llm_server.name,
+            "build_servers": [self.build_server.name],
+            "autorun": True,
+            "max_iterations": 5
+        }
+        response = self.client.patch(reverse('configuration-detail', args=[self.config.id]),
+                                     updated_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.config.refresh_from_db()
+        self.assertEqual(self.config.name, updated_data['name'])
+        self.assertEqual(self.config.autorun, updated_data['autorun'])
+        self.assertEqual(self.config.llm_server.name, updated_data['llm_server'])
+
+    def test_delete_configuration(self):
+        response = self.client.delete(reverse('configuration-detail', args=[self.config.id]))
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(Configuration.objects.count(), 0)
+
+    def create_config_object(self, name):
+        config = Configuration.objects.create(
+            name=name,
+            preset=self.preset,
+            llm_server=self.llm_server,
+        )
+        config.build_servers.add(self.build_server)
+        return config
