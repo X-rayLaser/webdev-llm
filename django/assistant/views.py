@@ -1,10 +1,10 @@
 from rest_framework import viewsets
-from rest_framework.generics import RetrieveAPIView
+from rest_framework import generics
 
-from .models import Configuration, Server, Preset, Build, LinterCheck, TestRun
+from .models import Configuration, Server, Preset, Build, LinterCheck, TestRun, OperationSuite
 from .serializers import (
     ConfigurationSerializer, ServerSerializer, PresetSerializer,
-    BuildSerializer, LinterCheckSerializer, TestRunSerializer
+    BuildSerializer, LinterCheckSerializer, TestRunSerializer, OperationSuiteSerializer
 )
 
 
@@ -23,16 +23,26 @@ class ConfigurationViewSet(viewsets.ModelViewSet):
     serializer_class = ConfigurationSerializer
 
 
-class BuildDetailView(RetrieveAPIView):
+class BuildDetailView(generics.RetrieveAPIView):
     queryset = Build.objects.all()
     serializer_class = BuildSerializer
 
 
-class LinterCheckDetailView(RetrieveAPIView):
+class LinterCheckDetailView(generics.RetrieveAPIView):
     queryset = LinterCheck.objects.all()
     serializer_class = LinterCheckSerializer
 
 
-class TestRunDetailView(RetrieveAPIView):
+class TestRunDetailView(generics.RetrieveAPIView):
     queryset = TestRun.objects.all()
     serializer_class = TestRunSerializer
+
+
+class OperationSuiteListView(generics.ListAPIView):
+    queryset = OperationSuite.objects.all()
+    serializer_class = OperationSuiteSerializer
+
+
+class OperationSuiteDetailView(generics.RetrieveAPIView):
+    queryset = OperationSuite.objects.all()
+    serializer_class = OperationSuiteSerializer

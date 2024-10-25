@@ -1,4 +1,5 @@
 from django.db import models
+from django.urls import reverse
 
 
 class Server(models.Model):
@@ -133,6 +134,9 @@ class Build(Operation):
     operation_suite = models.ForeignKey(OperationSuite, related_name="builds",
                                         blank=True, null=True, on_delete=models.CASCADE)
 
+    def get_absolute_url(self):
+        return reverse('build-detail', args=[self.pk])
+
 
 class LinterCheck(Operation):
     logs = models.JSONField(blank=True, null=True)
@@ -141,6 +145,9 @@ class LinterCheck(Operation):
     operation_suite = models.ForeignKey(OperationSuite, related_name="lints",
                                         blank=True, null=True, on_delete=models.CASCADE)
 
+    def get_absolute_url(self):
+        return reverse('lintercheck-detail', args=[self.pk])
+
 
 class TestRun(Operation):
     logs = models.JSONField(blank=True, null=True)
@@ -148,3 +155,6 @@ class TestRun(Operation):
 
     operation_suite = models.ForeignKey(OperationSuite, related_name="tests",
                                         blank=True, null=True, on_delete=models.CASCADE)
+
+    def get_absolute_url(self):
+        return reverse('testrun-detail', args=[self.pk])

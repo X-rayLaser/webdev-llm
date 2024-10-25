@@ -1,7 +1,9 @@
 from rest_framework.test import APITestCase
 from rest_framework import status
 from django.urls import reverse
-from .models import Configuration, Server, Preset, Build, LinterCheck, TestRun
+from .models import (
+    Configuration, Server, Preset, Build, LinterCheck, TestRun, OperationSuite, Revision
+)
 
 
 class ServerAPITests(APITestCase):
@@ -208,3 +210,62 @@ class OperationDetailTests(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['logs'], self.test_run.logs)
+
+    def test_with_hardcoded_url(self):
+        response = self.client.get("/api/builds/1/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['logs'], self.build.logs)
+
+
+class OperationSuiteAPITests(APITestCase):
+    def setUp(self):
+        self.revision = Revision.objects.create(src_tree={})
+        self.suite = OperationSuite.objects.create(revision=self.revision)
+
+        # Create operations in all states for each type
+        self.builds = self.create_operations(Build)
+        self.lints = self.create_operations(LinterCheck)
+        self.tests = self.create_operations(TestRun)
+
+        self.list_url = reverse('operation-suite-list')
+        self.url = reverse('operation-suite-detail', args=[self.suite.id])
+
+    def create_operations(self, model_class):
+        def create_fn(**kwargs):
+            return model_class.objects.create(**kwargs)
+
+        return [
+            create_fn(operation_suite=self.suite, finished=True, success=True),
+            create_fn(operation_suite=self.suite, finished=True, success=False, errors={"error": "Crashed"}),
+            create_fn(operation_suite=self.suite, finished=True, success=False),
+            create_fn(operation_suite=self.suite, finished=False)
+        ]
+
+    def test_list_operation_suites(self):
+        response = self.client.get(self.list_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertIsInstance(response.json(), list)
+
+    def test_retrieve_operation_suite(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn('builds', data)
+        self.assertIn('lints', data)
+        self.assertIn('tests', data)
+
+    def test_operation_suite_detail(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        groups = ["builds", "lints", "tests"]
+        statuses = ['successful', 'crashed', 'failed', 'running']
+
+        for group in groups:
+            operation_objects = getattr(self, group)
+            with self.subTest(group):
+                group_data = response.data[group]
+
+                operation_objects = getattr(self, group)
+                for state, obj in zip(statuses, operation_objects):
+                    self.assertIn(obj.get_absolute_url(), group_data[state])

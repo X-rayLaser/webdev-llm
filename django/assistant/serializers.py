@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from .models import Configuration, Server, Preset, Build, LinterCheck, TestRun
+from django.urls import reverse
+from .models import Configuration, Server, Preset, Build, LinterCheck, TestRun, OperationSuite
 
 
 class ServerSerializer(serializers.ModelSerializer):
@@ -56,3 +57,34 @@ class TestRunSerializer(serializers.ModelSerializer):
     class Meta:
         model = TestRun
         fields = ['id', 'logs', 'report', 'finished', 'success', 'errors', 'start_time', 'end_time']
+
+
+class OperationSuiteSerializer(serializers.ModelSerializer):
+    builds = serializers.SerializerMethodField()
+    lints = serializers.SerializerMethodField()
+    tests = serializers.SerializerMethodField()
+
+    class Meta:
+        model = OperationSuite
+        fields = ['id', 'builds', 'lints', 'tests']
+
+    def get_operation_hyperlinks(self, monitor):
+        states = {
+            "running": monitor.running_operations,
+            "crashed": monitor.crashed_operations,
+            "failed": monitor.failed_operations,
+            "successful": monitor.successful_operations
+        }
+
+        def get_url(op): return op.get_absolute_url()
+
+        return {state: list(map(get_url, ops)) for state, ops in states.items()}
+
+    def get_builds(self, obj):
+        return self.get_operation_hyperlinks(obj.builds_monitor)
+
+    def get_lints(self, obj):
+        return self.get_operation_hyperlinks(obj.lints_monitor)
+
+    def get_tests(self, obj):
+        return self.get_operation_hyperlinks(obj.tests_monitor)
