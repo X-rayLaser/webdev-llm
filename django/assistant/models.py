@@ -158,3 +158,25 @@ class TestRun(Operation):
 
     def get_absolute_url(self):
         return reverse('testrun-detail', args=[self.pk])
+
+
+class Thread(models.Model):
+    revision = models.ForeignKey(Revision, on_delete=models.CASCADE, related_name="threads")
+    file_path = models.CharField(max_length=255)
+    line_no = models.IntegerField(blank=True, null=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Thread in {self.file_path} at line {self.line_no}"
+
+
+class Comment(models.Model):
+    thread = models.ForeignKey(Thread, on_delete=models.CASCADE, related_name="comments",
+                               null=True, blank=True)
+    text = models.TextField()
+    parent = models.ForeignKey("self", on_delete=models.CASCADE, related_name="replies",
+                               null=True, blank=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.text[:50]

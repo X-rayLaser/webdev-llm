@@ -1,7 +1,9 @@
 from rest_framework import serializers
 from django.urls import reverse
-from .models import Configuration, Server, Preset, Build, LinterCheck, TestRun, OperationSuite
-
+from .models import (
+    Configuration, Server, Preset, Build, LinterCheck,
+    TestRun, OperationSuite, Thread, Comment
+)
 
 class ServerSerializer(serializers.ModelSerializer):
     class Meta:
@@ -88,3 +90,28 @@ class OperationSuiteSerializer(serializers.ModelSerializer):
 
     def get_tests(self, obj):
         return self.get_operation_hyperlinks(obj.tests_monitor)
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    replies = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Comment
+        fields = ['id', 'text', 'parent', 'timestamp', 'replies']
+
+    def get_replies(self, obj):
+        children = Comment.objects.filter(parent=obj).order_by('timestamp')
+        return CommentSerializer(children, many=True).data
+
+
+class ThreadSerializer(serializers.ModelSerializer):
+    comment_tree = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Thread
+        fields = ['id', 'revision', 'file_path', 'line_no', 'timestamp', 'comment_tree']
+
+    def get_comment_tree(self, obj):
+        # Fetch root comments (those without parents)
+        root_comments = Comment.objects.filter(thread=obj, parent__isnull=True).order_by('timestamp')
+        return CommentSerializer(root_comments, many=True).data

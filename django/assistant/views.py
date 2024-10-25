@@ -1,10 +1,14 @@
 from rest_framework import viewsets
 from rest_framework import generics
 
-from .models import Configuration, Server, Preset, Build, LinterCheck, TestRun, OperationSuite
+
+from .models import (
+    Configuration, Server, Preset, Build, LinterCheck, TestRun, OperationSuite, Thread
+)
 from .serializers import (
     ConfigurationSerializer, ServerSerializer, PresetSerializer,
-    BuildSerializer, LinterCheckSerializer, TestRunSerializer, OperationSuiteSerializer
+    BuildSerializer, LinterCheckSerializer, TestRunSerializer, OperationSuiteSerializer,
+    ThreadSerializer
 )
 
 
@@ -46,3 +50,8 @@ class OperationSuiteListView(generics.ListAPIView):
 class OperationSuiteDetailView(generics.RetrieveAPIView):
     queryset = OperationSuite.objects.all()
     serializer_class = OperationSuiteSerializer
+
+
+class ThreadViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Thread.objects.all()
+    serializer_class = ThreadSerializer

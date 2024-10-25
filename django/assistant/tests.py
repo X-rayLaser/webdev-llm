@@ -1,8 +1,11 @@
 from rest_framework.test import APITestCase
 from rest_framework import status
 from django.urls import reverse
+from django.utils import timezone
+
 from .models import (
-    Configuration, Server, Preset, Build, LinterCheck, TestRun, OperationSuite, Revision
+    Configuration, Server, Preset, Build, LinterCheck, TestRun, OperationSuite, Revision,
+    Thread, Comment,
 )
 
 
@@ -269,3 +272,43 @@ class OperationSuiteAPITests(APITestCase):
                 operation_objects = getattr(self, group)
                 for state, obj in zip(statuses, operation_objects):
                     self.assertIn(obj.get_absolute_url(), group_data[state])
+
+
+class ThreadAPITests(APITestCase):
+    def setUp(self):
+        self.revision = Revision.objects.create(src_tree={})
+        
+        # Create comments and threads with branching
+        self.thread = Thread.objects.create(
+            revision=self.revision,
+            file_path="example.py",
+            line_no=42,
+            timestamp=timezone.now()
+        )
+
+        self.head_comment = Comment.objects.create(text="Initial Comment", thread=self.thread)
+        
+        # Add branching comments
+        self.child_comment_1 = Comment.objects.create(text="First Reply", parent=self.head_comment)
+        self.child_comment_2 = Comment.objects.create(text="Second Reply", parent=self.head_comment)
+        self.child_comment_1_1 = Comment.objects.create(text="Reply to First Reply", parent=self.child_comment_1)
+
+        self.thread_detail_url = reverse('thread-detail', args=[self.thread.id])
+
+    def test_retrieve_thread_with_comment_tree(self):
+        response = self.client.get(self.thread_detail_url)
+        self.assertEqual(response.status_code, 200)
+        
+        data = response.data
+        self.assertIn('comment_tree', data)
+        
+        # Check root level
+        self.assertEqual(data['comment_tree'][0]['text'], "Initial Comment")
+        
+        # Check first-level replies
+        replies = data['comment_tree'][0]['replies']
+        self.assertEqual(replies[0]['text'], "First Reply")
+        self.assertEqual(replies[1]['text'], "Second Reply")
+        
+        # Check nested reply
+        self.assertEqual(replies[0]['replies'][0]['text'], "Reply to First Reply")
