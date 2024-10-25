@@ -17,7 +17,10 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from assistant.views import ConfigurationViewSet, ServerViewSet, PresetViewSet
+from assistant.views import (
+    ConfigurationViewSet, ServerViewSet, PresetViewSet,
+    BuildDetailView, LinterCheckDetailView, TestRunDetailView
+)
 
 router = DefaultRouter()
 router.register(r'servers', ServerViewSet)
@@ -27,4 +30,7 @@ router.register(r'configs', ConfigurationViewSet)
 urlpatterns = [
     path('api/', include(router.urls)),
     path('admin/', admin.site.urls),
+    path('builds/<int:pk>/', BuildDetailView.as_view(), name='build-detail'),
+    path('checks/<int:pk>/', LinterCheckDetailView.as_view(), name='lintercheck-detail'),
+    path('tests/<int:pk>/', TestRunDetailView.as_view(), name='testrun-detail'),
 ]

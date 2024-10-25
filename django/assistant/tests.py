@@ -1,7 +1,7 @@
 from rest_framework.test import APITestCase
 from rest_framework import status
 from django.urls import reverse
-from .models import Configuration, Server, Preset
+from .models import Configuration, Server, Preset, Build, LinterCheck, TestRun
 
 
 class ServerAPITests(APITestCase):
@@ -183,3 +183,28 @@ class ConfigurationAPITests(APITestCase):
         )
         config.build_servers.add(self.build_server)
         return config
+
+
+class OperationDetailTests(APITestCase):
+    def setUp(self):
+        self.build = Build.objects.create(logs={"info": "Build log"}, url="http://build.com")
+        self.linter_check = LinterCheck.objects.create(logs={"info": "Linter log"}, report={"errors": []})
+        self.test_run = TestRun.objects.create(logs={"info": "Test log"}, report={"passed": True})
+
+    def test_get_build_detail(self):
+        url = reverse('build-detail', args=[self.build.id])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['logs'], self.build.logs)
+
+    def test_get_linter_check_detail(self):
+        url = reverse('lintercheck-detail', args=[self.linter_check.id])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['logs'], self.linter_check.logs)
+
+    def test_get_test_run_detail(self):
+        url = reverse('testrun-detail', args=[self.test_run.id])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['logs'], self.test_run.logs)

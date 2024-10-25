@@ -123,3 +123,28 @@ class Operation(models.Model):
 
     class Meta:
         abstract = True
+
+
+class Build(Operation):
+    logs = models.JSONField(blank=True, null=True)
+    screenshot = models.ImageField(upload_to='screenshots/', blank=True, null=True)
+    url = models.URLField(blank=True, null=True)
+
+    operation_suite = models.ForeignKey(OperationSuite, related_name="builds",
+                                        blank=True, null=True, on_delete=models.CASCADE)
+
+
+class LinterCheck(Operation):
+    logs = models.JSONField(blank=True, null=True)
+    report = models.JSONField(blank=True, null=True)
+
+    operation_suite = models.ForeignKey(OperationSuite, related_name="lints",
+                                        blank=True, null=True, on_delete=models.CASCADE)
+
+
+class TestRun(Operation):
+    logs = models.JSONField(blank=True, null=True)
+    report = models.JSONField(blank=True, null=True)
+
+    operation_suite = models.ForeignKey(OperationSuite, related_name="tests",
+                                        blank=True, null=True, on_delete=models.CASCADE)

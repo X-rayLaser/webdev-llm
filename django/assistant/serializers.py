@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Configuration, Server, Preset
+from .models import Configuration, Server, Preset, Build, LinterCheck, TestRun
 
 
 class ServerSerializer(serializers.ModelSerializer):
@@ -38,3 +38,21 @@ class ConfigurationSerializer(serializers.ModelSerializer):
             'build_servers', 'lint_servers', 'test_servers', 'interaction_servers',
             'autorun', 'max_iterations'
         ]
+
+
+class BuildSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Build
+        fields = ['id', 'logs', 'screenshot', 'url', 'finished', 'success', 'errors', 'start_time', 'end_time']
+
+
+class LinterCheckSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LinterCheck
+        fields = ['id', 'logs', 'report', 'finished', 'success', 'errors', 'start_time', 'end_time']
+
+
+class TestRunSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TestRun
+        fields = ['id', 'logs', 'report', 'finished', 'success', 'errors', 'start_time', 'end_time']
