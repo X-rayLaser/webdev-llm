@@ -8,6 +8,8 @@ router.register(r'servers', ServerViewSet)
 router.register(r'presets', PresetViewSet)
 router.register(r'configs', ConfigurationViewSet)
 router.register(r'threads', ThreadViewSet)
+router.register(r'chats', views.ChatViewSet)
+
 
 urlpatterns = [
     path('', include(router.urls)),

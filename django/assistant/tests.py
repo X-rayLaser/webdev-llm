@@ -5,7 +5,7 @@ from django.utils import timezone
 
 from .models import (
     Configuration, Server, Preset, Build, LinterCheck, TestRun, OperationSuite, Revision,
-    Thread, Comment,
+    Thread, Comment, Chat, Modality, MultimediaMessage
 )
 
 
@@ -222,7 +222,9 @@ class OperationDetailTests(APITestCase):
 
 class OperationSuiteAPITests(APITestCase):
     def setUp(self):
-        self.revision = Revision.objects.create(src_tree={})
+        modality = Modality.objects.create(modality_type="text")
+        message = MultimediaMessage.objects.create(content=modality)
+        self.revision = Revision.objects.create(src_tree={}, message=message)
         self.suite = OperationSuite.objects.create(revision=self.revision)
 
         # Create operations in all states for each type
@@ -276,7 +278,10 @@ class OperationSuiteAPITests(APITestCase):
 
 class ThreadAPITests(APITestCase):
     def setUp(self):
-        self.revision = Revision.objects.create(src_tree={})
+        modality = Modality.objects.create(modality_type="text")
+
+        message = MultimediaMessage.objects.create(content=modality)
+        self.revision = Revision.objects.create(src_tree={}, message=message)
         
         # Create comments and threads with branching
         self.thread = Thread.objects.create(
@@ -312,3 +317,87 @@ class ThreadAPITests(APITestCase):
         
         # Check nested reply
         self.assertEqual(replies[0]['replies'][0]['text'], "Reply to First Reply")
+
+
+class ChatAPITests(APITestCase):
+    def setUp(self):
+        # Create instances of Server and Preset with necessary fields
+        self.server = Server.objects.create(name='Test Server', url='http://testserver.com')
+        
+        # Include all required fields for the Preset model
+        self.preset = Preset.objects.create(
+            name='Test Preset',
+            temperature=0.7,
+            top_k=50,
+            top_p=0.9,
+            min_p=0.1,
+            repeat_penalty=1.2,
+            n_predict=5,
+            extra_params={"param1": "value1"}
+        )
+
+        # Create a Configuration instance with the required fields
+        self.configuration = Configuration.objects.create(
+            name='Test Configuration',
+            llm_server=self.server,
+            preset=self.preset
+        )
+
+        # Create a Chat instance
+        self.chat = Chat.objects.create(
+            name="Test Chat",
+            description="A test chat",
+            configuration=self.configuration
+        )
+        
+        self.list_url = reverse('chat-list')
+        self.url = reverse('chat-detail', args=[self.chat.id])
+
+    def test_list_chats(self):
+        response = self.client.get(self.list_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertIsInstance(response.json(), list)
+
+    def test_retrieve_chat(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+
+        expected_configuration_url = reverse('configuration-detail', args=[self.configuration.id])
+        full_expected_configuration_url = response.wsgi_request.build_absolute_uri(expected_configuration_url)
+
+        self.assertEqual(data['configuration'], full_expected_configuration_url)
+
+        self.assertEqual(data['name'], self.chat.name)
+        self.assertEqual(data['description'], self.chat.description)
+        self.assertIn('messages', data)
+
+    def test_create_chat(self):
+        data = {
+            'name': 'New Chat',
+            'description': 'This is a new chat.',
+            'configuration': reverse('configuration-detail', args=[self.configuration.id])
+        }
+        response = self.client.post(self.list_url, data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Chat.objects.count(), 2)  # One existing chat + one new
+        self.assertEqual(Chat.objects.last().name, 'New Chat')
+
+    def test_update_chat(self):
+        data = {
+            'name': 'Updated Chat',
+            'description': 'This is an updated chat.',
+            'configuration': reverse('configuration-detail', args=[self.configuration.id])
+        }
+        response = self.client.put(self.url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # Refresh the instance from the database
+        self.chat.refresh_from_db()
+        self.assertEqual(self.chat.name, 'Updated Chat')
+        self.assertEqual(self.chat.description, 'This is an updated chat.')
+
+    def test_delete_chat(self):
+        response = self.client.delete(self.url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(Chat.objects.count(), 0)  # Chat should be deleted

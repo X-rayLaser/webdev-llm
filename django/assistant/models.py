@@ -1,5 +1,6 @@
 from django.db import models
 from django.urls import reverse
+from django.utils.translation import gettext_lazy as _
 
 
 class Server(models.Model):
@@ -85,6 +86,8 @@ class Monitor:
 
 class Revision(models.Model):
     src_tree = models.JSONField()
+    message = models.ForeignKey("MultimediaMessage", related_name="revisions",
+                                on_delete=models.CASCADE)
 
 
 class OperationSuite(models.Model):
@@ -180,3 +183,56 @@ class Comment(models.Model):
 
     def __str__(self):
         return self.text[:50]
+
+
+class Chat(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+    description = models.TextField(blank=True, null=True)
+    configuration = models.ForeignKey('Configuration', on_delete=models.CASCADE)
+    created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+
+class MultimediaMessage(models.Model):
+    ROLE_CHOICES = [
+        ('assistant', 'Assistant'),
+        ('user', 'User'),
+        ('system', 'System')
+    ]
+
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES)
+    chat = models.ForeignKey(Chat, on_delete=models.CASCADE, related_name='messages',
+                             blank=True, null=True)
+    parent = models.ForeignKey('self', on_delete=models.CASCADE, related_name='replies',
+                               blank=True, null=True)
+    active_revision = models.OneToOneField('Revision', on_delete=models.SET_NULL, 
+                                           blank=True, null=True, related_name='active_message')
+    created = models.DateTimeField(auto_now_add=True)
+
+    content = models.OneToOneField("Modality", on_delete=models.CASCADE,
+                                   related_name='content_message')
+
+    def __str__(self):
+        return f"{self.role.capitalize()} message in chat '{self.chat.name}'"
+
+
+class Modality(models.Model):
+    class ModalityType(models.TextChoices):
+        TEXT = 'text', _('Text')
+        IMAGE = 'image', _('Image')
+        CODE = 'code', _('Code')
+        MIXTURE = 'mixture', _('Mixture')
+
+    modality_type = models.CharField(max_length=10, choices=ModalityType.choices)
+    text = models.TextField(blank=True, null=True)
+    image = models.ImageField(upload_to='message_images/', blank=True, null=True)
+    file_path = models.CharField(max_length=255, blank=True, null=True)
+
+    mixed_modality = models.ForeignKey('self', on_delete=models.SET_NULL, related_name='mixture',
+                                       blank=True, null=True)
+    layout = models.JSONField(blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.modality_type.capitalize()} modality in message {self.message.id}"

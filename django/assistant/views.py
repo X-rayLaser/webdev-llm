@@ -3,12 +3,13 @@ from rest_framework import generics
 
 
 from .models import (
-    Configuration, Server, Preset, Build, LinterCheck, TestRun, OperationSuite, Thread
+    Configuration, Server, Preset, Build, LinterCheck, TestRun, OperationSuite,
+    Thread, Chat
 )
 from .serializers import (
     ConfigurationSerializer, ServerSerializer, PresetSerializer,
     BuildSerializer, LinterCheckSerializer, TestRunSerializer, OperationSuiteSerializer,
-    ThreadSerializer
+    ThreadSerializer, ChatSerializer
 )
 
 
@@ -55,3 +56,8 @@ class OperationSuiteDetailView(generics.RetrieveAPIView):
 class ThreadViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Thread.objects.all()
     serializer_class = ThreadSerializer
+
+
+class ChatViewSet(viewsets.ModelViewSet):
+    queryset = Chat.objects.all()
+    serializer_class = ChatSerializer
