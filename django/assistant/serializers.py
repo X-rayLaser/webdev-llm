@@ -158,7 +158,7 @@ class MultimediaMessageSerializer(serializers.ModelSerializer):
         fields = ['id', 'role', 'chat', 'parent', 'active_revision', 'content', 'revisions', 'replies']
 
     def get_replies(self, obj):
-        return MultimediaMessageSerializer(obj.children.all(), many=True).data
+        return MultimediaMessageSerializer(obj.replies.all(), many=True).data
 
 
 class ChatSerializer(serializers.HyperlinkedModelSerializer):

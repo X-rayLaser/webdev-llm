@@ -4,12 +4,12 @@ from rest_framework import generics
 
 from .models import (
     Configuration, Server, Preset, Build, LinterCheck, TestRun, OperationSuite,
-    Thread, Chat
+    Thread, Chat, MultimediaMessage
 )
 from .serializers import (
     ConfigurationSerializer, ServerSerializer, PresetSerializer,
     BuildSerializer, LinterCheckSerializer, TestRunSerializer, OperationSuiteSerializer,
-    ThreadSerializer, ChatSerializer
+    ThreadSerializer, ChatSerializer, MultimediaMessageSerializer
 )
 
 
@@ -61,3 +61,8 @@ class ThreadViewSet(viewsets.ReadOnlyModelViewSet):
 class ChatViewSet(viewsets.ModelViewSet):
     queryset = Chat.objects.all()
     serializer_class = ChatSerializer
+
+
+class MultimediaMessageViewSet(viewsets.ModelViewSet):
+    queryset = MultimediaMessage.objects.all()
+    serializer_class = MultimediaMessageSerializer

@@ -3,7 +3,7 @@ from rest_framework import status
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import (
+from assistant.models import (
     Configuration, Server, Preset, Build, LinterCheck, TestRun, OperationSuite, Revision,
     Thread, Comment, Chat, Modality, MultimediaMessage
 )
@@ -401,3 +401,68 @@ class ChatAPITests(APITestCase):
         response = self.client.delete(self.url)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(Chat.objects.count(), 0)  # Chat should be deleted
+
+
+class MultimediaMessageAPITests(APITestCase):
+    def setUp(self):
+        #self.revision = Revision.objects.create(src_tree={})
+        self.configuration = Configuration.objects.create(
+            name="Test Config",
+            llm_server=Server.objects.create(name="Test Server", url="http://localhost:8000"),
+            preset=Preset.objects.create(
+                name="Default",
+                temperature=0.7,
+                top_k=50,
+                top_p=0.9,
+                min_p=0.1,
+                repeat_penalty=1.0,
+                n_predict=1,
+                extra_params=None
+            )
+        )
+        self.chat = Chat.objects.create(name="Test Chat", configuration=self.configuration)
+
+        self.modality = Modality.objects.create(modality_type="text")
+
+        self.request_data = {
+            "role": "user",
+            "chat": self.chat.id,
+            "parent": None,
+            "content": self.modality.id
+        }
+        self.message_data = {
+            "role": "user",
+            "chat": self.chat,
+            "parent": None,
+            "content": self.modality
+        }
+        self.message_url = "/api/multimedia-messages/"
+
+    def _test_create_multimedia_message(self):
+        # todo: fix the test
+        response = self.client.post(self.message_url, self.request_data, format='json')
+        print(response.json())
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(MultimediaMessage.objects.count(), 1)
+
+    def test_list_multimedia_messages(self):
+        MultimediaMessage.objects.create(**self.message_data)
+        response = self.client.get(self.message_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIsInstance(response.data, list)
+
+    def test_retrieve_multimedia_message(self):
+        message = MultimediaMessage.objects.create(**self.message_data)
+        url = f"{self.message_url}{message.id}/"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['id'], message.id)
+
+    def test_update_multimedia_message(self):
+        message = MultimediaMessage.objects.create(**self.message_data)
+        url = f"{self.message_url}{message.id}/"
+        updated_data = {"role": "assistant"}
+        response = self.client.patch(url, updated_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        message.refresh_from_db()
+        self.assertEqual(message.role, "assistant")

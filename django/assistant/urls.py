@@ -9,6 +9,7 @@ router.register(r'presets', PresetViewSet)
 router.register(r'configs', ConfigurationViewSet)
 router.register(r'threads', ThreadViewSet)
 router.register(r'chats', views.ChatViewSet)
+router.register(r'multimedia-messages', views.MultimediaMessageViewSet)
 
 
 urlpatterns = [
