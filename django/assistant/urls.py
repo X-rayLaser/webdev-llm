@@ -10,7 +10,8 @@ router.register(r'configs', ConfigurationViewSet)
 router.register(r'threads', ThreadViewSet)
 router.register(r'chats', views.ChatViewSet)
 router.register(r'multimedia-messages', views.MultimediaMessageViewSet)
-
+router.register(r'modalities', views.ModalityViewSet)
+router.register(r'comments', views.CommentViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),

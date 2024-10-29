@@ -1,15 +1,19 @@
 from rest_framework import viewsets
 from rest_framework import generics
+from rest_framework import decorators
+from rest_framework.response import Response
+from rest_framework import status
 
 
 from .models import (
     Configuration, Server, Preset, Build, LinterCheck, TestRun, OperationSuite,
-    Thread, Chat, MultimediaMessage
+    Comment, Thread, Chat, MultimediaMessage, Modality
 )
 from .serializers import (
     ConfigurationSerializer, ServerSerializer, PresetSerializer,
     BuildSerializer, LinterCheckSerializer, TestRunSerializer, OperationSuiteSerializer,
-    ThreadSerializer, ChatSerializer, MultimediaMessageSerializer
+    ThreadSerializer, ChatSerializer, MultimediaMessageSerializer, ModalitySerializer,
+    NewRevisionSerializer, CommentSerializer
 )
 
 
@@ -53,9 +57,16 @@ class OperationSuiteDetailView(generics.RetrieveAPIView):
     serializer_class = OperationSuiteSerializer
 
 
-class ThreadViewSet(viewsets.ReadOnlyModelViewSet):
+# todo: prevent updates
+class ThreadViewSet(viewsets.ModelViewSet):
     queryset = Thread.objects.all()
     serializer_class = ThreadSerializer
+
+
+# todo: prevent deletion
+class CommentViewSet(viewsets.ModelViewSet):
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
 
 
 class ChatViewSet(viewsets.ModelViewSet):
@@ -66,3 +77,15 @@ class ChatViewSet(viewsets.ModelViewSet):
 class MultimediaMessageViewSet(viewsets.ModelViewSet):
     queryset = MultimediaMessage.objects.all()
     serializer_class = MultimediaMessageSerializer
+
+    @decorators.action(methods=['post'], detail=False)
+    def make_revision(self, request):
+        serializer = NewRevisionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class ModalityViewSet(viewsets.ModelViewSet):
+    queryset = Modality.objects.all()
+    serializer_class = ModalitySerializer

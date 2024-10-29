@@ -119,12 +119,12 @@ class ThreadSerializer(serializers.ModelSerializer):
         return CommentSerializer(root_comments, many=True).data
 
 
-class RevisionSerializer(serializers.HyperlinkedModelSerializer):
+class RevisionSerializer(serializers.ModelSerializer):
     message = serializers.HyperlinkedRelatedField(
         view_name='multimediamessage-detail', read_only=True
     )
     threads = serializers.HyperlinkedRelatedField(
-        view_name='thread-detail', many=True, read_only=True, source="threads"
+        view_name='thread-detail', many=True, read_only=True
     )
     operation_suites = serializers.HyperlinkedRelatedField(
         view_name='operation-suite-detail', many=True, read_only=True, source='suites'
@@ -132,7 +132,13 @@ class RevisionSerializer(serializers.HyperlinkedModelSerializer):
 
     class Meta:
         model = Revision
-        fields = ['url', 'src_tree', 'message', 'threads', 'operation_suites']
+        fields = ['id', 'src_tree', 'message', 'threads', 'operation_suites']
+
+
+class NewRevisionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Revision
+        fields = ['id', 'src_tree', 'message']
 
 
 class ModalitySerializer(serializers.ModelSerializer):
@@ -149,16 +155,34 @@ class ModalitySerializer(serializers.ModelSerializer):
 
 
 class MultimediaMessageSerializer(serializers.ModelSerializer):
-    content = ModalitySerializer()
-    revisions = RevisionSerializer(many=True)
+    src_tree = serializers.ListField(
+        child=serializers.DictField(),
+        required=False
+    )
+    content_ro = ModalitySerializer(source="content", read_only=True)
+    revisions = RevisionSerializer(many=True, read_only=True)
     replies = serializers.SerializerMethodField()
 
     class Meta:
         model = MultimediaMessage
-        fields = ['id', 'role', 'chat', 'parent', 'active_revision', 'content', 'revisions', 'replies']
+        fields = ['id', 'role', 'chat', 'parent', 'active_revision', 'content_ro', 'content', 'revisions', 'replies', 'src_tree']
 
     def get_replies(self, obj):
         return MultimediaMessageSerializer(obj.replies.all(), many=True).data
+
+    def create(self, validatted_data):
+        if 'src_tree' in validatted_data:
+            src_tree = validatted_data.pop('src_tree')
+        else:
+            src_tree = ''
+        message = super().create(validatted_data)
+        if src_tree:
+            if message.content.modality_type == "code":
+                path = message.content.file_path
+                contents = [entry["content"] for entry in src_tree if entry["file_path"] == path]
+                if contents:
+                    Revision.objects.create(src_tree=src_tree, message=message)
+        return message
 
 
 class ChatSerializer(serializers.HyperlinkedModelSerializer):
