@@ -1,96 +1,62 @@
 from rest_framework.test import APITestCase
 from django.urls import reverse
+from assistant.tests import utils
 
 
 class MainScenarioTest(APITestCase):
     def test_configuration_creation_and_chat_interaction(self):
         # Step 1: Create a Preset
         preset_name = 'SamplePreset'
-        preset_response = self.client.post(reverse('preset-list'), {
-            'name': preset_name,
-            'temperature': 0.7,
-            'top_k': 40,
-            'top_p': 0.9,
-            'min_p': 0.1,
-            'repeat_penalty': 1.2,
-            'n_predict': 5,
-            'extra_params': {"param1": "value1"}
-        }, format='json')
+        preset_response = utils.create_default_preset(self.client, preset_name)
         self.assertEqual(preset_response.status_code, 201)
         preset_id = preset_response.data['id']
         
         # Step 2: Create several Server instances
-        build_server_response = self.client.post(reverse('server-list'), {
-            'name': 'BuildServer1',
-            'url': 'http://build-server-url.com',
-            'description': 'Primary build server',
-        })
+        build_server_response = utils.create_server(self.client, name='BuildServer1')
         self.assertEqual(build_server_response.status_code, 201)
         build_server_id = build_server_response.data['id']
 
         llm_server_name = 'LLM server'
-        llm_server_response = self.client.post(reverse('server-list'), {
-            'name': llm_server_name,
-            'url': 'http://localhost:8000',
-            'description': 'LLM server',
-        })
-
+        llm_server_response = utils.create_server(self.client, name=llm_server_name)
         self.assertEqual(llm_server_response.status_code, 201)
         llm_server_id = llm_server_response.data['id']
         
         # Repeat for other server types (lint, test, interaction) as necessary
         
         # Step 3: Create a Configuration and link the Preset and Servers
-        config_response = self.client.post(reverse('configuration-list'), {
-            'name': 'MainConfig',
-            'preset': preset_name,
-            'llm_server': llm_server_name,
-            # Add other server relationships as needed
-        })
+        config_response = utils.create_default_conf(self.client, name='MainConfig', 
+                                                    preset_name=preset_name,
+                                                    llm_server=llm_server_name)
         self.assertEqual(config_response.status_code, 201)
         config_id = config_response.data['id']
         
         # Step 4: Create a Chat
-        config_url = reverse('configuration-detail', args=[config_id])
-
-        chat_response = self.client.post(reverse('chat-list'), {
-            'name': 'First chat',
-            'configuration': config_url,
-            # Add other necessary fields if required...
-        })
+        chat_response = utils.create_chat(self.client, config_id, name='First chat')
         self.assertEqual(chat_response.status_code, 201, chat_response.json())
         chat_id = chat_response.data['id']
         
         # Step 5: Create the first Message in the Chat
-        modality1_response = self.client.post(reverse('modality-list'), {
-            'modality_type': 'text',
-            'text': "This is the first message."
-        })
+        modality1_response = utils.create_text_modality(self.client,
+                                                        text="This is the first message.")
 
         modality1_id = modality1_response.data['id']
-        message1_response = self.client.post(reverse('multimediamessage-list'), {
-            'chat': chat_id,
-            'role': 'user',
-            'content': modality1_id
-            # Additional fields as needed
-        }, format='json')
+        message1_response = utils.create_message(self.client, modality_id=modality1_id,
+                                                 chat_id=chat_id, role="user")
+
         self.assertEqual(message1_response.status_code, 201, message1_response.json())
         message1_id = message1_response.data['id']
         
         # Step 6: Create the second Message in the Chat
-        modality2_response = self.client.post(reverse('modality-list'), {
-            'modality_type': 'code',
-            'file_path': "main.js"
-        })
+        modality2_response = utils.create_code_modality(self.client, file_path="main.js")
 
         modality2_id = modality2_response.data['id']
-        message2_response = self.client.post(reverse('multimediamessage-list'), {
-            'chat': chat_id,
-            'role': 'assistant',
-            'content': modality2_id,
-            'src_tree': [{"file_path": "main.js", "content": "console.log(42)"}]
-            # Additional fields as needed
-        }, format='json')
+        message2_response = utils.create_message(
+            self.client,
+            modality_id=modality2_id,
+            parent_id=message1_id,
+            role="assistant",
+            src_tree=[{"file_path": "main.js", "content": "console.log(42)"}]
+        )
         self.assertEqual(message2_response.status_code, 201, message2_response.json())
         message2_id = message2_response.data['id']
         
