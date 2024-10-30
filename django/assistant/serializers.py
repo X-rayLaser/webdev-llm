@@ -155,6 +155,11 @@ class ModalitySerializer(serializers.ModelSerializer):
             return objs
         return []
 
+    def validate(self, data):
+        if self.instance is not None and self.instance.modality_type == "code":
+            raise serializers.ValidationError("Code modality cannot be directly updated")
+        return data
+
 
 class ModalitiesOrderingSerializer(serializers.Serializer):
     parent = serializers.PrimaryKeyRelatedField(queryset=Modality.objects.all())

@@ -3,25 +3,6 @@ from django.urls import reverse
 from assistant.tests import utils
 
 
-def create_default_chat(client):
-    preset_name = 'SamplePreset'
-    preset_response = utils.create_default_preset(client, preset_name)
-    build_server_response = utils.create_server(client, name='BuildServer1')
-
-    llm_server_name = 'LLM server'
-    llm_server_response = utils.create_server(client, name=llm_server_name)
-
-    config_response = utils.create_default_conf(client, name='MainConfig', 
-                                                preset_name=preset_name,
-                                                llm_server=llm_server_name)
-
-    config_id = config_response.data['id']
-
-    chat_response = utils.create_chat(client, config_id, name='First chat')
-    chat_id = chat_response.data['id']
-    return chat_id
-
-
 class BehaviorTests(APITestCase):
     def test_create_chat(self):
         # Step 1: Create a Preset
@@ -55,7 +36,7 @@ class BehaviorTests(APITestCase):
         chat_id = chat_response.data['id']
 
     def test_create_messages_with_code_then_make_revisions_then_add_comments(self):
-        chat_id = create_default_chat(self.client)
+        chat_id = utils.create_default_chat(self.client)
 
         # Step 5: Create the first Message in the Chat
         modality1_response = utils.create_text_modality(self.client,
@@ -122,7 +103,7 @@ class BehaviorTests(APITestCase):
 
     def test_multimodal_message_lifecycle(self):
         # Step 1: Create a Chat
-        chat_id = create_default_chat(self.client)
+        chat_id = utils.create_default_chat(self.client)
 
         # Step 2: Create a Mixed Modality as a Parent
         mixed_modality_response = utils.create_mixed_modality(self.client, layout_type='vertical')
@@ -154,14 +135,13 @@ class BehaviorTests(APITestCase):
         self.assertEqual(update_text_response.data['text'], updated_text)
 
         # Step 6: Reorder the Modalities within the Mixed Modality
+
+        reorder_url = reverse('modality-reorder', args=[mixed_modality_id])
         reorder_data = {
-            "modalities": [
-                {"id": code_modality_id, "order": 1},
-                {"id": text_modality_id, "order": 2}
-            ]
+            "modalities": [code_modality_id, text_modality_id]
         }
-        reorder_response = self.client.post(reverse('modality-reorder'), reorder_data, format='json')
-        self.assertEqual(reorder_response.status_code, 200)
+        reorder_response = self.client.post(reorder_url, reorder_data, format='json')
+        self.assertEqual(reorder_response.status_code, 204)
         
         # Step 7: Delete the Code Modality
         delete_code_response = self.client.delete(reverse('modality-detail', args=[code_modality_id]))

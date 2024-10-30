@@ -90,3 +90,22 @@ def create_message(client, modality_id, chat_id=None, parent_id=None, role="user
         data['parent'] = parent_id
 
     return client.post(reverse('multimediamessage-list'), data, format='json')
+
+
+def create_default_chat(client):
+    preset_name = 'SamplePreset'
+    preset_response = create_default_preset(client, preset_name)
+    build_server_response = create_server(client, name='BuildServer1')
+
+    llm_server_name = 'LLM server'
+    llm_server_response = create_server(client, name=llm_server_name)
+
+    config_response = create_default_conf(client, name='MainConfig', 
+                                                preset_name=preset_name,
+                                                llm_server=llm_server_name)
+
+    config_id = config_response.data['id']
+
+    chat_response = create_chat(client, config_id, name='First chat')
+    chat_id = chat_response.data['id']
+    return chat_id
