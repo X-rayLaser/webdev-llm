@@ -3,8 +3,27 @@ from django.urls import reverse
 from assistant.tests import utils
 
 
-class MainScenarioTest(APITestCase):
-    def test_configuration_creation_and_chat_interaction(self):
+def create_default_chat(client):
+    preset_name = 'SamplePreset'
+    preset_response = utils.create_default_preset(client, preset_name)
+    build_server_response = utils.create_server(client, name='BuildServer1')
+
+    llm_server_name = 'LLM server'
+    llm_server_response = utils.create_server(client, name=llm_server_name)
+
+    config_response = utils.create_default_conf(client, name='MainConfig', 
+                                                preset_name=preset_name,
+                                                llm_server=llm_server_name)
+
+    config_id = config_response.data['id']
+
+    chat_response = utils.create_chat(client, config_id, name='First chat')
+    chat_id = chat_response.data['id']
+    return chat_id
+
+
+class BehaviorTests(APITestCase):
+    def test_create_chat(self):
         # Step 1: Create a Preset
         preset_name = 'SamplePreset'
         preset_response = utils.create_default_preset(self.client, preset_name)
@@ -34,7 +53,10 @@ class MainScenarioTest(APITestCase):
         chat_response = utils.create_chat(self.client, config_id, name='First chat')
         self.assertEqual(chat_response.status_code, 201, chat_response.json())
         chat_id = chat_response.data['id']
-        
+
+    def test_create_messages_with_code_then_make_revisions_then_add_comments(self):
+        chat_id = create_default_chat(self.client)
+
         # Step 5: Create the first Message in the Chat
         modality1_response = utils.create_text_modality(self.client,
                                                         text="This is the first message.")
@@ -97,3 +119,56 @@ class MainScenarioTest(APITestCase):
         
         # Optional Assertions: check if all elements were correctly linked
         # Additional checks could verify relationships or specific content fields if needed
+
+    def test_multimodal_message_lifecycle(self):
+        # Step 1: Create a Chat
+        chat_id = create_default_chat(self.client)
+
+        # Step 2: Create a Mixed Modality as a Parent
+        mixed_modality_response = utils.create_mixed_modality(self.client, layout_type='vertical')
+        self.assertEqual(mixed_modality_response.status_code, 201, mixed_modality_response.json())
+        mixed_modality_id = mixed_modality_response.data['id']
+        
+        # Step 3: Create Text and Code Modalities as Children
+        text_modality_response = utils.create_text_modality(
+            self.client, text="This is a text modality", parent=mixed_modality_id)
+        self.assertEqual(text_modality_response.status_code, 201)
+        text_modality_id = text_modality_response.data['id']
+        
+        code_modality_response = utils.create_code_modality(
+            self.client, file_path="/path/to/code_file.py", parent=mixed_modality_id)
+        self.assertEqual(code_modality_response.status_code, 201)
+        code_modality_id = code_modality_response.data['id']
+        
+        # Step 4: Create a Multimedia Message containing the Mixed Modality
+        message_response = utils.create_message(self.client, modality_id=mixed_modality_id, chat_id=chat_id)
+        self.assertEqual(message_response.status_code, 201)
+        message_id = message_response.data['id']
+        
+        # Step 5: Update the Text Modality
+        updated_text = "This is an updated text modality"
+        update_text_response = self.client.patch(reverse('modality-detail', args=[text_modality_id]), {
+            "text": updated_text
+        }, format='json')
+        self.assertEqual(update_text_response.status_code, 200)
+        self.assertEqual(update_text_response.data['text'], updated_text)
+
+        # Step 6: Reorder the Modalities within the Mixed Modality
+        reorder_data = {
+            "modalities": [
+                {"id": code_modality_id, "order": 1},
+                {"id": text_modality_id, "order": 2}
+            ]
+        }
+        reorder_response = self.client.post(reverse('modality-reorder'), reorder_data, format='json')
+        self.assertEqual(reorder_response.status_code, 200)
+        
+        # Step 7: Delete the Code Modality
+        delete_code_response = self.client.delete(reverse('modality-detail', args=[code_modality_id]))
+        self.assertEqual(delete_code_response.status_code, 204)
+        
+        # Verify Deletion: Try fetching the deleted code modality
+        fetch_code_response = self.client.get(reverse('modality-detail', args=[code_modality_id]))
+        self.assertEqual(fetch_code_response.status_code, 404)
+        
+        # Optional: Additional assertions could be added to verify the integrity of the message or mixed modality

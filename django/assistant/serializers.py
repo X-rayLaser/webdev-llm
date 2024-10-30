@@ -146,12 +146,60 @@ class ModalitySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Modality
-        fields = ['id', 'modality_type', 'text', 'image', 'file_path', 'mixture', 'layout']
+        fields = ['id', 'modality_type', 'text', 'image', 'file_path', 
+                  'mixed_modality', 'mixture', 'layout', 'order']
 
     def get_mixture(self, obj):
         if obj.mixture.exists():
-            return ModalitySerializer(obj.mixture.all(), many=True).data
+            objs = ModalitySerializer(obj.mixture.order_by("order"), many=True).data
+            return objs
         return []
+
+
+class ModalitiesOrderingSerializer(serializers.Serializer):
+    parent = serializers.PrimaryKeyRelatedField(queryset=Modality.objects.all())
+
+    modalities = serializers.PrimaryKeyRelatedField(
+        queryset=Modality.objects.all(),
+        many=True
+    )
+
+    def validate_modalities(self, modalities):
+        if len(modalities) != len(set(modalities)):
+            raise serializers.ValidationError("All modality ids must not contain duplicates")
+
+        parent = modalities[0].mixed_modality
+
+        if parent.mixture.count() != len(modalities):
+            raise serializers.ValidationError(
+                "Complete set of child modalities of a parent must be submited"
+            )
+        return modalities
+
+    def validate_parent(self, parent):
+        if parent.modality_type != "mixture":
+            raise serializers.ValidationError(
+                "Parent modality must be a mixture of modalities"
+            )
+        return parent
+
+    def validate(self, data):
+        parent = data["parent"]
+        modalities = data["modalities"]
+
+        for mod in modalities:
+            if mod.mixed_modality != parent:
+                raise serializers.ValidationError(
+                    "All modalities must be children of the parent modality."
+                )
+
+        return data
+
+    def save(self):
+        modalities = self.validated_data["modalities"]
+        for modality, order in zip(modalities, range(1, len(modalities) + 1)):
+            modality.order = order
+            modality.save(update_fields=["order"])
 
 
 class MultimediaMessageSerializer(serializers.ModelSerializer):

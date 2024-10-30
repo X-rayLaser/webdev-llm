@@ -13,7 +13,7 @@ from .serializers import (
     ConfigurationSerializer, ServerSerializer, PresetSerializer,
     BuildSerializer, LinterCheckSerializer, TestRunSerializer, OperationSuiteSerializer,
     ThreadSerializer, ChatSerializer, MultimediaMessageSerializer, ModalitySerializer,
-    NewRevisionSerializer, CommentSerializer
+    NewRevisionSerializer, CommentSerializer, ModalitiesOrderingSerializer
 )
 
 
@@ -89,3 +89,11 @@ class MultimediaMessageViewSet(viewsets.ModelViewSet):
 class ModalityViewSet(viewsets.ModelViewSet):
     queryset = Modality.objects.all()
     serializer_class = ModalitySerializer
+
+    @decorators.action(methods=["post"], detail=True)
+    def reorder(self, request, pk=None):
+        data = dict(parent=pk, **request.data)
+        serializer = ModalitiesOrderingSerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({}, status=status.HTTP_204_NO_CONTENT)

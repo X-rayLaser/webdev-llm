@@ -47,8 +47,8 @@ def create_chat(client, config_id, name='First chat'):
     })
 
 
-def create_modality(client, **kwargs):
-    return client.post(reverse('modality-list'), kwargs)
+def create_modality(client, format='json', **kwargs):
+    return client.post(reverse('modality-list'), kwargs, format=format)
 
 
 def create_text_modality(client, text, parent=None):
@@ -66,8 +66,9 @@ def create_code_modality(client, file_path, parent=None):
     return create_modality(client, **kwargs)
 
 
-def create_mixed_modality(client, layout, parent=None):
-    kwargs = dict(modality_type="mixed", layout=layout)
+def create_mixed_modality(client, layout_type, parent=None):
+    layout = dict(type=layout_type)
+    kwargs = dict(modality_type="mixture", layout=layout)
     if parent:
         kwargs["mixed_modality"] = parent
     return create_modality(client, **kwargs)

@@ -1,6 +1,7 @@
 from django.db import models
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
+from django.db.models import Max
 
 
 class Server(models.Model):
@@ -234,5 +235,22 @@ class Modality(models.Model):
                                        blank=True, null=True)
     layout = models.JSONField(blank=True, null=True)
 
+    order = models.PositiveSmallIntegerField(blank=True, null=True)
+
+    def save(self, **kwargs):
+        if self.mixed_modality is not None and self.order is None:
+            parent = self.mixed_modality
+            max_order = parent.mixture.aggregate(Max("order", default=0))
+            self.order = max_order["order__max"] + 1
+
+            update_fields = kwargs.get("update_fields")
+            if update_fields is not None:
+                kwargs["update_fields"] = {"order"}.union(update_fields)
+
+        super().save(**kwargs)
+
     def __str__(self):
-        return f"{self.modality_type.capitalize()} modality in message {self.message.id}"
+        return f"{self.modality_type.capitalize()} modality"
+
+    class Meta:
+        ordering = ["order"]
