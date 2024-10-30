@@ -1,6 +1,7 @@
 from rest_framework.test import APITestCase
 from assistant.tests import utils
 from django.urls import reverse
+from io import BytesIO
 
 
 class ModalityOrderingTests(APITestCase):
@@ -87,6 +88,52 @@ class UpdateModalityTests(APITestCase):
         })
 
         self.assertEqual(400, response.status_code, response.json())
+
+    def test_can_update_text_modality(self):
+        mixed_modality_id, text_modality_id, code_modality_id = create_modalities(self.client)
+        response = self.client.patch(reverse("modality-detail", args=[text_modality_id]), {
+            "text": "New text"
+        })
+
+        self.assertEqual(200, response.status_code)
+        response = self.client.get(reverse("modality-detail", args=[text_modality_id]))
+        self.assertEqual("New text", response.data["text"])
+
+    def test_can_update_image_modality(self):
+        response1 = self.client.post(reverse("modality-list"), {
+            "modality_type": "image"
+        })
+        self.assertEqual(201, response1.status_code)
+        
+
+        modality_id = response1.data["id"]
+
+        img = BytesIO(
+            b"GIF89a\x01\x00\x01\x00\x00\x00\x00!\xf9\x04\x01\x00\x00\x00"
+            b"\x00,\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x01\x00\x00"
+        )
+        img.name = "myimage.gif"
+        response2 = self.client.patch(reverse("modality-detail", args=[modality_id]), {
+            "image": img
+        })
+        self.assertEqual(200, response2.status_code)
+        self.assertIsNotNone(response2.data["image"])
+
+    def test_can_only_update_layout_of_mixed_modality(self):
+        mixed_modality_response = utils.create_mixed_modality(self.client, layout_type='vertical')
+        mixed_modality_id = mixed_modality_response.data['id']
+
+        response1 = self.client.patch(reverse("modality-detail", args=[mixed_modality_id]), {
+            "layout": {"type": "horizontal"}
+        }, format="json")
+        self.assertEqual(200, response1.status_code)
+        self.assertEqual({"type": "horizontal"}, response1.data["layout"])
+
+        response2 = self.client.patch(reverse("modality-detail", args=[mixed_modality_id]), {
+            "modality_type": "image"
+        }, format="json")
+
+        self.assertEqual(400, response2.status_code)
 
 
 def create_modalities(client):

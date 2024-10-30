@@ -9,3 +9,4 @@ secrets.py
 package-lock.json
 devcontainer.json
 dependabot.yml
+*.gif
