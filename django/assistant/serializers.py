@@ -156,11 +156,17 @@ class ModalitySerializer(serializers.ModelSerializer):
         return []
 
     def validate(self, data):
+        
+        all_fields = set(data.keys())
+
         if self.instance is not None:
+            common_fields = all_fields.intersection(["modality_type", "mixed_modality"])
+            if common_fields:
+                raise serializers.ValidationError(f'This field is immutable: {common_fields}')
+
             if self.instance.modality_type == "code":
                 raise serializers.ValidationError("Code modality cannot be directly updated")
         
-            all_fields = set(data.keys())
             allowed_fields = set(["layout"])
             forbidden_fields = all_fields - allowed_fields
             if self.instance.modality_type == "mixture" and forbidden_fields:

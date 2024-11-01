@@ -135,6 +135,18 @@ class UpdateModalityTests(APITestCase):
 
         self.assertEqual(400, response2.status_code)
 
+    def test_cannot_update_certain_fields(self):
+        text_modality_response = utils.create_text_modality(
+            self.client, text="This is a text modality"
+        )
+        modality_id = text_modality_response.data["id"]
+
+        response1 = self.client.patch(reverse("modality-detail", args=[modality_id]), {
+            "modality_type": "image"
+        }, format="json")
+
+        self.assertEqual(400, response1.status_code)
+
 
 def create_modalities(client):
     mixed_modality_response = utils.create_mixed_modality(client, layout_type='vertical')
