@@ -189,7 +189,7 @@ class LanguageDetectionTests(unittest.TestCase):
                 self.assertEqual(segments[0].metadata["language"], expected_language)
 
 
-class SourceTreeExtractionTests(unittest.TestCase):
+class SourceFilesNameResolutionTests(unittest.TestCase):
     def test_has_only_css_file(self):
         raw_message = "```css\np { height: 100%; }```"
         _, sources = process_raw_message(raw_message)
@@ -211,3 +211,11 @@ class SourceTreeExtractionTests(unittest.TestCase):
         self.assertEqual(len(sources), 2)
         self.assertEqual(sources[0]["file_path"], "main.js")
         self.assertEqual(sources[1]["file_path"], "styles.css")
+
+    def test_has_1_js_file_importing_the_other(self):
+        raw_message = "```javascript\nconsole.log```\n```javascript\nimport x from 'utils'```"
+        _, sources = process_raw_message(raw_message)
+
+        self.assertEqual(len(sources), 2)
+        self.assertEqual(sources[0]["file_path"], "utils.js")
+        self.assertEqual(sources[1]["file_path"], "main.js")
