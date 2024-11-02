@@ -151,19 +151,8 @@ def get_named_code_segments(segments):
 
 
 def find_files(text):
-    found_files = []
-
-    def _find(s):
-        regex = "(?P<path>[/a-zA-Z0-9_-]*\.(js|css)):?$"
-        match = re.search(regex, s, flags=re.MULTILINE)
-        if match:
-            path = match.group("path")
-            found_files.append(path)
-            start, end = match.span()
-            _find(s[end:])
-    
-    _find(text)
-    return found_files
+    pattern = re.compile("(?P<path>[/a-zA-Z0-9_-]*\.(js|css)):?$", flags=re.MULTILINE)
+    return find_all(pattern, text, lambda match: match.group("path"))
 
 
 def get_language_segments(named_segments, language):
@@ -193,20 +182,27 @@ def extract_imports(js_code):
     side_effect_import_regex = f"import\s+{name_capture.format('name2')}"
     regex = f"({import_regex}|{side_effect_import_regex})"
 
-    imports = []
-    def extract(code):
-        match = re.search(regex, code, flags=re.DOTALL)
+    pattern = re.compile(regex, flags=re.DOTALL)
+
+    def parse_match(match):
+        return match.group("name1") if match.groupdict("name1") else match.group("name2")
+  
+    return find_all(pattern, js_code, parse_match)
+
+
+def find_all(regex_pattern, text, parse_match):
+    res = []
+
+    def _find(s):
+        match = regex_pattern.search(s)
         if match:
             start, end = match.span()
-            if match.groupdict("name1"):
-                name = match.group("name1")
-            elif match.groupdict("name2"):
-                name = match.group("name2")
-            imports.append(name)
-            extract(code[end:])
+            res.append(parse_match(match))
+            s = s[end:]
+            _find(s)
 
-    extract(js_code)
-    return imports
+    _find(text)
+    return res
 
 
 def process_raw_message(text: str) -> Tuple[List[MessageSegment], List[Dict[str, str]]]:
