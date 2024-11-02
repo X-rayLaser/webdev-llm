@@ -74,6 +74,54 @@ class ModalityOrderingTests(APITestCase):
         return response, [(obj["id"], obj["order"]) for obj in response.data["mixture"]]
 
 
+class CreateMessageTests(APITestCase):
+    def test_creating_message_with_code(self):
+        response = utils.create_code_modality(self.client, file_path="main.js")
+        code_mod_id = response.data["id"]
+
+        chat_id = utils.create_default_chat(self.client)
+
+        cases = {
+            "creating message without sending files": None,
+            "sending files as dict": {"file_path": "whatever"},
+            "sending files as list of strings": ["whatever"],
+            "sending files with none of required keys": [{"file": "123"}],
+            "sending files with only content key": [{"content": "123"}],
+            "sending files with with only file_path key": [{"file_path": "main.js"}],
+            "creating message with malformed source files": [{"file_path": "whatever"}],
+            "creating message with wrong file in the source files": [{"file_path": "root.js", "content": ""}]
+        }
+
+        for case, src_tree in cases.items():
+            with self.subTest(case):
+                response = utils.create_message(self.client, code_mod_id, 
+                                                chat_id=chat_id, src_tree=src_tree)
+                self.assertEqual(400, response.status_code)
+
+    def test_creating_message_with_multiple_code_sections_and_files(self):
+        response = utils.create_mixed_modality(self.client, layout_type="grid")
+        mixed_id = response.data["id"]
+
+        response = utils.create_code_modality(self.client, file_path="main.js", parent=mixed_id)
+        main_id = response.data["id"]
+
+        response = utils.create_code_modality(self.client, file_path="utils.js", parent=mixed_id)
+        utils_id = response.data["id"]
+
+        chat_id = utils.create_default_chat(self.client)
+
+        # some files are missing
+        response = utils.create_message(self.client, mixed_id, chat_id=chat_id,
+                                        src_tree=[{"file_path": "main.js", "content": "content"}])
+        self.assertEqual(400, response.status_code)
+
+        # one file has wrong name
+        src_tree = [{"file_path": "main.js", "content": "content"},
+                    {"file_path": "config.js", "content": "let x;"}]
+        response = utils.create_message(self.client, mixed_id, chat_id=chat_id, src_tree=src_tree)
+        self.assertEqual(400, response.status_code)
+
+
 class UpdateModalityTests(APITestCase):
     def test_cannot_update_code_modality(self):
         chat = utils.create_default_chat(self.client)

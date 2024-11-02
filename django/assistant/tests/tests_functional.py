@@ -116,13 +116,16 @@ class BehaviorTests(APITestCase):
         self.assertEqual(text_modality_response.status_code, 201)
         text_modality_id = text_modality_response.data['id']
         
+        file_path = "/path/to/code_file.py"
         code_modality_response = utils.create_code_modality(
-            self.client, file_path="/path/to/code_file.py", parent=mixed_modality_id)
+            self.client, file_path=file_path, parent=mixed_modality_id)
         self.assertEqual(code_modality_response.status_code, 201)
         code_modality_id = code_modality_response.data['id']
         
         # Step 4: Create a Multimedia Message containing the Mixed Modality
-        message_response = utils.create_message(self.client, modality_id=mixed_modality_id, chat_id=chat_id)
+        src_tree = [{"file_path": file_path, "content": "console.log"}]
+        message_response = utils.create_message(self.client, modality_id=mixed_modality_id,
+                                                chat_id=chat_id, src_tree=src_tree)
         self.assertEqual(message_response.status_code, 201)
         message_id = message_response.data['id']
         

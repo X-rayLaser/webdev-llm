@@ -241,17 +241,52 @@ class MultimediaMessageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = MultimediaMessage
-        fields = ['id', 'role', 'chat', 'parent', 'active_revision', 'content_ro', 'content', 'revisions', 'replies', 'src_tree']
+        fields = ['id', 'role', 'chat', 'parent', 'active_revision',
+                  'content_ro', 'content', 'revisions', 'replies', 'src_tree']
 
     def get_replies(self, obj):
         return MultimediaMessageSerializer(obj.replies.all(), many=True).data
 
-    def create(self, validatted_data):
-        if 'src_tree' in validatted_data:
-            src_tree = validatted_data.pop('src_tree')
+    def validate_src_tree(self, data):
+        for entry in data:
+            keys_present = "file_path" in entry and "content" in entry
+            if not keys_present:
+                raise serializers.ValidationError(
+                    "Source tree entries must contain both 'file_path' and 'content' fields"
+                )
+        return data
+
+    def validate(self, data):
+        is_being_created = bool(self.instance is None)
+        error_msg = "Source tree must contain exactly the same files as those referenced in code modalities"
+        if is_being_created:
+            src_tree = data.get('src_tree', [])
+            modality = data["content"]
+            if modality.modality_type == "code":
+                if len(src_tree) != 1:
+                    raise serializers.ValidationError(error_msg)
+                
+                if modality.file_path != src_tree[0]["file_path"]:
+                    raise serializers.ValidationError(error_msg)
+            elif modality.modality_type == "mixture":
+                # todo: traverse recursively all descendants to get all code modalities
+                code_modalities = modality.mixture.filter(modality_type="code").values_list("file_path", flat=True)
+                if len(src_tree) != len(code_modalities):
+                    raise serializers.ValidationError(error_msg)
+                
+                src_names = [item["file_path"] for item in src_tree]
+                if list(sorted(code_modalities)) != list(sorted(src_names)):
+                    raise serializers.ValidationError(error_msg)
+
+        return data
+
+    def create(self, validated_data):
+        if 'src_tree' in validated_data:
+            src_tree = validated_data.pop('src_tree')
         else:
             src_tree = ''
-        message = super().create(validatted_data)
+
+        message = super().create(validated_data)
         if src_tree:
             if message.content.modality_type == "code":
                 path = message.content.file_path
