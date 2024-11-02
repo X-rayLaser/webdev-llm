@@ -253,6 +253,26 @@ class SourceFilesNameResolutionTests(unittest.TestCase):
         self.assertEqual(sources[0]["file_path"], "utils.js")
         self.assertEqual(sources[1]["file_path"], "main.js")
 
+    def test_has_2_js_files_with_multiple_library_imports_per_line(self):
+        raw_message = """
+        ```javascript
+        console.log
+        ```
+        ```javascript
+        import React, { Component } from 'react'
+        import { 
+            x, y
+        } from 'utils'
+        import { createStore, xyz } from "redux"
+
+        ```
+        """
+        _, sources = process_raw_message(raw_message)
+
+        self.assertEqual(len(sources), 2)
+        self.assertEqual(sources[0]["file_path"], "utils.js")
+        self.assertEqual(sources[1]["file_path"], "main.js")
+
     def test_has_2_js_file_without_imports(self):
         raw_message = "```javascript\nconsole.log```\n```javascript\nconst x = 23'```"
         _, sources = process_raw_message(raw_message)
