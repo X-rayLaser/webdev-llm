@@ -21,6 +21,17 @@ class MessageSegment:
 NamedCodeSegment = namedtuple("NamedCodeSegment", "index segment candidate_name")
 
 
+def process_raw_message(text: str) -> Tuple[List[MessageSegment], List[Dict[str, str]]]:
+    segments = parse_raw_message(text)
+    sources = get_sources(segments)
+
+    for src in sources:
+        idx = src["index"]
+        segments[idx].metadata["file_path"] = src["file_path"]
+
+    return segments, sources
+
+
 def parse_raw_message(text) -> List[MessageSegment]:
     pattern = re.compile("```(?P<lang>[a-zA-Z]+\n)?\s*(?P<code_block>.*?)```", flags=re.DOTALL)
     match = pattern.search(text)
@@ -95,46 +106,55 @@ def get_sources(segments) -> List[Dict[str, str]]:
 
     python_sources = make_language_sources(python_segments, "main.py", "module_{}.css")
     css_sources = make_language_sources(css_segments, "styles.css", "styles_{}.css")
+    js_sources = make_js_sources(js_segments)
+ 
+    sources = js_sources + python_sources + css_sources
 
+    sources.sort(key=lambda item: item["index"])
+    return sources
+
+
+def make_js_sources(js_segments):
     js_sources = []
     if len(js_segments) == 1:
         idx, seg, _ = js_segments[0]
         js_sources = [make_source(index=idx, file_path="main.js", content=seg.content)]
     elif len(js_segments) == 2:
-        (id1, segment1, candidate_name1), (id2, segment2, candidate_name2) = js_segments
-        candidate_name1 = candidate_name1 or "module1.js"
-        candidate_name2 = candidate_name2 or "module2.js"
-
-        seg1_imports = extract_imports(segment1.content)
-        seg2_imports = extract_imports(segment2.content)
-        
-        # if total # of imports != 1, either there are no imports or we have circular imports
-        if len(seg1_imports) + len(seg2_imports) != 1:
-            js_sources = [make_source(id1, candidate_name1, segment1.content),
-                          make_source(id2, candidate_name2, segment2.content)]
-        else:
-            main_path = "main.js"
-            if seg1_imports:
-                imported_path = f"{seg1_imports[0]}.js"
-                paths = (main_path, imported_path)
-            else:
-                imported_path = f"{seg2_imports[0]}.js"
-                paths = (imported_path, main_path)
-
-            path1, path2 = paths
-            js_sources = [make_source(id1, path1, segment1.content),
-                          make_source(id2, path2, segment2.content)]
+        js_sources = resolve_couple(js_segments)
     else:
         js_sources = []
         for idx, obj in enumerate(js_segments):
             index, segment, name = obj
             name = name or f"module_{idx}.js"
             js_sources.append(make_source(index, name, segment.content))
- 
-    sources = js_sources + python_sources + css_sources
 
-    sources.sort(key=lambda item: item["index"])
-    return sources
+    return js_sources
+
+
+def resolve_couple(js_segments):
+    (id1, segment1, candidate_name1), (id2, segment2, candidate_name2) = js_segments
+    candidate_name1 = candidate_name1 or "module1.js"
+    candidate_name2 = candidate_name2 or "module2.js"
+
+    seg1_imports = extract_imports(segment1.content)
+    seg2_imports = extract_imports(segment2.content)
+    
+    # if total # of imports != 1, either there are no imports or we have circular imports
+    if len(seg1_imports) + len(seg2_imports) != 1:
+        return [make_source(id1, candidate_name1, segment1.content),
+                make_source(id2, candidate_name2, segment2.content)]
+
+    main_path = "main.js"
+    if seg1_imports:
+        imported_path = f"{seg1_imports[0]}.js"
+        paths = (main_path, imported_path)
+    else:
+        imported_path = f"{seg2_imports[0]}.js"
+        paths = (imported_path, main_path)
+
+    path1, path2 = paths
+    return [make_source(id1, path1, segment1.content),
+            make_source(id2, path2, segment2.content)]
 
 
 def get_named_code_segments(segments):
@@ -203,14 +223,3 @@ def find_all(regex_pattern, text, parse_match):
 
     _find(text)
     return res
-
-
-def process_raw_message(text: str) -> Tuple[List[MessageSegment], List[Dict[str, str]]]:
-    segments = parse_raw_message(text)
-    sources = get_sources(segments)
-
-    for src in sources:
-        idx = src["index"]
-        segments[idx].metadata["file_path"] = src["file_path"]
-
-    return segments, sources
