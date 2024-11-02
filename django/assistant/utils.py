@@ -136,9 +136,11 @@ def resolve_couple(js_segments):
     candidate_name1 = candidate_name1 or "module1.js"
     candidate_name2 = candidate_name2 or "module2.js"
 
-    seg1_imports = extract_imports(segment1.content)
-    seg2_imports = extract_imports(segment2.content)
-    
+    # add more libraries to exclude
+    exclude = ["react", "redux"]
+    seg1_imports = extract_imports(segment1.content, exclude=exclude)
+    seg2_imports = extract_imports(segment2.content, exclude=exclude)
+
     # if total # of imports != 1, either there are no imports or we have circular imports
     if len(seg1_imports) + len(seg2_imports) != 1:
         return [make_source(id1, candidate_name1, segment1.content),
@@ -171,7 +173,8 @@ def get_named_code_segments(segments):
 
 
 def find_files(text):
-    pattern = re.compile("(?P<path>[/a-zA-Z0-9_-]*\.(js|css)):?$", flags=re.MULTILINE)
+    pattern = re.compile("(\"|\')?(?P<path>[/a-zA-Z0-9_-]*\.(js|css))(\"|\')?:?$",
+                         flags=re.MULTILINE)
     return find_all(pattern, text, lambda match: match.group("path"))
 
 
@@ -195,19 +198,21 @@ def make_source(index, file_path, content):
     return dict(index=index, file_path=file_path, content=content)
 
 
-def extract_imports(js_code):
-    # todo: exclude imports from libraries
-    name_capture = "[\"'](?P<{}>[a-zA-Z0-9]+)[\"']"
-    import_regex = f"import.*from\s+{name_capture.format('name1')}"
+def extract_imports(js_code, exclude=None):
+    exclude = exclude or []
+    name_capture = "[\"'](?P<{}>[a-zA-Z0-9]+)[\"'];?$"
+
+    import_regex = f"import\s[^'^\"]*from\s+{name_capture.format('name1')}"
     side_effect_import_regex = f"import\s+{name_capture.format('name2')}"
     regex = f"({import_regex}|{side_effect_import_regex})"
 
-    pattern = re.compile(regex, flags=re.DOTALL)
+    pattern = re.compile(regex, flags=re.DOTALL | re.MULTILINE)
 
     def parse_match(match):
-        return match.group("name1") if match.groupdict("name1") else match.group("name2")
+        return match.group("name1") if match.group("name1") else match.group("name2")
   
-    return find_all(pattern, js_code, parse_match)
+    imports = find_all(pattern, js_code, parse_match)
+    return [name for name in imports if name not in exclude]
 
 
 def find_all(regex_pattern, text, parse_match):

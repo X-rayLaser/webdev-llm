@@ -212,8 +212,41 @@ class SourceFilesNameResolutionTests(unittest.TestCase):
         self.assertEqual(sources[0]["file_path"], "main.js")
         self.assertEqual(sources[1]["file_path"], "styles.css")
 
+    def test_has_2_js_files_and_1_css_file(self):
+        raw_message = """
+        main.js
+        ```javascript\nconsole.log```\n
+        style_file.css:
+        ```css\n p { height: 100%; }```
+        utils.js:
+        ```javascript\nlet x = 42```
+        """
+        _, sources = process_raw_message(raw_message)
+
+        self.assertEqual(len(sources), 3)
+        self.assertEqual(sources[0]["file_path"], "main.js")
+        self.assertEqual(sources[1]["file_path"], "style_file.css")
+        self.assertEqual(sources[2]["file_path"], "utils.js")
+
     def test_has_1_js_file_importing_the_other(self):
         raw_message = "```javascript\nconsole.log```\n```javascript\nimport x from 'utils'```"
+        _, sources = process_raw_message(raw_message)
+
+        self.assertEqual(len(sources), 2)
+        self.assertEqual(sources[0]["file_path"], "utils.js")
+        self.assertEqual(sources[1]["file_path"], "main.js")
+
+    def test_has_2_js_files_with_library_imports(self):
+        raw_message = """
+        ```javascript
+        console.log
+        ```
+        ```javascript
+        import React from "react";
+        import 'utils';
+        import { createStore } from "redux";
+        ```
+        """
         _, sources = process_raw_message(raw_message)
 
         self.assertEqual(len(sources), 2)
@@ -236,13 +269,21 @@ class SourceFilesNameResolutionTests(unittest.TestCase):
         self.assertEqual(sources[0]["file_path"], "main.js")
         self.assertEqual(sources[1]["file_path"], "config.js")
 
-    def test_multiple_code_sections_preceded_by_names(self):
+    def test_has_2_js_file_without_imports_with_some_names_missing(self):
+        raw_message = "main.js:\n```javascript\nconsole.log```\n```javascript\nconst x = 23'```"
+        _, sources = process_raw_message(raw_message)
+
+        self.assertEqual(len(sources), 2)
+        self.assertEqual(sources[0]["file_path"], "main.js")
+        self.assertEqual(sources[1]["file_path"], "module2.js")
+
+    def test_multiple_code_sections_preceded_by_quated_names(self):
         raw_message = """
-        main.js:
+        "main.js":
         ```javascript\nconsole.log```\n
-        config.js:
+        "config.js":
         ```javascript\nconst x = 23'```\n
-        utils.js:
+        'utils.js':
         ```function foo() {}```\n
         """
         _, sources = process_raw_message(raw_message)
@@ -251,3 +292,23 @@ class SourceFilesNameResolutionTests(unittest.TestCase):
         self.assertEqual(sources[0]["file_path"], "main.js")
         self.assertEqual(sources[1]["file_path"], "config.js")
         self.assertEqual(sources[2]["file_path"], "utils.js")
+
+    def test_multiple_code_sections_preceded_by_text_with_paths(self):
+        raw_message = """
+        Here is a .js file:
+        "project/main.js":
+        ```javascript\nconsole.log```\n
+        Next, we implemented a configuration file:
+        "project/config.js":
+        ```javascript\nconst x = 23'```\n
+
+        Finally, we write a file utils containing utility functions:
+        'project/utils.js':
+        ```function foo() {}```\n
+        """
+        _, sources = process_raw_message(raw_message)
+
+        self.assertEqual(len(sources), 3)
+        self.assertEqual(sources[0]["file_path"], "project/main.js")
+        self.assertEqual(sources[1]["file_path"], "project/config.js")
+        self.assertEqual(sources[2]["file_path"], "project/utils.js")
