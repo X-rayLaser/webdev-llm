@@ -219,3 +219,35 @@ class SourceFilesNameResolutionTests(unittest.TestCase):
         self.assertEqual(len(sources), 2)
         self.assertEqual(sources[0]["file_path"], "utils.js")
         self.assertEqual(sources[1]["file_path"], "main.js")
+
+    def test_has_2_js_file_without_imports(self):
+        raw_message = "```javascript\nconsole.log```\n```javascript\nconst x = 23'```"
+        _, sources = process_raw_message(raw_message)
+
+        self.assertEqual(len(sources), 2)
+        self.assertEqual(sources[0]["file_path"], "module1.js")
+        self.assertEqual(sources[1]["file_path"], "module2.js")
+
+    def test_has_2_js_file_without_imports_with_names(self):
+        raw_message = "main.js:\n```javascript\nconsole.log```\nconfig.js:\n```javascript\nconst x = 23'```"
+        _, sources = process_raw_message(raw_message)
+
+        self.assertEqual(len(sources), 2)
+        self.assertEqual(sources[0]["file_path"], "main.js")
+        self.assertEqual(sources[1]["file_path"], "config.js")
+
+    def test_multiple_code_sections_preceded_by_names(self):
+        raw_message = """
+        main.js:
+        ```javascript\nconsole.log```\n
+        config.js:
+        ```javascript\nconst x = 23'```\n
+        utils.js:
+        ```function foo() {}```\n
+        """
+        _, sources = process_raw_message(raw_message)
+
+        self.assertEqual(len(sources), 3)
+        self.assertEqual(sources[0]["file_path"], "main.js")
+        self.assertEqual(sources[1]["file_path"], "config.js")
+        self.assertEqual(sources[2]["file_path"], "utils.js")
