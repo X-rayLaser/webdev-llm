@@ -147,6 +147,60 @@ class UpdateModalityTests(APITestCase):
 
         self.assertEqual(400, response1.status_code)
 
+    def test_can_only_update_text_on_text_modality(self):
+        text_modality_response = utils.create_text_modality(
+            self.client, text="This is a text modality"
+        )
+        text_modality_id = text_modality_response.data["id"]
+
+        image_modality_response = self.client.post(reverse("modality-list"), {
+            "modality_type": "image"
+        })
+        image_modality_id = image_modality_response.data["id"]
+
+        code_modality_response = self.client.post(reverse("modality-list"), {
+            "modality_type": "code",
+            "file_path": "main.js"
+        })
+        code_modality_id = code_modality_response.data["id"]
+
+        mixed_mod_response = utils.create_mixed_modality(self.client, layout_type="horizontal")
+        mixed_modality_id = mixed_mod_response.data["id"]
+
+        img = BytesIO(
+            b"GIF89a\x01\x00\x01\x00\x00\x00\x00!\xf9\x04\x01\x00\x00\x00"
+            b"\x00,\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x01\x00\x00"
+        )
+        img.name = "myimage.gif"
+        updates = {
+            "text": ("New text", dict(format="json")),
+            "image": (img, {}),
+            "file_path": (img, dict(format="json")),
+            "layout": ("vertical", dict(format="json"))
+        }
+
+        cases = {
+            "can_only_update_text_on_text_modality": (text_modality_id, exclude_field(updates, "text")),
+            "can_only_update_image_on_image_modality": (image_modality_id, exclude_field(updates, "image")),
+            "can_only_update_file_path_on_code_modality": (code_modality_id, exclude_field(updates, "file_path")),
+            "can_only_update_layout_on_mixed_modality": (mixed_modality_id, exclude_field(updates, "layout"))
+        }
+
+        for case, (mod_id, submissions) in cases.items():
+            with self.subTest(case):
+                for field, (value, submission_kwargs) in submissions.items():
+                    response = self.client.patch(reverse("modality-detail", args=[mod_id]), {
+                        field: value
+                    }, **submission_kwargs)
+
+                    self.assertEqual(400, response.status_code)
+
+
+def exclude_field(mapping, field):
+    mapping = dict(mapping)
+    del mapping[field]
+    return mapping
+
 
 def create_modalities(client):
     mixed_modality_response = utils.create_mixed_modality(client, layout_type='vertical')

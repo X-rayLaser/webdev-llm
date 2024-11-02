@@ -164,14 +164,22 @@ class ModalitySerializer(serializers.ModelSerializer):
             if common_fields:
                 raise serializers.ValidationError(f'This field is immutable: {common_fields}')
 
-            if self.instance.modality_type == "code":
+            modality_type = self.instance.modality_type
+            if modality_type == "text":
+                allowed_fields = set(["text", "order"])
+            elif modality_type == "image":
+                allowed_fields = set(["image", "order"])
+            elif modality_type == "code":
                 raise serializers.ValidationError("Code modality cannot be directly updated")
-        
-            allowed_fields = set(["layout"])
+            elif modality_type == "mixture":
+                allowed_fields = set(["layout"])
+            else:
+                allowed_fields = set()
+
             forbidden_fields = all_fields - allowed_fields
-            if self.instance.modality_type == "mixture" and forbidden_fields:
+            if forbidden_fields:
                 raise serializers.ValidationError(
-                    f'These fields are immutable on mixed modality: {forbidden_fields}'
+                    f'These fields are immutable on "{modality_type}" modality: {forbidden_fields}'
                 )
         return data
 
