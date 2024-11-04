@@ -1,3 +1,4 @@
+from operator import itemgetter
 from rest_framework import serializers
 from django.urls import reverse
 from .models import (
@@ -263,7 +264,9 @@ class MultimediaMessageSerializer(serializers.ModelSerializer):
             src_tree = data.get('src_tree', [])
             modality = data["content"]
             paths = list(sorted(modality.source_paths))
-            data_paths = list(sorted([item["file_path"] for item in src_tree]))
+
+            get_path = itemgetter("file_path")
+            data_paths = list(sorted(map(get_path, src_tree)))
 
             if paths != data_paths:
                 raise serializers.ValidationError(error_msg)
