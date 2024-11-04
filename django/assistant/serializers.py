@@ -4,7 +4,7 @@ from django.urls import reverse
 from .models import (
     Configuration, Server, Preset, Build, LinterCheck,
     TestRun, OperationSuite, Thread, Comment, Modality,
-    MultimediaMessage, Revision, Chat
+    MultimediaMessage, Revision, Chat, Generation, GenerationMetadata
 )
 
 
@@ -304,3 +304,18 @@ class ChatSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Chat
         fields = ['id', 'name', 'description', 'configuration', 'messages', 'created']
+
+
+class GenerationMetadataSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GenerationMetadata
+        fields = ['id', 'server', 'model_name', 'params', 'response_metadata']
+
+
+class GenerationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Generation
+        fields = [
+            'id', 'task_id', 'finished', 'errors', 'start_time', 'stop_time',
+            'chat', 'message', 'generation_metadata'
+        ]

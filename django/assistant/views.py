@@ -1,5 +1,5 @@
 from rest_framework import viewsets
-from rest_framework import generics
+from rest_framework import generics, mixins
 from rest_framework import decorators
 from rest_framework.response import Response
 from rest_framework import status
@@ -7,15 +7,15 @@ from rest_framework import status
 
 from .models import (
     Configuration, Server, Preset, Build, LinterCheck, TestRun, OperationSuite,
-    Comment, Thread, Chat, MultimediaMessage, Modality
+    Comment, Thread, Chat, MultimediaMessage, Modality, Generation, GenerationMetadata
 )
 from .serializers import (
     ConfigurationSerializer, ServerSerializer, PresetSerializer,
     BuildSerializer, LinterCheckSerializer, TestRunSerializer, OperationSuiteSerializer,
     ThreadSerializer, ChatSerializer, MultimediaMessageSerializer, ModalitySerializer,
-    NewRevisionSerializer, CommentSerializer, ModalitiesOrderingSerializer
+    NewRevisionSerializer, CommentSerializer, ModalitiesOrderingSerializer,
+    GenerationSerializer, GenerationMetadataSerializer
 )
-
 
 class ServerViewSet(viewsets.ModelViewSet):
     queryset = Server.objects.all()
@@ -97,3 +97,25 @@ class ModalityViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response({}, status=status.HTTP_204_NO_CONTENT)
+
+
+class GenerationViewSet(mixins.CreateModelMixin,
+                        mixins.ListModelMixin,
+                        mixins.RetrieveModelMixin,
+                        viewsets.GenericViewSet):
+    queryset = Generation.objects.all()
+    serializer_class = GenerationSerializer
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        status_filter = self.request.query_params.get('status')
+        
+        if status_filter:
+            if status_filter == 'in_progress':
+                queryset = queryset.filter(finished=False)
+            elif status_filter == 'finished':
+                queryset = queryset.filter(finished=True)
+            elif status_filter == 'successful':
+                queryset = queryset.filter(finished=True, errors__isnull=True)
+        
+        return queryset

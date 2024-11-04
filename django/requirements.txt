@@ -1,3 +1,7 @@
 Django
 djangorestframework
 Pillow
+httpx[socks]
+openai
+celery[redis]
+websockets

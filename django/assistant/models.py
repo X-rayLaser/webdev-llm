@@ -208,6 +208,7 @@ class MultimediaMessage(models.Model):
                              blank=True, null=True)
     parent = models.ForeignKey('self', on_delete=models.CASCADE, related_name='replies',
                                blank=True, null=True)
+    # todo: only active_revision can be updated
     active_revision = models.OneToOneField('Revision', on_delete=models.SET_NULL, 
                                            blank=True, null=True, related_name='active_message')
     created = models.DateTimeField(auto_now_add=True)
@@ -269,3 +270,31 @@ class Modality(models.Model):
 
     class Meta:
         ordering = ["order"]
+
+
+class GenerationMetadata(models.Model):
+    server = models.ForeignKey('Server', on_delete=models.CASCADE, related_name='generations')
+    model_name = models.CharField(max_length=255, blank=True, null=True)
+    params = models.JSONField(blank=True, null=True)
+    response_metadata = models.JSONField(blank=True, null=True)
+
+    def __str__(self):
+        return f"GenerationMetadata for {self.server}"
+
+
+class Generation(models.Model):
+    task_id = models.CharField(max_length=255)
+    finished = models.BooleanField(default=False)
+    errors = models.JSONField(blank=True, null=True)
+    start_time = models.DateTimeField(auto_now_add=True)
+    stop_time = models.DateTimeField(blank=True, null=True)
+    chat = models.ForeignKey('Chat', on_delete=models.SET_NULL,
+                             blank=True, null=True, related_name='generations')
+    # parent message of a message to be generated
+    message = models.ForeignKey(MultimediaMessage, on_delete=models.SET_NULL,
+                                blank=True, null=True, related_name='generations')
+    generation_metadata = models.OneToOneField(GenerationMetadata, blank=True, null=True,
+                                               on_delete=models.SET_NULL, related_name='generation')
+
+    def __str__(self):
+        return f"Generation {self.task_id} - Finished: {self.finished}"
