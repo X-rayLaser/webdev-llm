@@ -249,6 +249,21 @@ class Modality(models.Model):
 
         super().save(**kwargs)
 
+    @property
+    def source_paths(self):
+        if self.modality_type == "code":
+            return [self.file_path]
+        elif self.modality_type == "mixture":
+            paths = self.mixture.filter(
+                modality_type="code"
+            ).values_list("file_path", flat=True)
+            paths = list(paths)
+            for child_modality in self.mixture.filter(modality_type="mixture"):
+                paths.extend(child_modality.source_paths)
+            return paths
+        else:
+            return []
+
     def __str__(self):
         return f"{self.modality_type.capitalize()} modality"
 

@@ -121,6 +121,26 @@ class CreateMessageTests(APITestCase):
         response = utils.create_message(self.client, mixed_id, chat_id=chat_id, src_tree=src_tree)
         self.assertEqual(400, response.status_code)
 
+    def test_creating_message_with_nested_mixtures(self):
+        response = utils.create_mixed_modality(self.client, layout_type="grid")
+        top_mixture_id = response.data["id"]
+        response = utils.create_mixed_modality(self.client, layout_type="grid",
+                                               parent=top_mixture_id)
+        nested_mixture_id = response.data["id"]
+
+        response = utils.create_code_modality(self.client, file_path="main.js",
+                                              parent=nested_mixture_id)
+        main_id = response.data["id"]
+
+        response = utils.create_code_modality(self.client, file_path="utils.js",
+                                              parent=top_mixture_id)
+        utils_id = response.data["id"]
+        chat_id = utils.create_default_chat(self.client)
+        # some files are missing
+        response = utils.create_message(self.client, top_mixture_id, chat_id=chat_id,
+                                        src_tree=[{"file_path": "utils.js", "content": "content"}])
+        self.assertEqual(400, response.status_code)
+
 
 class UpdateModalityTests(APITestCase):
     def test_cannot_update_code_modality(self):
@@ -195,7 +215,7 @@ class UpdateModalityTests(APITestCase):
 
         self.assertEqual(400, response1.status_code)
 
-    def test_can_only_update_text_on_text_modality(self):
+    def test_can_only_update_specific_fields_on_each_modality_type(self):
         text_modality_response = utils.create_text_modality(
             self.client, text="This is a text modality"
         )

@@ -262,21 +262,11 @@ class MultimediaMessageSerializer(serializers.ModelSerializer):
         if is_being_created:
             src_tree = data.get('src_tree', [])
             modality = data["content"]
-            if modality.modality_type == "code":
-                if len(src_tree) != 1:
-                    raise serializers.ValidationError(error_msg)
-                
-                if modality.file_path != src_tree[0]["file_path"]:
-                    raise serializers.ValidationError(error_msg)
-            elif modality.modality_type == "mixture":
-                # todo: traverse recursively all descendants to get all code modalities
-                code_modalities = modality.mixture.filter(modality_type="code").values_list("file_path", flat=True)
-                if len(src_tree) != len(code_modalities):
-                    raise serializers.ValidationError(error_msg)
-                
-                src_names = [item["file_path"] for item in src_tree]
-                if list(sorted(code_modalities)) != list(sorted(src_names)):
-                    raise serializers.ValidationError(error_msg)
+            paths = list(sorted(modality.source_paths))
+            data_paths = list(sorted([item["file_path"] for item in src_tree]))
+
+            if paths != data_paths:
+                raise serializers.ValidationError(error_msg)
 
         return data
 
