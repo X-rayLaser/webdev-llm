@@ -1,11 +1,14 @@
 from operator import itemgetter
+import uuid
 from rest_framework import serializers
-from django.urls import reverse
+from django.conf import settings
 from .models import (
     Configuration, Server, Preset, Build, LinterCheck,
     TestRun, OperationSuite, Thread, Comment, Modality,
     MultimediaMessage, Revision, Chat, Generation, GenerationMetadata
 )
+from assistant.tasks import generate_completion
+from assistant.tasks import CompletionConfig
 
 
 class ServerSerializer(serializers.ModelSerializer):
@@ -313,9 +316,57 @@ class GenerationMetadataSerializer(serializers.ModelSerializer):
 
 
 class GenerationSerializer(serializers.ModelSerializer):
+    generation_metadata = GenerationMetadataSerializer()
+
     class Meta:
         model = Generation
         fields = [
             'id', 'task_id', 'finished', 'errors', 'start_time', 'stop_time',
             'chat', 'message', 'generation_metadata'
         ]
+
+        read_only_fields = ['task_id', 'finished', 'errors', 'start_time',
+                            'stop_time', 'generation_metadata']
+
+
+class NewGenerationTaskSerializer(serializers.ModelSerializer):
+    model_name = serializers.CharField(max_length=255, write_only=True, required=False)
+    params = serializers.DictField(write_only=True, required=False)
+
+    class Meta:
+        model = Generation
+        fields = ['id', 'model_name', 'params', 'chat', 'message']
+
+    def create(self, validated_data):
+        # todo: add validation
+        model_name = validated_data.get("model_name", "")
+        params = validated_data.get("params", {})
+
+        chat = validated_data.get("chat")
+        message = validated_data.get("message")
+        message_id = message.id if message is not None else None
+
+        if chat is None:
+            root = message.get_root()
+            chat = root.chat
+
+        server = chat.configuration.llm_server
+
+        backend_name = settings.GENERATION_BACKEND
+
+        job_id = uuid.uuid4().hex
+
+        completion_config = CompletionConfig(backend_name,
+                                             task_id=job_id,
+                                             server_url=server.url,
+                                             model_name=model_name,
+                                             params=params,
+                                             chat_id=chat.id,
+                                             message_id=message_id)
+        generate_completion.delay_on_commit(completion_config.to_dict())
+
+        metadata = GenerationMetadata.objects.create(server=server, model_name=model_name, 
+                                                     params=params)
+        # todo: prepare a list of messages for LLM
+        return Generation.objects.create(task_id=job_id, chat=chat, message=message,
+                                         generation_metadata=metadata)

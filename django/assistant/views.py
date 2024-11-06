@@ -3,7 +3,7 @@ from rest_framework import generics, mixins
 from rest_framework import decorators
 from rest_framework.response import Response
 from rest_framework import status
-
+from django.conf import settings
 
 from .models import (
     Configuration, Server, Preset, Build, LinterCheck, TestRun, OperationSuite,
@@ -14,7 +14,7 @@ from .serializers import (
     BuildSerializer, LinterCheckSerializer, TestRunSerializer, OperationSuiteSerializer,
     ThreadSerializer, ChatSerializer, MultimediaMessageSerializer, ModalitySerializer,
     NewRevisionSerializer, CommentSerializer, ModalitiesOrderingSerializer,
-    GenerationSerializer, GenerationMetadataSerializer
+    GenerationSerializer, GenerationMetadataSerializer, NewGenerationTaskSerializer
 )
 
 class ServerViewSet(viewsets.ModelViewSet):
@@ -104,7 +104,6 @@ class GenerationViewSet(mixins.CreateModelMixin,
                         mixins.RetrieveModelMixin,
                         viewsets.GenericViewSet):
     queryset = Generation.objects.all()
-    serializer_class = GenerationSerializer
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -119,3 +118,8 @@ class GenerationViewSet(mixins.CreateModelMixin,
                 queryset = queryset.filter(finished=True, errors__isnull=True)
         
         return queryset
+
+    def get_serializer_class(self):
+        if self.action == "create":
+            return NewGenerationTaskSerializer
+        return GenerationSerializer

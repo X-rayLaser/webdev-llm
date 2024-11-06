@@ -14,8 +14,14 @@ class MessageSegment:
     def __eq__(self, value: object) -> bool:
         return self.type == value.type and self.content == value.content and self.metadata == value.metadata
 
-    def create_modality(self):
-        pass
+    def create_modality(self, parent=None):
+        kwargs = dict(modality_type=self.type, mixed_modality=parent)
+
+        if self.type == "text":
+            kwargs.update(dict(text=self.content))
+        elif self.type == "code":
+            kwargs.update(dict(file_path=self.metadata["file_path"]))
+        return Modality.objects.create(**kwargs)
 
 
 NamedCodeSegment = namedtuple("NamedCodeSegment", "index segment candidate_name")

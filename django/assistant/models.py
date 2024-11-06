@@ -5,7 +5,9 @@ from django.db.models import Max
 
 
 class Server(models.Model):
+    # todo: make unique
     name = models.CharField(max_length=255)
+    # todo: make unique
     url = models.URLField(max_length=500)
     description = models.TextField(blank=True, null=True)
     configuration = models.JSONField(blank=True, null=True)
@@ -15,6 +17,7 @@ class Server(models.Model):
 
 
 class Preset(models.Model):
+    # todo: make unique
     name = models.CharField(max_length=255)
     temperature = models.FloatField()
     top_k = models.IntegerField()
@@ -216,6 +219,21 @@ class MultimediaMessage(models.Model):
     content = models.OneToOneField("Modality", on_delete=models.CASCADE,
                                    related_name='content_message')
 
+    def get_root(self):
+        if self.parent is None:
+            return self
+        
+        return self.parent.get_root()
+
+    def get_history(self):
+        message = self
+        history = [message]
+        while message.parent:
+            message = message.parent
+            history.append(message)
+
+        return list(reversed(history))
+
     def __str__(self):
         return f"{self.role.capitalize()} message in chat '{self.chat.name}'"
 
@@ -273,6 +291,7 @@ class Modality(models.Model):
 
 
 class GenerationMetadata(models.Model):
+    # todo: either make server entries immutable and undeletable or replace with base_url field
     server = models.ForeignKey('Server', on_delete=models.CASCADE, related_name='generations')
     model_name = models.CharField(max_length=255, blank=True, null=True)
     params = models.JSONField(blank=True, null=True)
