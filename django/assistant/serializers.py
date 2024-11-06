@@ -7,8 +7,7 @@ from .models import (
     TestRun, OperationSuite, Thread, Comment, Modality,
     MultimediaMessage, Revision, Chat, Generation, GenerationMetadata
 )
-from assistant.tasks import generate_completion
-from assistant.tasks import CompletionConfig
+from assistant.tasks import generate_completion, CompletionConfig
 
 
 class ServerSerializer(serializers.ModelSerializer):
@@ -367,6 +366,6 @@ class NewGenerationTaskSerializer(serializers.ModelSerializer):
 
         metadata = GenerationMetadata.objects.create(server=server, model_name=model_name, 
                                                      params=params)
-        # todo: prepare a list of messages for LLM
+
         return Generation.objects.create(task_id=job_id, chat=chat, message=message,
                                          generation_metadata=metadata)
