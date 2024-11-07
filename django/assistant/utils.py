@@ -234,3 +234,42 @@ def find_all(regex_pattern, text, parse_match):
 
     _find(text)
     return res
+
+
+def convert_modality(message, modality):
+    if modality.modality_type == "text":
+        content = [{ "type": "text", "text": modality.text}]
+    elif modality.modality_type == "image":
+        # todo: image to data uri
+        data_uri = modality.image.url
+        content = [{ "type": "image_url", "image_url": data_uri }]
+    elif modality.modality_type == "code":
+        path = modality.file_path
+        assert message.active_revision is not None and message.active_revision.src_tree
+
+        entries = [entry for entry in message.active_revision.src_tree
+                   if entry["file_path"] == path]
+        code = entries[0]["content"]
+
+        content = [{ "type": "text", "text": f"```\n{code}\n```" }]
+    elif modality.modality_type == "mixture":
+        content = []
+        for child in modality.mixture.all():
+            content.extend(convert_modality(message, child))
+    else:
+        content = []
+
+    return content
+
+
+def convert(message):
+    root_modality = message.content
+    content = convert_modality(message, root_modality)
+    return dict(role=message.role, content=content)
+
+
+def prepare_messages(history, system_message=None):
+    messages = [convert(msg_obj) for msg_obj in history]
+    if system_message:
+        messages = [{ "role": "system", "content": system_message }] + messages
+    return messages
