@@ -1,8 +1,12 @@
 import unittest
+from unittest.mock import Mock
+from django.test import TestCase
 from rest_framework.test import APITestCase
-from assistant.models import Chat, MultimediaMessage
+from assistant.models import Chat, MultimediaMessage, Modality, Revision
 from assistant.tests.utils import create_default_chat, create_message, create_text_modality
-from assistant.utils import process_raw_message, MessageSegment
+from assistant.utils import (
+    process_raw_message, prepare_messages, convert_modality, MessageSegment
+)
 
 
 class ProcessRawMessageTests(unittest.TestCase):
@@ -400,3 +404,88 @@ class MultimediaMessageMethodTests(APITestCase):
         history = self.reply1_obj.get_history()
         expected_history = [self.root_message_obj, self.reply1_obj]
         self.assertEqual(history, expected_history)
+
+
+class PrepareMessagesTests(TestCase):
+    
+    def setUp(self):
+        # Common mocks for the MultimediaMessage and Modality instances
+        self.text_modality = Mock(spec=Modality, modality_type="text", text="Hello, world!")
+        self.image_modality = Mock(spec=Modality, modality_type="image")
+        self.image_modality.image.url = "http://example.com/image.jpg"
+        
+        self.code_modality = Mock(spec=Modality, modality_type="code", file_path="example.py")
+        self.revision = Mock(spec=Revision, src_tree=[
+            {"file_path": "example.py", "content": "print('Hello, code!')"}
+        ])
+        
+        self.mixture_modality = Mock(spec=Modality, modality_type="mixture")
+        self.mixture_modality.mixture.all.return_value = [self.text_modality, self.image_modality]
+        
+        # Mocking MultimediaMessage objects
+        self.text_message = Mock(spec=MultimediaMessage, role="user", content=self.text_modality)
+        self.image_message = Mock(spec=MultimediaMessage, role="assistant", content=self.image_modality)
+        self.code_message = Mock(
+            spec=MultimediaMessage, role="user", content=self.code_modality,
+            active_revision=self.revision
+        )
+        self.mixed_message = Mock(spec=MultimediaMessage, role="system", content=self.mixture_modality)
+
+    def test_convert_modality_text(self):
+        """Test convert_modality handles text modality."""
+        result = convert_modality(self.text_message, self.text_modality)
+        expected = [{"type": "text", "text": "Hello, world!"}]
+        self.assertEqual(result, expected)
+
+    def test_convert_modality_image(self):
+        """Test convert_modality handles image modality with URL conversion."""
+        result = convert_modality(self.image_message, self.image_modality)
+        expected = [{"type": "image_url", "image_url": "http://example.com/image.jpg"}]
+        self.assertEqual(result, expected)
+
+    def test_convert_modality_code(self):
+        """Test convert_modality handles code modality with src_tree lookup."""
+        result = convert_modality(self.code_message, self.code_modality)
+        expected = [{"type": "text", "text": "```\nprint('Hello, code!')\n```"}]
+        self.assertEqual(result, expected)
+
+    def test_convert_modality_mixture(self):
+        """Test convert_modality handles mixture modality with recursive conversion."""
+        result = convert_modality(self.mixed_message, self.mixture_modality)
+        expected = [
+            {"type": "text", "text": "Hello, world!"},
+            {"type": "image_url", "image_url": "http://example.com/image.jpg"}
+        ]
+        self.assertEqual(result, expected)
+
+    def test_prepare_messages_with_history(self):
+        """Test prepare_messages with a list of history messages without system_message."""
+        history = [self.text_message, self.image_message, self.code_message]
+        result = prepare_messages(history)
+        expected = [
+            {"role": "user", "content": [{"type": "text", "text": "Hello, world!"}]},
+            {"role": "assistant", "content": [{"type": "image_url", "image_url": "http://example.com/image.jpg"}]},
+            {"role": "user", "content": [{"type": "text", "text": "```\nprint('Hello, code!')\n```"}]},
+        ]
+        self.assertEqual(result, expected)
+
+    def test_prepare_messages_with_system_message(self):
+        """Test prepare_messages includes system_message at the start if provided."""
+        history = [self.text_message]
+        system_message = "System initialization message."
+        result = prepare_messages(history, system_message=system_message)
+        expected = [
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": [{"type": "text", "text": "Hello, world!"}]}
+        ]
+        self.assertEqual(result, expected)
+
+    def test_prepare_messages_with_empty_history(self):
+        """Test prepare_messages handles empty history gracefully, only showing system_message if present."""
+        result = prepare_messages([])
+        self.assertEqual(result, [])
+        
+        system_message = "System message only."
+        result_with_system = prepare_messages([], system_message=system_message)
+        expected_with_system = [{"role": "system", "content": system_message}]
+        self.assertEqual(result_with_system, expected_with_system)
