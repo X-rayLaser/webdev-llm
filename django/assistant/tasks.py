@@ -1,9 +1,13 @@
 from dataclasses import dataclass
+import json
 from django.utils import timezone
 from celery import shared_task
+import redis
+from django.conf import settings
 from assistant.generation_backends import backends, ChatCompletionJob
 from assistant.models import Chat, MultimediaMessage, Modality, Revision, Generation
 from assistant.utils import process_raw_message, prepare_messages, MessageSegment
+from assistant import serializers
 
 
 @dataclass
@@ -56,8 +60,20 @@ def create_response_message(raw_response, role, parent=None, chat=None):
     return new_message
 
 
+class RedisEventEmitter:
+    main_events_stream = "main_events_stream"
+
+    def __init__(self, socket_session_id):
+        self.redis_object = redis.Redis(settings.REDIS_HOST)
+        self.channel = f'{self.main_events_stream}:{socket_session_id}'
+
+    def __call__(self, event_type, data=None):
+        event = dict(event_type=event_type, data=data)
+        self.redis_object.publish(self.channel, json.dumps(event))
+
+
 @shared_task
-def generate_completion(completion_config: dict):
+def generate_completion(completion_config: dict, socket_session_id: int):
     config = CompletionConfig.from_dict(completion_config)
     message = config.get_message()
     chat = config.get_chat()
@@ -71,9 +87,13 @@ def generate_completion(completion_config: dict):
 
     job = ChatCompletionJob(model=config.model_name, base_url=config.server_url,
                             messages=messages, params=config.params)
+
+    emitter = RedisEventEmitter(socket_session_id)
+
+    emitter(event_type="generation_started")
+
     for token in generator.generate(job):
-        token
-        # todo: process token
+        emitter(event_type="token_arrived", data=token)
 
     role = "user" if len(history) % 2 == 0 else "assistant"
     new_message = create_response_message(generator.response, role, parent=message, chat=chat)
@@ -83,3 +103,9 @@ def generate_completion(completion_config: dict):
     generation.stop_time = timezone.now()
     # todo: set response_metadata field of generation_metadata field
     generation.save()
+
+    event_data = {
+        "message": serializers.MultimediaMessageSerializer(new_message).data,
+        "generation": serializers.GenerationSerializer(generation).data
+    }
+    emitter(event_type="generation_ended", data=event_data)

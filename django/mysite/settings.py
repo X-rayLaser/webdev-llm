@@ -122,6 +122,8 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+REDIS_HOST = "redis"
+
 CELERY_RESULT_BACKEND = "rpc://"
 
 CELERY_TASK_TIME_LIMIT = 30 * 60

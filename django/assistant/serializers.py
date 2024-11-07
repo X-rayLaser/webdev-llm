@@ -370,6 +370,7 @@ class NewGenerationTaskSerializer(serializers.ModelSerializer):
                                              params=params,
                                              chat_id=chat.id,
                                              message_id=message_id)
+        # todo: pass additional socket_session_id parameter
         generate_completion.delay_on_commit(completion_config.to_dict())
 
         metadata = GenerationMetadata.objects.create(server=server, model_name=model_name, 
