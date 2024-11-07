@@ -1,4 +1,7 @@
 import unittest
+from rest_framework.test import APITestCase
+from assistant.models import Chat, MultimediaMessage
+from assistant.tests.utils import create_default_chat, create_message, create_text_modality
 from assistant.utils import process_raw_message, MessageSegment
 
 
@@ -332,3 +335,68 @@ class SourceFilesNameResolutionTests(unittest.TestCase):
         self.assertEqual(sources[0]["file_path"], "project/main.js")
         self.assertEqual(sources[1]["file_path"], "project/config.js")
         self.assertEqual(sources[2]["file_path"], "project/utils.js")
+
+
+class MultimediaMessageMethodTests(APITestCase):
+
+    def setUp(self):
+        # Set up a chat and initial message chain for tests
+        self.chat_id = create_default_chat(self.client)
+        self.chat = Chat.objects.get(id=self.chat_id)
+
+        text1 = "This is a first text modality"
+        text2 = "This is a second text modality"
+        text3 = "This is a third text modality"
+        
+        # Create a root message
+        self.root_message_obj = self.create_text_message(
+            text=text1, role="user", chat_id=self.chat_id
+        )
+
+        # Create a reply to the root message
+        self.reply1_obj = self.create_text_message(
+            text=text2, role="assistant", parent_id=self.root_message_obj.id
+        )
+
+        # Create another reply to the first reply
+        self.reply2_obj = self.create_text_message(
+            text=text3, role="user", parent_id=self.reply1_obj.id
+        )
+
+    def create_text_message(self, text, role, chat_id=None, parent_id=None):
+        text_modality_response = create_text_modality(
+            self.client, text=text)
+        mod_id = text_modality_response.data['id']
+
+        msg_data = create_message(
+            self.client, modality_id=mod_id, chat_id=chat_id, parent_id=parent_id, role=role
+        ).data
+
+        return MultimediaMessage.objects.get(id=msg_data['id'])
+
+    def test_get_root_on_root_message(self):
+        """Ensure get_root returns itself if the message is the root."""
+        root = self.root_message_obj.get_root()
+        self.assertEqual(root, self.root_message_obj)
+
+    def test_get_root_on_nested_reply(self):
+        """Ensure get_root returns the root message for a reply chain."""
+        root = self.reply2_obj.get_root()
+        self.assertEqual(root, self.root_message_obj)
+
+    def test_get_history_on_root_message(self):
+        """Ensure get_history returns only the root message if there are no replies."""
+        history = self.root_message_obj.get_history()
+        self.assertEqual(history, [self.root_message_obj])
+
+    def test_get_history_on_nested_reply(self):
+        """Ensure get_history returns the correct sequence of messages from root to current."""
+        history = self.reply2_obj.get_history()
+        expected_history = [self.root_message_obj, self.reply1_obj, self.reply2_obj]
+        self.assertEqual(history, expected_history)
+
+    def test_get_history_on_first_reply(self):
+        """Ensure get_history returns correct history for the first reply."""
+        history = self.reply1_obj.get_history()
+        expected_history = [self.root_message_obj, self.reply1_obj]
+        self.assertEqual(history, expected_history)
