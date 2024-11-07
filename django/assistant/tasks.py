@@ -34,6 +34,28 @@ class CompletionConfig:
         return cls(**data)
 
 
+def create_response_message(raw_response, role, parent=None, chat=None):
+    segments, sources = process_raw_message(raw_response)
+    
+    mixture = Modality.objects.create(modality_type="mixture")
+    # todo: extract image modalities
+    modalities = [seg.create_modality(mixture) for seg in segments]
+
+    new_message = MultimediaMessage(role=role, content=mixture)
+    if parent is not None:
+        new_message.parent = parent
+    else:
+        new_message.chat = chat
+    new_message.save()
+
+    if sources:
+        revision = Revision.objects.create(src_tree=sources, message=new_message)
+        new_message.active_revision = revision
+        new_message.save()
+
+    return new_message
+
+
 @shared_task
 def generate_completion(completion_config: dict):
     config = CompletionConfig.from_dict(completion_config)
@@ -53,25 +75,8 @@ def generate_completion(completion_config: dict):
         token
         # todo: process token
 
-    segments, sources = process_raw_message(generator.response)
-    
-    mixture = Modality.objects.create(modality_type="mixture")
-    # todo: extract image modalities
-    modalities = [seg.create_modality(mixture) for seg in segments]
-
     role = "user" if len(history) % 2 == 0 else "assistant"
-
-    new_message = MultimediaMessage(role=role, content=mixture)
-    if message is not None:
-        new_message.parent = message
-    else:
-        new_message.chat = chat
-    new_message.save()
-
-    if sources:
-        revision = Revision.objects.create(src_tree=sources, message=new_message)
-        new_message.active_revision = revision
-        new_message.save()
+    new_message = create_response_message(generator.response, role, parent=message, chat=chat)
 
     generation = Generation.objects.get(pk=config.task_id)
     generation.finished = True

@@ -16,6 +16,9 @@ class ChatCompletionJob:
 
 
 class Backend(ABC):
+    def __init__(self):
+        self.response = ""
+
     @abstractmethod
     def generate(self, job: ChatCompletionJob):
         pass
@@ -27,7 +30,9 @@ class DummyBackend(Backend):
         for word in words:
             sleep_secs = 0.1
             time.sleep(sleep_secs)
-            yield word + " "
+            chunk = word + " "
+            self.response += chunk
+            yield chunk
 
 
 class OpenAICompatibleBackend(Backend):
@@ -52,6 +57,7 @@ class OpenAICompatibleBackend(Backend):
 
         for chunk in stream:
             chunk_text = chunk.choices[0].delta.content or ""
+            self.response += chunk_text
             yield chunk_text
 
     def get_http_client(self):
