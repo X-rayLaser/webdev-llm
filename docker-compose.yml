@@ -7,6 +7,45 @@ services:
     volumes:
       - .:/workspace:cached
       - ./django:/django
+    links:
+      - redis
+    depends_on:
+      - celery
+      - redis
+      - websocketserver
+
+  celery:
+    build:
+      context: django
+      dockerfile: Dockerfile
+    environment:
+      - ENV=${ENV}
+    volumes:
+      - ./django:/django
+    links:
+      - redis
+    depends_on:
+      - redis
+      - websocketserver
+    command: celery -A mysite worker -l INFO
+
+  websocketserver:
+    build:
+      context: django
+      dockerfile: Dockerfile
+    volumes:
+      - ./django:/django
+    links:
+      - redis
+    depends_on:
+      - redis
+    ports:
+      - "9000:9000"
+    command: python3 -u websocket_server.py --redis-host redis
+
+  redis:
+    image: redis
+
   builder:
     build:
       context: qa_tools
