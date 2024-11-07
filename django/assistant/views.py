@@ -104,6 +104,7 @@ class GenerationViewSet(mixins.CreateModelMixin,
                         mixins.RetrieveModelMixin,
                         viewsets.GenericViewSet):
     queryset = Generation.objects.all()
+    serializer_class = GenerationSerializer
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -119,7 +120,10 @@ class GenerationViewSet(mixins.CreateModelMixin,
         
         return queryset
 
-    def get_serializer_class(self):
-        if self.action == "create":
-            return NewGenerationTaskSerializer
-        return GenerationSerializer
+    def create(self, request, *args, **kwargs):
+        serializer = NewGenerationTaskSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        generation = serializer.save()
+        
+        response_data = GenerationSerializer(generation).data
+        return Response(response_data, status=status.HTTP_201_CREATED)

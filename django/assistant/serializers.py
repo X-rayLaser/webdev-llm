@@ -324,17 +324,25 @@ class GenerationSerializer(serializers.ModelSerializer):
             'chat', 'message', 'generation_metadata'
         ]
 
-        read_only_fields = ['task_id', 'finished', 'errors', 'start_time',
-                            'stop_time', 'generation_metadata']
-
 
 class NewGenerationTaskSerializer(serializers.ModelSerializer):
-    model_name = serializers.CharField(max_length=255, write_only=True, required=False)
-    params = serializers.DictField(write_only=True, required=False)
+    model_name = serializers.CharField(max_length=255, required=False)
+    params = serializers.DictField(required=False)
 
     class Meta:
         model = Generation
         fields = ['id', 'model_name', 'params', 'chat', 'message']
+
+    def validate(self, attrs):
+        chat = attrs.get('chat')
+        message = attrs.get('message')
+        
+        if (chat is None and message is None) or (chat is not None and message is not None):
+            raise serializers.ValidationError(
+                "Exactly one of 'chat' or 'message' must be provided."
+            )
+        
+        return attrs
 
     def create(self, validated_data):
         # todo: add validation

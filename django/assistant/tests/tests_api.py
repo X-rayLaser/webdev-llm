@@ -1,7 +1,10 @@
+from io import BytesIO
+from rest_framework.test import APITestCase
+from django.urls import reverse
+from rest_framework import status
 from rest_framework.test import APITestCase
 from assistant.tests import utils
-from django.urls import reverse
-from io import BytesIO
+from assistant.models import Generation, Chat
 
 
 class ModalityOrderingTests(APITestCase):
@@ -262,6 +265,86 @@ class UpdateModalityTests(APITestCase):
                     }, **submission_kwargs)
 
                     self.assertEqual(400, response.status_code)
+
+
+class GenerationCreationTests(APITestCase):
+
+    def setUp(self):
+        # Set up a chat and message for tests
+        self.chat_id = utils.create_default_chat(self.client)
+        self.chat = Chat.objects.get(id=self.chat_id)
+
+        text_modality_response = utils.create_text_modality(
+            self.client, text="This is a text modality"
+        )
+        text_modality_id = text_modality_response.data["id"]
+        message_response = utils.create_message(
+            self.client, modality_id=text_modality_id, chat_id=self.chat_id
+        )
+        self.message_id = message_response.data["id"]
+
+    def test_create_generation_with_chat_only(self):
+        """Ensure generation can be created with only a chat provided."""
+        data = {
+            "chat": self.chat_id,
+            "model_name": "test-model",
+            "params": {"param1": "value1"}
+        }
+        response = self.client.post(reverse('generation-list'), data, format='json')
+        
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(Generation.objects.filter(chat=self.chat).exists())
+        self.assertEqual(response.data['chat'], data['chat'])
+
+    def test_create_generation_with_message_only(self):
+        """Ensure generation can be created with only a message provided."""
+        data = {
+            "message": self.message_id,
+            "model_name": "test-model",
+            "params": {"param1": "value1"}
+        }
+        response = self.client.post(reverse('generation-list'), data, format='json')
+        
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(Generation.objects.filter(message_id=self.message_id).exists())
+        self.assertEqual(response.data['message'], data['message'])
+
+    def test_create_generation_with_both_chat_and_message(self):
+        """Ensure generation creation fails if both chat and message are provided."""
+        data = {
+            "chat": self.chat_id,
+            "message": self.message_id,
+            "model_name": "test-model",
+            "params": {"param1": "value1"}
+        }
+        response = self.client.post(reverse('generation-list'), data, format='json')
+        
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("Exactly one of 'chat' or 'message' must be provided.",
+                      response.data['non_field_errors'])
+
+    def test_create_generation_with_neither_chat_nor_message(self):
+        """Ensure generation creation fails if neither chat nor message is provided."""
+        data = {
+            "model_name": "test-model",
+            "params": {"param1": "value1"}
+        }
+        response = self.client.post(reverse('generation-list'), data, format='json')
+        
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("Exactly one of 'chat' or 'message' must be provided.",
+                      response.data['non_field_errors'])
+
+    def test_create_generation_without_model_name_or_params(self):
+        """Test creation with minimal data (only chat or message), ensuring defaults are handled."""
+        data = {
+            "chat": self.chat_id
+        }
+        response = self.client.post(reverse('generation-list'), data, format='json')
+        
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(Generation.objects.filter(chat=self.chat).exists())
+        self.assertEqual(response.data['chat'], self.chat_id)
 
 
 def exclude_field(mapping, field):
