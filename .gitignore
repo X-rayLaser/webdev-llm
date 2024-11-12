@@ -2,11 +2,15 @@
 *.png
 *.jpg
 *.jpeg
+*.svg
+*.gif
 *.sqlite3
 secrets.py
 \.devcontainer/
 \.github/
+nextjs_app/node_modules
+nextjs_app/public
+
 package-lock.json
 devcontainer.json
 dependabot.yml
-*.gif
