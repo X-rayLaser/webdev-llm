@@ -11,7 +11,7 @@ export const ServerForm = () => {
   const [configuration, setConfiguration] = useState('');
 
   return (
-    <Form className="border rounded-lg border-stone-400 p-6 text-gray-800 max-w-md bg-slate-200">
+    <Form>
       {/* Name Field */}
       <div className="mb-5">
         <TextField id="name" value={name}
