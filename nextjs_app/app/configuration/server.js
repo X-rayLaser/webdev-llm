@@ -1,4 +1,7 @@
 import React from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faEnvelope } from '@fortawesome/free-solid-svg-icons'
+
 
 const ServerInfo = ({ server }) => {
   return (
@@ -6,6 +9,7 @@ const ServerInfo = ({ server }) => {
       <header className="bg-blue-200 rounded-t-lg pt-2 pb-2 pl-4 pr-4 text-center">
         <h2 className="block text-lg font-bold p-0">
           {server.name}
+          <FontAwesomeIcon icon={faEnvelope} />
         </h2>
       </header>
 
