@@ -1,77 +1,141 @@
 "use client"
 
 import React from 'react';
+import { Alert } from './alerts';
 
 
-export function TextField({ id, label="", type="text", value, placeholder="", onChange }) {
-    label = label || capitalize(id);
+function FlexInputField(props) {
+    let { extraInputClasses, ...other} = props;
 
-    placeholder = placeholder || `Fill in "${id}"`
     return (
-        <div className="flex items-center">
-            <label htmlFor={id} className='basis-28 shrink-0 grow-0 font-semibold'>{label}</label>
-            <input className="border border-stone-400 ml-2 rounded-lg required:bg-red-500 p-2 grow min-w-0"
-                type={type}
-                id={id}
-                value={value}
-                placeholder={placeholder}
-                onChange={onChange}
-            />
-        </div>
-    );
-}
-
-export function NumberField({ id, label="", min=0, max=1, step=0.1, value, placeholder="", onChange }) {
-    label = label || capitalize(id);
-
-    placeholder = placeholder || `Fill in "${id}"`
-    return (
-        <div className="flex items-center">
-            <label htmlFor={id} className='basis-28 shrink-0 grow-0 font-semibold'>{label}</label>
-            <input className="border border-stone-400 ml-2 rounded-lg required:bg-red-500 p-2 grow min-w-0"
-                type="number"
-                id={id}
-                min={min}
-                max={max}
-                step={step}
-                value={value}
-                placeholder={placeholder}
-                onChange={onChange}
-            />
-        </div>
+        <input className={`ml-2 rounded-lg p-2 grow min-w-0 ${extraInputClasses}`}
+            {...other}
+        />
     );
 }
 
 
-export function TextArea({ id, label, value, placeholder="", onChange }) {
-    label = label || capitalize(id);
-
-    placeholder = placeholder || `Please, enter value for the "${id}"`
+function TextAreaField({ extraInputClasses, ...other }) {
     return (
-        <div className="mb-5">
-            <label htmlFor={id} className="font-semibold">{label}</label>
-            <textarea className="block w-full border border-stone-400 rounded-lg p-2"
-                id={id}
-                value={value}
-                placeholder={placeholder}
-                onChange={onChange}
-                rows={7}
-            />
+        <textarea className={`block w-full rounded-lg p-2 ${extraInputClasses}`}
+            rows={7}
+            {...other}
+        />
+    )
+}
+
+
+function FormFieldWithErrors({ errors=[], children } ) {
+    const errorElements = errors.map((error, idx) => 
+        <div key={idx} className="mt-2">
+            <Alert text={error} level="danger" size="xs" />
+        </div>
+    );
+
+    return (
+        <div>
+            <div>{children}</div>
+            {errorElements.length > 0 && (
+                <div>{errorElements}</div>
+            )}
         </div>
     );
 }
 
-export function Form({ children }) {
+
+function InlineFormField({ label, field, errors=[] }) {
+    const extraLabelClasses = errors.length > 0 ? "text-red-600" : ""
     return (
-        <form className="border-2 rounded-lg border-cyan-800 p-6 text-gray-800 max-w-md bg-slate-200">
+        <FormFieldWithErrors errors={errors}>
+            <div className="flex items-center">
+                <div className={`basis-28 shrink-0 grow-0 font-semibold ${extraLabelClasses}`}>
+                    {label}
+                </div>
+                <div>{field}</div>
+            </div>
+        </FormFieldWithErrors>
+    );
+}
+
+
+function BlockedFormField({ label, field, errors=[] } ) {
+    const extraLabelClasses = errors.length > 0 ? "text-red-600" : ""
+    return (
+        <FormFieldWithErrors errors={errors}>
+            <div>
+                <div className={`font-semibold ${extraLabelClasses}`}>
+                    {label}
+                </div>
+                {field}
+            </div>
+        </FormFieldWithErrors>
+    );
+}
+
+
+function WrappedField({ id, label="", name="", placeholder="", errors=[], FieldComponent, FieldContainer, ...rest }) {
+    label = label || capitalize(id);
+    name = name || id;
+    placeholder = placeholder || `Fill in "${id}"`;
+
+    const extraInputClasses = errors.length > 0 ? "border-2 border-red-600" : "border border-stone-400";
+
+    let labelField = <label htmlFor={id}>{label}</label>;
+
+    let inputProps = {
+        id, label, name, placeholder, extraInputClasses, ...rest
+    };
+    let inputField = (
+        <FieldComponent {...inputProps} />
+    );
+    return (
+        <FieldContainer label={labelField} field={inputField} errors={errors} />
+    );
+}
+
+export function TextField(props) {
+    return <WrappedField type="text" FieldComponent={FlexInputField} FieldContainer={InlineFormField} {...props} />
+}
+
+
+export function NumberField(props) {
+    let { min=0, max=1, step=0.1, ...rest } = {...props};
+    let allProps = { min, max, step, ...rest};
+    return <WrappedField type="number" FieldComponent={FlexInputField} FieldContainer={InlineFormField} {...allProps} />
+}
+
+
+export function TextArea(props) {
+    return <WrappedField FieldComponent={TextAreaField} FieldContainer={BlockedFormField} {...props} />
+}
+
+export function Form({ action, variant="default", children }) {
+    let borderColorClass;
+    let borderWidthClass;
+
+    switch (variant) {
+        case "danger":
+            borderColorClass = "border-red-600";
+            borderWidthClass = "border-4";
+            break;
+        default:
+            borderColorClass = "border-cyan-800";
+            borderWidthClass = "border-2";
+    }
+    
+    return (
+        <form className={`${borderWidthClass} rounded-lg ${borderColorClass} p-6 text-gray-800 max-w-md bg-slate-200`}
+            action={action}>
             {children}
         </form>
     );
 }
 
-export function SubmitButton() {
+export function SubmitButton({ onClick, disabled=false }) {
     return (
-        <button type="submit" className="bg-blue-700 px-10 py-2 rounded-md text-white hover:bg-blue-900">
+        <button className="bg-blue-700 px-10 py-2 rounded-md text-white hover:bg-blue-900 disabled:bg-gray-500"
+            type="submit"
+            disabled={disabled}>
             Submit
         </button>
     );

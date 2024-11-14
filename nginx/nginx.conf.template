@@ -19,7 +19,7 @@ http {
   access_log /var/log/nginx/access.log combined;
   sendfile on;
 
-  upstream app_server {
+  upstream django_server {
     # fail_timeout=0 means we always retry an upstream even if it failed
     # to return a good HTTP response
 
@@ -47,7 +47,7 @@ http {
     client_max_body_size 4G;
 
     # set the correct host(s) for your site
-    server_name ${NGINX_HOST};
+    server_name ${NGINX_HOST} 172.17.0.1;
 
     keepalive_timeout 5;
 
@@ -77,7 +77,7 @@ http {
       # we don't want nginx trying to do something clever with
       # redirects, we set the Host: header above already.
       proxy_redirect off;
-      proxy_pass http://app_server;
+      proxy_pass http://django_server;
     }
 
     error_page 500 502 503 504 /500.html;

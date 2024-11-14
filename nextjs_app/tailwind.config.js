@@ -13,5 +13,13 @@ module.exports = {
       },
     },
   },
+  safelist: [
+    {
+      pattern: /bg-(orange|red)-[0-9]+/,
+    },
+    {
+      pattern: /border-(orange|red)-[0-9]+/
+    }
+  ],
   plugins: [],
 };

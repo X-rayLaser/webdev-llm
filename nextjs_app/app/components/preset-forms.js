@@ -31,6 +31,8 @@ const PresetForm = () => {
         <NumberField
           id="temperature"
           label="Temperature"
+          min={0}
+          max={100}
           type="number"
           value={temperature}
           onChange={(e) => setTemperature(e.target.value)}
