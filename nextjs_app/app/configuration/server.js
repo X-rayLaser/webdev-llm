@@ -1,45 +1,127 @@
-import React from 'react';
+"use client"
+import React, { useState, useRef, useEffect } from 'react';
+import { ServerForm } from '@/app/components/server-forms';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faEnvelope } from '@fortawesome/free-solid-svg-icons'
+import { faServer, faPencil, faTrash } from '@fortawesome/free-solid-svg-icons'
+import { updateServerEntry, deleteServerEntry } from '@/app/actions';
 
 
-const ServerInfo = ({ server }) => {
+function PencilButton({ onClick }) {
   return (
-    <div className="border rounded-lg max-w-96">
+    <button className="ml-2 text-zinc-600 hover:text-zinc-900 float-right"
+      onClick={onClick}>
+      <FontAwesomeIcon icon={faPencil} size="lg" />
+    </button>
+  );
+}
+
+
+const Expandable = ({ collapsedHeight=0, children }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpandable, setIsExpandable] = useState(false);
+  const contentRef = useRef(null);
+
+  const toggleExpand = () => {
+    setIsExpanded(!isExpanded);
+  };
+
+  useEffect(() => {
+    // Check if content height exceeds 300px when the component mounts
+    if (contentRef.current && contentRef.current.scrollHeight > collapsedHeight) {
+      setIsExpandable(true);
+    }
+  }, []);
+
+  return (
+    <div className="overflow-hidden">
+      {/* Collapsible Content */}
+      <div
+        ref={contentRef}
+        style={{
+          maxHeight: isExpanded ? contentRef.current.scrollHeight : collapsedHeight,
+          transition: 'max-height 0.3s ease',
+        }}
+        className="overflow-hidden"
+      >
+        <div>
+          {children}
+        </div>
+      </div>
+
+      {isExpandable && (
+        <div className="flex justify-left items-start mt-2">
+          <button
+            onClick={toggleExpand}
+            className="text-blue-600 hover:underline"
+          >
+            {isExpanded ? 'Collapse' : 'Expand'}
+          </button>
+        </div>
+      )}
+      {!isExpandable && <div className="mb-2"><button className="invisible"></button></div>}
+    </div>
+  );
+};
+
+
+const ServerInfo = ({ server, onEdit }) => {
+  function handleDelete() {
+    deleteServerEntry(server.id);
+  }
+  return (
+    <div className="border rounded-lg w-96 h-auto">
       <header className="bg-blue-200 rounded-t-lg pt-2 pb-2 pl-4 pr-4 text-center">
         <h2 className="block text-lg font-bold p-0">
           {server.name}
-          <FontAwesomeIcon icon={faEnvelope} />
+          <span className="ml-2 text-white">
+            <FontAwesomeIcon icon={faServer} size="lg" />
+          </span>
         </h2>
+
       </header>
 
       <div className="p-4 flex flex-col justify-around">
-
-      {/* URL */}
-      <div>
-        <span className="font-semibold">URL:</span> 
-        <a href={server.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 ml-2">
-          {server.url}
-        </a>
-      </div>
-
-      {/* Description */}
-      {server.description && (
-        <div className="">
-          <hr className="h-px my-4 bg-gray-200 border-0 dark:bg-gray-700" />
-          <div className="font-semibold">Description:</div>
-          <div>{server.description}</div>
+        {/* URL */}
+        <div>
+          <span className="font-semibold">URL:</span> 
+          <a href={server.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 ml-2">
+            {server.url}
+          </a>
         </div>
-      )}
 
-      {/* Configuration */}
-      {server.configuration && (
-        <div className="">
-          <hr className="h-px my-4 bg-gray-200 border-0 dark:bg-gray-700" />
-          <span className="font-semibold">Configuration:</span>
-          <pre className="bg-gray-100 p-2 rounded">{JSON.stringify(server.configuration, null, 2)}</pre>
+        <Expandable>
+        {/* Description */}
+        {server.description && (
+          <div className="">
+            <hr className="h-px my-4 bg-gray-200 border-0 dark:bg-gray-700" />
+            <div className="font-semibold">Description:</div>
+            <div>{server.description}</div>
+          </div>
+        )}
+
+        {/* Configuration */}
+        {server.configuration && (
+          <div className="">
+            <hr className="h-px my-4 bg-gray-200 border-0 dark:bg-gray-700" />
+            <span className="font-semibold">Configuration:</span>
+            <pre className="bg-gray-100 p-2 rounded">{JSON.stringify(server.configuration, null, 2)}</pre>
+          </div>
+        )}
+
+
+        </Expandable>
+
+        <div className="mt-4">
+          <button className="border p-1 text-zinc-600 hover:text-zinc-900 hover:bg-gray-500"
+            onClick={onEdit}>
+            <FontAwesomeIcon icon={faPencil} size="lg" />
+          </button>
+          <button className="border p-1 text-zinc-600 hover:text-zinc-900 hover:bg-gray-500"
+            onClick={handleDelete}>
+            <FontAwesomeIcon icon={faTrash} size="lg" />
+          </button>
+          
         </div>
-      )}
       </div>
     </div>
   );

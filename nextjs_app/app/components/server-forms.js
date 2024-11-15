@@ -5,32 +5,51 @@ import { TextField, TextArea, Form, SubmitButton, jsonPlaceholder } from './comm
 import { createServerEntry } from "@/app/actions";
 import { Alert } from "./alerts";
 import { useActionState } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCog } from '@fortawesome/free-solid-svg-icons';
 
-export const ServerForm = () => {
-  const [name, setName] = useState('');
-  const [url, setUrl] = useState('');
-  const [description, setDescription] = useState('');
-  const [configuration, setConfiguration] = useState('');
 
-  const [isDisabled, setDisabled] = useState(false);
+export function ServerForm({ action, defaultName="", defaultUrl="", defaultDescription="", defaultConfiguration="", onSubmit, children }) {
+  const [name, setName] = useState(defaultName);
+  const [url, setUrl] = useState(defaultUrl);
+  const [runningSubmission, setRunningSubmission] = useState(false);
+  const [description, setDescription] = useState(defaultDescription);
+  const [configuration, setConfiguration] = useState(defaultConfiguration);
 
   const initialState = { message: null, errors: {} };
-  const [state, formAction] = useActionState(createServerEntry, initialState);
+  const [state, formAction] = useActionState(async function() {
+    let res = await action(...arguments);
+    //artificial delay
+    await new Promise(resolve => setTimeout(resolve, 2000))
+    setRunningSubmission(false);
+    return res;
+  }, initialState);
 
-  const hasErrors = state => Object.keys(state.errors).length > 0;
+  const hasErrors = state => state && Object.keys(state.errors).length > 0;
+
+  function handleSubmit(e) {
+    console.log("handling submit", e);
+    setRunningSubmission(true);
+  }
+
+  const disabledButton = runningSubmission;
 
   return (
-    <Form action={formAction} variant={hasErrors(state) ? "danger" : "default"}>
+    <Form action={formAction} variant={hasErrors(state) ? "danger" : "default"} onSubmit={handleSubmit}>
       {/* Name Field */}
       <div className="mb-5">
-        <TextField id="name" value={name} errors={state.errors?.name}
-            onChange={(e) => setName(e.target.value)} />
+        <TextField id="name" value={name} errors={state?.errors?.name}
+            onChange={(e) => setName(e.target.value)}
+            disabled={runningSubmission}    
+        />
       </div>
 
       {/* URL Field */}
       <div className="mb-5">
-        <TextField id="url" label="URL" type="url" value={url} errors={state.errors?.url}
-            onChange={(e) => setUrl(e.target.value)} />
+        <TextField id="url" label="URL" type="url" value={url} errors={state?.errors?.url}
+            onChange={(e) => setUrl(e.target.value)}
+            disabled={runningSubmission}
+        />
       </div>
 
       <details>
@@ -39,31 +58,46 @@ export const ServerForm = () => {
         <div>
             <div className="mb-5">
                 <TextArea id="description" label="Description" value={description}
-                    errors={state.errors?.description}
-                    onChange={(e) => setDescription(e.target.value)} />
+                    errors={state?.errors?.description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    disabled={runningSubmission}
+                />
             </div>
 
             {/* Configuration Field */}
             
             <div className="mb-5">
                 <TextArea id="configuration" value={configuration} placeholder={jsonPlaceholder}
-                    errors={state.errors?.configuration}
-                    onChange={(e) => setConfiguration(e.target.value)} />
+                    errors={state?.errors?.configuration}
+                    onChange={(e) => setConfiguration(e.target.value)}
+                    disabled={runningSubmission}
+                />
             </div>
         </div>
       </details>
 
-      {state.message && 
+      {state?.message && 
         <div className="mt-5 mb-5">
           <Alert text={state.message} level="danger" />
         </div>}
     
       <div className="flex justify-center">
-          <SubmitButton onClick={() => setDisabled(true)} disabled={isDisabled} />
+          <SubmitButton disabled={disabledButton}>
+            {runningSubmission && <span className="ml-2"><FontAwesomeIcon icon={faCog} spin /></span>}
+          </SubmitButton>
       </div>
     </Form>
   );
 };
 
+export function CreateServerForm() {
+  return (
+    <div>
+      <ServerForm action={createServerEntry}>
+      </ServerForm>
+    </div>
+  );
+}
 
-export default ServerForm;
+
+export default CreateServerForm;

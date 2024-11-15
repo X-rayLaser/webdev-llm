@@ -109,7 +109,13 @@ export function TextArea(props) {
     return <WrappedField FieldComponent={TextAreaField} FieldContainer={BlockedFormField} {...props} />
 }
 
-export function Form({ action, variant="default", children }) {
+
+function dummyOnSubmit(e) {
+
+}
+
+
+export function Form({ action, variant="default", onSubmit=dummyOnSubmit, children }) {
     let borderColorClass;
     let borderWidthClass;
 
@@ -125,18 +131,21 @@ export function Form({ action, variant="default", children }) {
     
     return (
         <form className={`${borderWidthClass} rounded-lg ${borderColorClass} p-6 text-gray-800 max-w-md bg-slate-200`}
-            action={action}>
+            action={action}
+            onSubmit={onSubmit}>
             {children}
         </form>
     );
 }
 
-export function SubmitButton({ onClick, disabled=false }) {
+export function SubmitButton({ onClick, children, disabled=false }) {
     return (
         <button className="bg-blue-700 px-10 py-2 rounded-md text-white hover:bg-blue-900 disabled:bg-gray-500"
             type="submit"
-            disabled={disabled}>
+            disabled={disabled}
+            onClick={onClick}>
             Submit
+            <span>{children}</span>
         </button>
     );
 }
