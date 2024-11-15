@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ServerForm } from '@/app/components/server-forms';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faServer, faPencil, faTrash } from '@fortawesome/free-solid-svg-icons'
+import { faServer, faPencil, faTrash, faCog } from '@fortawesome/free-solid-svg-icons'
 import { updateServerEntry, deleteServerEntry } from '@/app/actions';
 
 
@@ -65,11 +65,14 @@ const Expandable = ({ collapsedHeight=0, children }) => {
 
 
 const ServerInfo = ({ server, onEdit }) => {
+  const [deletion, setDeletion] = useState(false);
+
   function handleDelete() {
+    setDeletion(true);
     deleteServerEntry(server.id);
   }
   return (
-    <div className="border rounded-lg w-96 h-auto">
+    <div className="border rounded-lg w-full md:w-96 h-auto">
       <header className="bg-blue-200 rounded-t-lg pt-2 pb-2 pl-4 pr-4 text-center">
         <h2 className="block text-lg font-bold p-0">
           {server.name}
@@ -112,15 +115,26 @@ const ServerInfo = ({ server, onEdit }) => {
         </Expandable>
 
         <div className="mt-4">
-          <button className="border p-1 text-zinc-600 hover:text-zinc-900 hover:bg-gray-500"
-            onClick={onEdit}>
-            <FontAwesomeIcon icon={faPencil} size="lg" />
-          </button>
-          <button className="border p-1 text-zinc-600 hover:text-zinc-900 hover:bg-gray-500"
-            onClick={handleDelete}>
-            <FontAwesomeIcon icon={faTrash} size="lg" />
-          </button>
-          
+          {!deletion && (
+            <div>
+              <button className="border p-1 text-zinc-600 hover:text-zinc-900 hover:bg-gray-500"
+                onClick={onEdit}>
+                <FontAwesomeIcon icon={faPencil} size="lg" />
+              </button>
+              <button className="border p-1 text-zinc-600 hover:text-zinc-900 hover:bg-gray-500"
+                onClick={handleDelete}>
+                <FontAwesomeIcon icon={faTrash} size="lg" />
+              </button>
+            </div>
+          )}
+          {deletion && (
+            <div>
+              <span>Deletion...</span>
+              <span className="ml-2">
+                <FontAwesomeIcon icon={faCog} spin></FontAwesomeIcon>
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -51,7 +51,7 @@ function InlineFormField({ label, field, errors=[] }) {
                 <div className={`basis-28 shrink-0 grow-0 font-semibold ${extraLabelClasses}`}>
                     {label}
                 </div>
-                <div>{field}</div>
+                {field}
             </div>
         </FormFieldWithErrors>
     );

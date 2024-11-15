@@ -8,10 +8,10 @@ import ServerInfo from "@/app/configuration/server";
 
 function FlexRowPanel({ children }) {
   return (
-    <div className="" style={{ height: 'auto'}}>
+    <div className="w-full">
       <div className="flex flex-row justify-center flex-wrap h-full gap-4 w-full items-start content-start">
         {children.map((child, idx) => (
-          <div key={idx} className="flex">
+          <div key={idx} className="flex w-full md:w-auto">
             {child}
           </div>
         ))}
@@ -26,7 +26,6 @@ async function ServerPanel() {
   try {
     const response = await fetch("http://django:8000/api/servers/");
 
-      
     if (response.ok) {
       const data = await response.json();
       //const data = [{ id: 1, name: "LLama.cpp server" }, { id: 2, name: "VLLM server" }];
@@ -36,6 +35,12 @@ async function ServerPanel() {
             <h4 className="mb-5 text-center font-bold">Servers</h4>
             {servers.length > 0 && <FlexRowPanel>{servers}</FlexRowPanel>}
             {servers.length === 0 && <h5>No servers has been created</h5>}
+            <div className="mt-4 flex justify-center md:justify-start">
+              <button className="pl-16 pr-16 pt-4 pb-4 bg-violet-900 hover:bg-violet-950 text-white border-2
+                               border-white rounded-md text-lg font-semibold">
+                Add new server
+              </button>
+            </div>
         </div>
       );
     }
@@ -56,7 +61,7 @@ export default function Page() {
 
   let servers = [{ id: 1, name: "LLama.cpp server" }, { id: 2, name: "VLLM server" }];
   return (
-    <div className="w-3/4 ml-auto mr-auto">
+    <div className="md:w-3/4 ml-auto mr-auto">
       <div className="pt-4 pb-4">
         <ServerPanel />
       </div>
