@@ -118,19 +118,26 @@ function dummyOnSubmit(e) {
 export function Form({ action, variant="default", onSubmit=dummyOnSubmit, children }) {
     let borderColorClass;
     let borderWidthClass;
+    let padding;
 
     switch (variant) {
         case "danger":
             borderColorClass = "border-red-600";
             borderWidthClass = "border-4";
+            padding = "p-6";
+            break;
+        case "compact":
+            borderWidthClass = "border-0";
+            padding = "p-0";
             break;
         default:
-            borderColorClass = "border-cyan-800";
+            borderColorClass = "border-cyan-600";
             borderWidthClass = "border-2";
+            padding = "p-6";
     }
     
     return (
-        <form className={`${borderWidthClass} rounded-lg ${borderColorClass} p-6 text-gray-800 max-w-md bg-slate-200`}
+        <form className={`${borderWidthClass} rounded-lg ${borderColorClass} ${padding} text-gray-800 max-w-md bg-slate-200`}
             action={action}
             onSubmit={onSubmit}>
             {children}

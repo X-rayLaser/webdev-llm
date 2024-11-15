@@ -35,7 +35,7 @@ export function ServerForm({ action, defaultName="", defaultUrl="", defaultDescr
   const disabledButton = runningSubmission;
 
   return (
-    <Form action={formAction} variant={hasErrors(state) ? "danger" : "default"} onSubmit={handleSubmit}>
+    <form action={formAction} onSubmit={handleSubmit}>
       {/* Name Field */}
       <div className="mb-5">
         <TextField id="name" value={name} errors={state?.errors?.name}
@@ -86,7 +86,7 @@ export function ServerForm({ action, defaultName="", defaultUrl="", defaultDescr
             {runningSubmission && <span className="ml-2"><FontAwesomeIcon icon={faCog} spin /></span>}
           </SubmitButton>
       </div>
-    </Form>
+    </form>
   );
 };
 

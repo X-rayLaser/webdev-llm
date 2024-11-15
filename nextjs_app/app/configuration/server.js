@@ -1,6 +1,5 @@
 "use client"
 import React, { useState, useRef, useEffect } from 'react';
-import { ServerForm } from '@/app/components/server-forms';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faServer, faPencil, faTrash, faCog } from '@fortawesome/free-solid-svg-icons'
 import { updateServerEntry, deleteServerEntry } from '@/app/actions';
