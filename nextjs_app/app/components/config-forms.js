@@ -1,6 +1,7 @@
 "use client"
 import React, { useState } from 'react';
-import { TextField, NumberField, TextArea, SubmitButton, Form } from './common-forms';
+import { TextField, NumberField, TextArea, Form } from './common-forms';
+import { SubmitButton } from './buttons';
 
 
 const ConfigurationForm = ({ presets, servers }) => {

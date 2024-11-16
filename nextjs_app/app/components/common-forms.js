@@ -145,17 +145,6 @@ export function Form({ action, variant="default", onSubmit=dummyOnSubmit, childr
     );
 }
 
-export function SubmitButton({ onClick, children, disabled=false }) {
-    return (
-        <button className="bg-blue-700 px-10 py-2 rounded-md text-white hover:bg-blue-900 disabled:bg-gray-500"
-            type="submit"
-            disabled={disabled}
-            onClick={onClick}>
-            Submit
-            <span>{children}</span>
-        </button>
-    );
-}
 
 export const jsonPlaceholder = `{
     "param1": "value1",

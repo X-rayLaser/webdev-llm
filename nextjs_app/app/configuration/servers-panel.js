@@ -3,7 +3,7 @@ import ServerInfo from "@/app/configuration/server";
 import Modal from "@/app/components/modal";
 import CreateServerForm from "@/app/components/server-forms";
 import { useState } from "react";
-
+import { ProminentButton } from "../components/buttons";
 
 function FlexRowPanel({ children }) {
   return (
@@ -30,11 +30,9 @@ function ServerPanel({ servers }) {
       {servers.length > 0 && <FlexRowPanel>{serverElements}</FlexRowPanel>}
       {servers.length === 0 && <h5>No servers has been created</h5>}
       <div className="mt-4 flex justify-center md:justify-start">
-          <button className="pl-16 pr-16 pt-4 pb-4 bg-violet-900 hover:bg-violet-950 text-white border-2
-                           border-white rounded-md text-lg font-semibold"
-                  onClick={() => setShowModal(true)}>
-          Add new server
-          </button>
+          <ProminentButton onClick={() => setShowModal(true)}>
+            Add new server
+          </ProminentButton>
       </div>
       <Modal show={showModal} onClose={() => setShowModal(false)}>
         <div className="p-6">

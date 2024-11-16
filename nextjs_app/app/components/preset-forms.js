@@ -1,7 +1,7 @@
 "use client"
 import React, { useState } from 'react';
-import { TextField, TextArea, NumberField, Form, SubmitButton, jsonPlaceholder } from './common-forms';
-
+import { TextField, TextArea, NumberField, Form, jsonPlaceholder } from './common-forms';
+import { SubmitButton } from './buttons';
 
 const PresetForm = () => {
   const [name, setName] = useState('');

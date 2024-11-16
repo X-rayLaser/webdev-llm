@@ -1,7 +1,8 @@
 "use client"
 
 import React, { useState } from 'react';
-import { TextField, TextArea, Form, SubmitButton, jsonPlaceholder } from './common-forms';
+import { TextField, TextArea, Form, jsonPlaceholder } from './common-forms';
+import { SubmitButton } from './buttons';
 import { createServerEntry } from "@/app/actions";
 import { Alert } from "./alerts";
 import { useActionState } from 'react';

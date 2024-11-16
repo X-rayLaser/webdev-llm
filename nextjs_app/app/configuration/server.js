@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faServer, faPencil, faTrash, faCog } from '@fortawesome/free-solid-svg-icons'
 import { updateServerEntry, deleteServerEntry } from '@/app/actions';
+import { ConfirmationModal } from '../components/modal';
 
 
 function PencilButton({ onClick }) {
@@ -65,10 +66,20 @@ const Expandable = ({ collapsedHeight=0, children }) => {
 
 const ServerInfo = ({ server, onEdit }) => {
   const [deletion, setDeletion] = useState(false);
+  const [showDialog, setShowDialog] = useState(false);
 
-  function handleDelete() {
+  function handleTrashClick() {
+    setShowDialog(true);
+  }
+
+  function handleConfirm() {
     setDeletion(true);
+    setShowDialog(false);
     deleteServerEntry(server.id);
+  }
+
+  function handleClose() {
+    setShowDialog(false);
   }
   return (
     <div className="border rounded-lg w-full md:w-96 h-auto">
@@ -121,7 +132,7 @@ const ServerInfo = ({ server, onEdit }) => {
                 <FontAwesomeIcon icon={faPencil} size="lg" />
               </button>
               <button className="border p-1 text-zinc-600 hover:text-zinc-900 hover:bg-gray-500"
-                onClick={handleDelete}>
+                onClick={handleTrashClick}>
                 <FontAwesomeIcon icon={faTrash} size="lg" />
               </button>
             </div>
@@ -135,6 +146,9 @@ const ServerInfo = ({ server, onEdit }) => {
             </div>
           )}
         </div>
+        <ConfirmationModal show={showDialog} onYes={handleConfirm} onClose={handleClose}>
+          <div>Are you sure that you want to permanently delete a server entry {server.name}?</div>
+        </ConfirmationModal>
       </div>
     </div>
   );

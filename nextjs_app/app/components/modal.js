@@ -1,10 +1,11 @@
 "use client"
 
 import React from "react";
+import { ButtonGroup, DialogButton } from "./buttons";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faRectangleXmark } from '@fortawesome/free-solid-svg-icons'
 
-const Modal = ({ show = false, onClose, children }) => {
+const Modal = ({ title="Add new entry", show = false, onClose, children }) => {
   return (
     <>
       {show && (
@@ -16,7 +17,7 @@ const Modal = ({ show = false, onClose, children }) => {
         >
           {/* Modal Content */}
           <div
-            className="bg-white rounded-lg shadow-lg mt-10 transition-all transform scale-95 w-full md:w-1/2"
+            className="bg-white rounded-lg shadow-lg mt-10 transition-all transform w-full md:w-1/2"
             style={{
               animation: show ? "slideDown 0.3s ease-out" : "slideUp 0.3s ease-in",
             }}
@@ -28,7 +29,7 @@ const Modal = ({ show = false, onClose, children }) => {
               >
                 <FontAwesomeIcon icon={faRectangleXmark} />
               </button>
-              <h3>Add new server</h3>
+              <h3>{title}</h3>
               {/* Close Button */}
 
             </header>
@@ -61,5 +62,22 @@ const Modal = ({ show = false, onClose, children }) => {
     </>
   );
 };
+
+export function ConfirmationModal({ title="Do you confirm the operation?", context="", show=false, onYes, onClose, children }) {
+  return (
+    <Modal show={show} title={title} onClose={onClose}>
+      <div className="p-6">
+        {children}
+        <div className="mt-4">
+          <ButtonGroup>
+            <DialogButton className="ml-0 mr-0" onClick={onYes}>Yes</DialogButton>
+            <DialogButton className="ml-0 mr-0" onClick={onClose}>No</DialogButton>
+          </ButtonGroup>
+        </div>
+      </div>
+    </Modal>
+  );
+
+}
 
 export default Modal;
