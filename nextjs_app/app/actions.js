@@ -10,16 +10,17 @@ function removeBlankField(formData, field) {
 }
 
 
-export async function createServerEntry(prevState, formData) {
+async function sendData({ url, method="POST", prevState, formData, serverErrorMessage="Something went wrong" }) {
     let message = 'Failed to Create server entry.';
 
     removeBlankField(formData, "description");
     removeBlankField(formData, "configuration");
     
     console.log('about to post!', formData)
+
     try {
-        let response = await fetch("http://django:8000/api/servers/", {
-            method: "POST",
+        let response = await fetch(url, {
+            method,
             body: formData,
             headers: {
                 "Accept": "application/json"
@@ -29,26 +30,56 @@ export async function createServerEntry(prevState, formData) {
         if (!response.ok) {
             let errors = await response.json();
             console.log("errors", errors, formData)
-            message = "Some fields contain incorrect data. Please try again.";
+            if (response.status == 400) {
+                message = "Some fields contain incorrect data. Please try again.";
+            } else if (response.status == 405) {
+                message = errors.detail;
+            }
 
-            return {
+            throw {
                 message,
                 errors
             };
         }
-
     } catch (error) {
-        console.error("error:", error)
         return {
-            message
+            message: error.message || serverErrorMessage,
+            errors: error?.errors
         };
+    }
+}
+
+
+export async function createServerEntry(prevState, formData) {
+    const errorResult = await sendData({
+        url: "http://django:8000/api/servers/",
+        prevState,
+        formData,
+        serverErrorMessage: 'Failed to create server entry.' 
+    });
+
+    if (errorResult) {
+        return errorResult;
     }
 
     revalidatePath("/configuration");
 }
 
-export async function updateServerEntry(prevState, id, formData) {
-    
+export async function updateServerEntry(id, prevState, formData) {
+    console.log("update: ", id);
+    const errorResult = await sendData({
+        url: `http://django:8000/api/servers/${id}/`,
+        method: "PUT",
+        prevState,
+        formData,
+        serverErrorMessage: 'Failed to update server entry.' 
+    });
+
+    if (errorResult) {
+        return errorResult;
+    }
+
+    revalidatePath("/configuration");
 }
 
 export async function deleteServerEntry(id) {

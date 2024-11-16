@@ -36,7 +36,7 @@ function ServerPanel({ servers }) {
       </div>
       <Modal show={showModal} onClose={() => setShowModal(false)}>
         <div className="p-6">
-          <CreateServerForm />
+          <CreateServerForm onSuccess={() => setShowModal(false)} />
         </div>
       </Modal>
   </div>

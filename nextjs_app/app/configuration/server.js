@@ -4,16 +4,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faServer, faPencil, faTrash, faCog } from '@fortawesome/free-solid-svg-icons'
 import { updateServerEntry, deleteServerEntry } from '@/app/actions';
 import { ConfirmationModal } from '../components/modal';
-
-
-function PencilButton({ onClick }) {
-  return (
-    <button className="ml-2 text-zinc-600 hover:text-zinc-900 float-right"
-      onClick={onClick}>
-      <FontAwesomeIcon icon={faPencil} size="lg" />
-    </button>
-  );
-}
+import { EditServerForm } from '../components/server-forms';
+import Modal from '../components/modal';
 
 
 const Expandable = ({ collapsedHeight=0, children }) => {
@@ -67,6 +59,10 @@ const Expandable = ({ collapsedHeight=0, children }) => {
 const ServerInfo = ({ server, onEdit }) => {
   const [deletion, setDeletion] = useState(false);
   const [showDialog, setShowDialog] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  
+  //hack forcing update
+  const [counter, setCounter] = useState(false);
 
   function handleTrashClick() {
     setShowDialog(true);
@@ -81,6 +77,20 @@ const ServerInfo = ({ server, onEdit }) => {
   function handleClose() {
     setShowDialog(false);
   }
+
+  function handleCloseForm() {
+    setShowForm(false);
+  }
+
+  function handleEditClick() {
+    setShowForm(true);
+  }
+
+  function handleSuccessfulUpdate() {
+    setShowForm(false);
+    setCounter(counter + 1);
+  }
+
   return (
     <div className="border rounded-lg w-full md:w-96 h-auto">
       <header className="bg-blue-200 rounded-t-lg pt-2 pb-2 pl-4 pr-4 text-center">
@@ -102,7 +112,7 @@ const ServerInfo = ({ server, onEdit }) => {
           </a>
         </div>
 
-        <Expandable>
+        <Expandable key={counter}>
         {/* Description */}
         {server.description && (
           <div className="">
@@ -121,14 +131,13 @@ const ServerInfo = ({ server, onEdit }) => {
           </div>
         )}
 
-
         </Expandable>
 
         <div className="mt-4">
           {!deletion && (
             <div>
               <button className="border p-1 text-zinc-600 hover:text-zinc-900 hover:bg-gray-500"
-                onClick={onEdit}>
+                onClick={handleEditClick}>
                 <FontAwesomeIcon icon={faPencil} size="lg" />
               </button>
               <button className="border p-1 text-zinc-600 hover:text-zinc-900 hover:bg-gray-500"
@@ -149,6 +158,12 @@ const ServerInfo = ({ server, onEdit }) => {
         <ConfirmationModal show={showDialog} onYes={handleConfirm} onClose={handleClose}>
           <div>Are you sure that you want to permanently delete a server entry {server.name}?</div>
         </ConfirmationModal>
+
+        <Modal title="Edit server's entry" show={showForm} onClose={handleCloseForm}>
+          <div className="p-6">
+            <EditServerForm server={server} onSuccess={handleSuccessfulUpdate} />
+          </div>
+        </Modal>
       </div>
     </div>
   );

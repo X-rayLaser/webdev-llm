@@ -3,19 +3,19 @@
 import React, { useState } from 'react';
 import { TextField, TextArea, Form, jsonPlaceholder } from './common-forms';
 import { SubmitButton } from './buttons';
-import { createServerEntry } from "@/app/actions";
+import { createServerEntry, updateServerEntry } from "@/app/actions";
 import { Alert } from "./alerts";
 import { useActionState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCog } from '@fortawesome/free-solid-svg-icons';
 
 
-export function ServerForm({ action, defaultName="", defaultUrl="", defaultDescription="", defaultConfiguration="", onSubmit, children }) {
-  const [name, setName] = useState(defaultName);
-  const [url, setUrl] = useState(defaultUrl);
+export function ServerForm({ action, defaultName="", defaultUrl="", defaultDescription="", defaultConfiguration="", onSuccess, children }) {
+  const [name, setName] = useState(defaultName || "");
+  const [url, setUrl] = useState(defaultUrl || "");
   const [runningSubmission, setRunningSubmission] = useState(false);
-  const [description, setDescription] = useState(defaultDescription);
-  const [configuration, setConfiguration] = useState(defaultConfiguration);
+  const [description, setDescription] = useState(defaultDescription || "");
+  const [configuration, setConfiguration] = useState(defaultConfiguration || "");
 
   const initialState = { message: null, errors: {} };
   const [state, formAction] = useActionState(async function() {
@@ -23,6 +23,9 @@ export function ServerForm({ action, defaultName="", defaultUrl="", defaultDescr
     //artificial delay
     await new Promise(resolve => setTimeout(resolve, 2000))
     setRunningSubmission(false);
+    if (!res) {
+      onSuccess();
+    }
     return res;
   }, initialState);
 
@@ -91,10 +94,25 @@ export function ServerForm({ action, defaultName="", defaultUrl="", defaultDescr
   );
 };
 
-export function CreateServerForm() {
+export function CreateServerForm({ onSuccess }) {
   return (
     <div>
-      <ServerForm action={createServerEntry}>
+      <ServerForm action={createServerEntry} onSuccess={onSuccess}>
+      </ServerForm>
+    </div>
+  );
+}
+
+export function EditServerForm({ server, onSuccess }) {
+  const updateAction = updateServerEntry.bind(null, server.id);
+  const configuration = server.configuration && JSON.stringify(server.configuration, null, 2);
+  return (
+    <div>
+      <ServerForm action={updateAction} onSuccess={onSuccess}
+        defaultName={server.name}
+        defaultUrl={server.url}
+        defaultDescription={server.description}
+        defaultConfiguration={configuration}>
       </ServerForm>
     </div>
   );

@@ -10,14 +10,14 @@ const Modal = ({ title="Add new entry", show = false, onClose, children }) => {
     <>
       {show && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-start z-50"
+          className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-start z-50 h-full"
           style={{
             animation: show ? "fadeIn 0.3s ease-out" : "fadeOut 0.3s ease-in",
           }}
         >
           {/* Modal Content */}
           <div
-            className="bg-white rounded-lg shadow-lg mt-10 transition-all transform w-full md:w-1/2"
+            className="bg-white rounded-lg shadow-lg my-auto transition-all transform w-full md:w-1/2"
             style={{
               animation: show ? "slideDown 0.3s ease-out" : "slideUp 0.3s ease-in",
             }}
@@ -62,6 +62,7 @@ const Modal = ({ title="Add new entry", show = false, onClose, children }) => {
     </>
   );
 };
+
 
 export function ConfirmationModal({ title="Do you confirm the operation?", context="", show=false, onYes, onClose, children }) {
   return (
