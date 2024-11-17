@@ -60,13 +60,8 @@ export function CreateServerForm({ onSuccess }) {
 }
 
 export function EditServerForm({ server, onSuccess }) {
-  const updateAction = updateServerEntry.bind(null, server.id);
-  const configuration = server.configuration && JSON.stringify(server.configuration, null, 2);
-
-  const { name, url, description } = server;
-  const defaults = {
-    name, url, description, configuration
-  };
+  const { id, ...defaults } = server;
+  const updateAction = updateServerEntry.bind(null, id);
   return (
     <div>
       <ServerForm defaults={defaults} action={updateAction} onSuccess={onSuccess}>

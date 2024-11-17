@@ -15,10 +15,14 @@ function FlexInputField(props) {
 }
 
 
-function TextAreaField({ extraInputClasses, ...other }) {
+function TextAreaField({ extraInputClasses, value="", ...other }) {
+    if (typeof value === "object") {
+        value = JSON.stringify(value, null, 2);
+    }
     return (
         <textarea className={`block w-full rounded-lg p-2 ${extraInputClasses}`}
             rows={7}
+            value={value}
             {...other}
         />
     )
