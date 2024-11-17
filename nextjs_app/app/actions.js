@@ -4,7 +4,9 @@ import { redirect } from 'next/navigation';
 
 
 function removeBlankField(formData, field) {
-    if (!formData.get(field).trim()) {
+    const value = formData.get(field);
+
+    if (typeof value === "string" && !value.trim()) {
         formData.delete(field);
     }
 }
@@ -12,9 +14,6 @@ function removeBlankField(formData, field) {
 
 async function sendData({ url, method="POST", prevState, formData, serverErrorMessage="Something went wrong" }) {
     let message = 'Failed to Create server entry.';
-
-    removeBlankField(formData, "description");
-    removeBlankField(formData, "configuration");
     
     console.log('about to post!', formData)
 
@@ -51,6 +50,9 @@ async function sendData({ url, method="POST", prevState, formData, serverErrorMe
 
 
 export async function createServerEntry(prevState, formData) {
+    removeBlankField(formData, "description");
+    removeBlankField(formData, "configuration");
+
     const errorResult = await sendData({
         url: "http://django:8000/api/servers/",
         prevState,
@@ -66,6 +68,8 @@ export async function createServerEntry(prevState, formData) {
 }
 
 export async function updateServerEntry(id, prevState, formData) {
+    removeBlankField(formData, "description");
+    removeBlankField(formData, "configuration");
     console.log("update: ", id);
     const errorResult = await sendData({
         url: `http://django:8000/api/servers/${id}/`,
@@ -106,6 +110,44 @@ export async function deleteServerEntry(id) {
 }
 
 
-export async function createPresetEntry() {
-    
+export async function createPresetEntry(prevState, formData) {
+    removeBlankField(formData, "extra_params");
+
+    const errorResult = await sendData({
+        url: "http://django:8000/api/presets/",
+        prevState,
+        formData,
+        serverErrorMessage: 'Failed to create preset entry.' 
+    });
+
+    if (errorResult) {
+        return errorResult;
+    }
+
+    revalidatePath("/configuration");
 }
+
+
+export async function updatePresetEntry(id, prevState, formData) {
+    removeBlankField(formData, "extra_params");
+
+    const errorResult = await sendData({
+        url: `http://django:8000/api/presets/${id}/`,
+        method: "PUT",
+        prevState,
+        formData,
+        serverErrorMessage: 'Failed to update preset entry.' 
+    });
+
+    if (errorResult) {
+        return errorResult;
+    }
+
+    revalidatePath("/configuration");
+}
+
+export async function deletePresetEntry() {
+
+}
+
+// todo: group related actions together represented by Actor class, create inherited classes for each viewset

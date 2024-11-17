@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { TextField, TextArea, NumberField, Form, jsonPlaceholder } from './common-forms';
 import { SubmitButton } from './buttons';
 import { formFactory } from './form-factory';
-import { createPresetEntry } from '../actions';
+import { createPresetEntry, updatePresetEntry } from '../actions';
 
 const fields = [{
   name: "name",
@@ -13,134 +13,92 @@ const fields = [{
 }, {
   name: "temperature",
   component: NumberField,
-  id: "temperature",
+  id: "temperature_create",
   label: "Temperature",
   min: 0,
   max: 100
+}, {
+  name: "top_k",
+  component: NumberField,
+  id: "top_k_create",
+  label: "Top K",
+  min: 1,
+  max: 10000,
+  step: 50
+}, {
+  name: "top_p",
+  component: NumberField,
+  id: "top_p_create",
+  label: "Top P",
+  min: 0,
+  max: 1
+}, {
+  name: "min_p",
+  component: NumberField,
+  id: "min_p_create",
+  label: "Min P",
+  min: 0,
+  max: 1
+}, {
+  name: "repeat_penalty",
+  component: NumberField,
+  id: "repeat_penalty_create",
+  label: "Repeat Penalty",
+  min: -4,
+  max: 4
+}, {
+  name: "n_predict",
+  component: NumberField,
+  id: "n_predict_create",
+  label: "Max tokens to predict",
+  min: 0,
+  max: 10000,
+  step: 256
+}, {
+  name: "extra_params",
+  component: TextArea,
+  id: "extra_params_create",
+  label: "Additional parameters"
 }];
 
 function renderFields(formFields) {
   console.log("renderfields", formFields)
   return (
     <div>
-      <div className="mt-8">{formFields.name}</div>
-      <div className="mt-8">{formFields.temperature}</div>
+      <div className="mb-4">{formFields.name}</div>
+      <div className="mb-4">{formFields.temperature}</div>
+      <div className="mb-4">{formFields.top_k}</div>
+      <div className="mb-4">{formFields.top_p}</div>
+      <div className="mb-4">{formFields.min_p}</div>
+      <div className="mb-4">{formFields.repeat_penalty}</div>
+      <div className="mb-4">{formFields.n_predict}</div>
+      <div className="mb-4">{formFields.extra_params}</div>
     </div>
   );
 }
 
-const CreatePresetForm = formFactory(fields, renderFields);
+const PresetForm = formFactory(fields, renderFields);
 
-
-const __PresetForm = ({}) => {
-  const [name, setName] = useState('');
-  const [temperature, setTemperature] = useState(0.2);
-  const [topK, setTopK] = useState(1000);
-  const [topP, setTopP] = useState(0.95);
-  const [minP, setMinP] = useState(0.05);
-  const [repeatPenalty, setRepeatPenalty] = useState(1.2);
-  const [nPredict, setNPredict] = useState(1000);
-  const [extraParams, setExtraParams] = useState('');
-
+export function CreatePresetForm({ onSuccess }) {
   return (
-    <Form>
-      {/* Name Field */}
-      <div className="mb-5">
-        <TextField
-          id="p_name"
-          label="Name"
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
-      </div>
-
-      {/* Temperature Field */}
-      <div className="mb-5">
-        <NumberField
-          id="temperature"
-          label="Temperature"
-          min={0}
-          max={100}
-          type="number"
-          value={temperature}
-          onChange={(e) => setTemperature(e.target.value)}
-        />
-      </div>
-
-      {/* Top K Field */}
-      <div className="mb-5">
-        <NumberField
-          id="top_k"
-          label="Top K"
-          min={1}
-          max={100000}
-          step={100}
-          value={topK}
-          onChange={(e) => setTopK(e.target.value)}
-        />
-      </div>
-
-      {/* Top P Field */}
-      <div className="mb-5">
-        <NumberField
-          id="top_p"
-          label="Top P"
-          value={topP}
-          onChange={(e) => setTopP(e.target.value)}
-        />
-      </div>
-
-      {/* Min P Field */}
-      <div className="mb-5">
-        <NumberField
-          id="min_p"
-          label="Min P"
-          value={minP}
-          onChange={(e) => setMinP(e.target.value)}
-        />
-      </div>
-
-      {/* Repeat Penalty Field */}
-      <div className="mb-5">
-        <NumberField
-          id="repeat_penalty"
-          label="Repeat Penalty"
-          max={100}
-          value={repeatPenalty}
-          onChange={(e) => setRepeatPenalty(e.target.value)}
-        />
-      </div>
-
-      {/* N Predict Field */}
-      <div className="mb-5">
-        <NumberField
-          id="n_predict"
-          label="N Predict"
-          min={1}
-          max={10000}
-          step={250}
-          value={nPredict}
-          onChange={(e) => setNPredict(e.target.value)}
-        />
-      </div>
-
-      {/* Extra Params Field */}
-      <div className="mb-5">
-        <TextArea
-          id="extra_params"
-          label="Extra Params (JSON)"
-          value={extraParams}
-          placeholder={jsonPlaceholder}
-          onChange={(e) => setExtraParams(e.target.value)}
-        />
-      </div>
-
-      <div className="flex justify-center">
-        <SubmitButton />
-      </div>
-    </Form>
+    <div>
+      <PresetForm action={createPresetEntry} onSuccess={onSuccess}>
+      </PresetForm>
+    </div>
   );
-};
+}
+
+
+export function EditPresetForm({ data, onSuccess }) {
+  const { id, ...defaults } = data;
+  const updateAction = updatePresetEntry.bind(null, id);
+  return (
+    <div>
+      <PresetForm defaults={defaults} action={updateAction} onSuccess={onSuccess}>
+      </PresetForm>
+    </div>
+  );
+}
+
 
 export default CreatePresetForm;

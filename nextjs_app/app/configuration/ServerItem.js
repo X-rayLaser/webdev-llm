@@ -1,4 +1,3 @@
-"use client";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faServer } from '@fortawesome/free-solid-svg-icons';
 import { deleteServerEntry } from '@/app/actions';

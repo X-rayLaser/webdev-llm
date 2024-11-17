@@ -7,6 +7,25 @@ import { useActionState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCog } from '@fortawesome/free-solid-svg-icons';
 
+
+function cleanDefault(defaults, fieldName) {
+    let defaultValue;
+    if (defaults && defaults.hasOwnProperty(fieldName)) {
+        let fieldVal = defaults[fieldName];
+        if (fieldVal === 0) {
+            defaultValue = 0;
+        } else if (fieldVal === false) {
+            defaultValue = false;
+        } else if (fieldVal) {
+            defaultValue = fieldVal;
+        } else {
+            defaultValue = "";
+        }
+    }
+
+    return defaultValue
+}
+
 export function formFactory(fields, renderFields) {
 
     function FormComponent({ action, defaults, onSuccess }) {
@@ -16,7 +35,7 @@ export function formFactory(fields, renderFields) {
 
         for (let fieldSpec of fields) {
             let name = fieldSpec.name;
-            let defaultValue = (defaults && defaults[name]) || "";
+            let defaultValue = cleanDefault(defaults, name);
             let [value, setValue] = useState(defaultValue);
             states[name] = value;
             setters[name] = setValue;
@@ -45,7 +64,6 @@ export function formFactory(fields, renderFields) {
             }
             const setValue = setters[name];
 
-            console.log("COMPONENT ELEMENT", component);
             const element = (
                 <div key={idx}>
                     <Component 

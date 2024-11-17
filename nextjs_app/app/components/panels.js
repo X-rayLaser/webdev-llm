@@ -22,17 +22,17 @@ function FlexRowPanel({ children }) {
 }
 
 
-export default function Panel({ title, noElementsText="No items so far", elements, createForm }) {
+export default function Panel({ title, addButtonText, noElementsText="No items so far", elements, createForm }) {
   const [showModal, setShowModal] = useState(false);
   const CreateForm = createForm;
   return (
-  <div className="border-2 rounded-md border-stone-700 p-4">
+  <div className="border-2 rounded-md shadow-lg border-stone-200 p-4">
       <h4 className="mb-5 text-center font-bold">{title}</h4>
       {elements.length > 0 && <FlexRowPanel>{elements}</FlexRowPanel>}
       {elements.length === 0 && <h5>{noElementsText}</h5>}
       <div className="mt-4 flex justify-center md:justify-start">
           <ProminentButton onClick={() => setShowModal(true)}>
-            Add new server
+            {addButtonText}
           </ProminentButton>
       </div>
       <Modal show={showModal} onClose={() => setShowModal(false)}>
@@ -86,7 +86,7 @@ export function PanelItem({ data, editComponent, deleteAction, headerSection, bo
   const EditFormComponent = editComponent;
 
   return (
-    <div className="border rounded-lg w-full md:w-96 h-auto">
+    <div className="border rounded-lg shadow w-full md:w-96 h-auto">
       {headerSection}
       <div className="p-4 flex flex-col justify-around">
         <div>{bodySection}</div>
