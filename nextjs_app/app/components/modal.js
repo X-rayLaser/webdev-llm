@@ -64,7 +64,7 @@ const Modal = ({ title="Add new entry", show = false, onClose, children }) => {
 };
 
 
-export function ConfirmationModal({ title="Do you confirm the operation?", context="", show=false, onYes, onClose, children }) {
+export function ConfirmationModal({ title="Do you confirm the operation?", show=false, onYes, onClose, children }) {
   return (
     <Modal show={show} title={title} onClose={onClose}>
       <div className="p-6">

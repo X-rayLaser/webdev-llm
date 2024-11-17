@@ -2,6 +2,10 @@
 import Modal from "@/app/components/modal";
 import { useState } from "react";
 import { ProminentButton } from "../components/buttons";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faPencil, faTrash, faCog } from '@fortawesome/free-solid-svg-icons'
+import { ConfirmationModal } from '../components/modal';
+
 
 function FlexRowPanel({ children }) {
   return (
@@ -37,5 +41,87 @@ export default function Panel({ title, noElementsText="No items so far", element
         </div>
       </Modal>
   </div>
+  );
+}
+
+
+export function PanelItem({ data, editComponent, deleteAction, headerSection, bodySection, 
+                     editTitle="Edit item", deletionTitle="", deletionText="" }) {
+  deletionTitle = deletionTitle || "Do you want to proceed?";
+  deletionText = deletionText || "Are you sure that you want to permanently delete the entry?";
+  const [deletion, setDeletion] = useState(false);
+  const [showDialog, setShowDialog] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  
+  //todo: remove this hack forcing update
+  const [counter, setCounter] = useState(false);
+
+  function handleTrashClick() {
+    setShowDialog(true);
+  }
+
+  function handleConfirm() {
+    setDeletion(true);
+    setShowDialog(false);
+    deleteAction(data.id);
+  }
+
+  function handleClose() {
+    setShowDialog(false);
+  }
+
+  function handleCloseForm() {
+    setShowForm(false);
+  }
+
+  function handleEditClick() {
+    setShowForm(true);
+  }
+
+  function handleSuccessfulUpdate() {
+    setShowForm(false);
+    setCounter(counter + 1);
+  }
+
+  const EditFormComponent = editComponent;
+
+  return (
+    <div className="border rounded-lg w-full md:w-96 h-auto">
+      {headerSection}
+      <div className="p-4 flex flex-col justify-around">
+        <div>{bodySection}</div>
+        <div className="mt-4">
+          {!deletion && (
+            <div>
+              <button className="border p-1 text-zinc-600 hover:text-zinc-900 hover:bg-gray-500"
+                onClick={handleEditClick}>
+                <FontAwesomeIcon icon={faPencil} size="lg" />
+              </button>
+              <button className="border p-1 text-zinc-600 hover:text-zinc-900 hover:bg-gray-500"
+                onClick={handleTrashClick}>
+                <FontAwesomeIcon icon={faTrash} size="lg" />
+              </button>
+            </div>
+          )}
+          {deletion && (
+            <div>
+              <span>Deletion...</span>
+              <span className="ml-2">
+                <FontAwesomeIcon icon={faCog} spin></FontAwesomeIcon>
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+      <ConfirmationModal title={deletionTitle} show={showDialog} onYes={handleConfirm} onClose={handleClose}>
+        <div>{deletionText}</div>
+      </ConfirmationModal>
+
+      <Modal title={editTitle} show={showForm} onClose={handleCloseForm}>
+        <div className="p-6">
+          <EditFormComponent data={data} onSuccess={handleSuccessfulUpdate} />
+        </div>
+      </Modal>
+    </div>
   );
 }

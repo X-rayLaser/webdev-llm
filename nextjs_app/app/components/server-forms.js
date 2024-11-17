@@ -59,8 +59,8 @@ export function CreateServerForm({ onSuccess }) {
   );
 }
 
-export function EditServerForm({ server, onSuccess }) {
-  const { id, ...defaults } = server;
+export function EditServerForm({ data, onSuccess }) {
+  const { id, ...defaults } = data;
   const updateAction = updateServerEntry.bind(null, id);
   return (
     <div>

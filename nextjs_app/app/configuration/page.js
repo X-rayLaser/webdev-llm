@@ -2,12 +2,12 @@ import "@/app/page.css"
 import CreateServerForm from "@/app/components/server-forms";
 import CreatePresetForm from "@/app/components/preset-forms";
 import ConfigurationForm from "@/app/components/config-forms";
-import ServerInfo from "@/app/configuration/server";
 import Panel from "@/app/components/panels";
+import { ServerItem } from "./ServerItem";
 
 
 function ServerPanel({ servers }) {
-  const serverElements = servers.map((entry, idx) => <ServerInfo key={idx} server={entry} />);
+  const serverElements = servers.map((entry, idx) => <ServerItem key={idx} server={entry} />);
   return <Panel title="Servers" elements={serverElements} createForm={CreateServerForm} />
 }
 
