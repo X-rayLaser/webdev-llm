@@ -56,7 +56,7 @@ const Expandable = ({ collapsedHeight=0, children }) => {
 };
 
 
-const ServerInfo = ({ server, onEdit }) => {
+const ServerInfo = ({ server }) => {
   const [deletion, setDeletion] = useState(false);
   const [showDialog, setShowDialog] = useState(false);
   const [showForm, setShowForm] = useState(false);

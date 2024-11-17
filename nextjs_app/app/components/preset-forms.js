@@ -2,8 +2,37 @@
 import React, { useState } from 'react';
 import { TextField, TextArea, NumberField, Form, jsonPlaceholder } from './common-forms';
 import { SubmitButton } from './buttons';
+import { formFactory } from './form-factory';
+import { createPresetEntry } from '../actions';
 
-const PresetForm = () => {
+const fields = [{
+  name: "name",
+  component: TextField,
+  id: "p_name",
+  label: "Name"
+}, {
+  name: "temperature",
+  component: NumberField,
+  id: "temperature",
+  label: "Temperature",
+  min: 0,
+  max: 100
+}];
+
+function renderFields(formFields) {
+  console.log("renderfields", formFields)
+  return (
+    <div>
+      <div className="mt-8">{formFields.name}</div>
+      <div className="mt-8">{formFields.temperature}</div>
+    </div>
+  );
+}
+
+const CreatePresetForm = formFactory(fields, renderFields);
+
+
+const __PresetForm = ({}) => {
   const [name, setName] = useState('');
   const [temperature, setTemperature] = useState(0.2);
   const [topK, setTopK] = useState(1000);
@@ -114,4 +143,4 @@ const PresetForm = () => {
   );
 };
 
-export default PresetForm;
+export default CreatePresetForm;

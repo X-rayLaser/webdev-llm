@@ -73,10 +73,10 @@ function BlockedFormField({ label, field, errors=[] } ) {
 }
 
 
-function WrappedField({ id, label="", name="", placeholder="", errors=[], FieldComponent, FieldContainer, ...rest }) {
-    label = label || capitalize(id);
-    name = name || id;
-    placeholder = placeholder || `Fill in "${id}"`;
+function WrappedField({ name, id="", label="", placeholder="", errors=[], FieldComponent, FieldContainer, ...rest }) {
+    label = label || capitalize(name);
+    id = id || `${name}_id`;
+    placeholder = placeholder || `Fill in "${name}"`;
 
     const extraInputClasses = errors.length > 0 ? "border-2 border-red-600" : "border border-stone-400";
 

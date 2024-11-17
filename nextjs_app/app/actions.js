@@ -104,3 +104,8 @@ export async function deleteServerEntry(id) {
 
     revalidatePath('/configuration');
 }
+
+
+export async function createPresetEntry() {
+    
+}

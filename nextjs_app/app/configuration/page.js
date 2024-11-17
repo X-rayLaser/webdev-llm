@@ -1,8 +1,22 @@
 import "@/app/page.css"
 import CreateServerForm from "@/app/components/server-forms";
-import PresetForm from "@/app/components/preset-forms";
+import CreatePresetForm from "@/app/components/preset-forms";
 import ConfigurationForm from "@/app/components/config-forms";
-import ServerPanel from "./servers-panel";
+import ServerInfo from "@/app/configuration/server";
+import Panel from "@/app/components/panels";
+
+
+function ServerPanel({ servers }) {
+  const serverElements = servers.map((entry, idx) => <ServerInfo key={idx} server={entry} />);
+  return <Panel title="Servers" elements={serverElements} createForm={CreateServerForm} />
+}
+
+/*
+function PresetPanel({ servers }) {
+  const serverElements = servers.map((entry, idx) => <ServerInfo key={idx} server={entry} />);
+  return <Panel title="Presets" elements={serverElements} createForm={CreatePresetForm} />
+}
+*/
 
 
 export default async function Page() {
@@ -32,7 +46,7 @@ export default async function Page() {
         <ServerPanel servers={servers} />
       </div>
 
-      <PresetForm />
+      <CreatePresetForm />
       <ConfigurationForm presets={presets} servers={servers} />
     </div>
   );

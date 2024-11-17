@@ -8,91 +8,47 @@ import { Alert } from "./alerts";
 import { useActionState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCog } from '@fortawesome/free-solid-svg-icons';
+import { formFactory } from './form-factory';
 
 
-export function ServerForm({ action, defaultName="", defaultUrl="", defaultDescription="", defaultConfiguration="", onSuccess, children }) {
-  const [name, setName] = useState(defaultName || "");
-  const [url, setUrl] = useState(defaultUrl || "");
-  const [runningSubmission, setRunningSubmission] = useState(false);
-  const [description, setDescription] = useState(defaultDescription || "");
-  const [configuration, setConfiguration] = useState(defaultConfiguration || "");
+const fields = [{
+  name: "name",
+  component: TextField,
+  id: "server_name",
+  label: "Name"
+}, {
+  name: "url",
+  component: TextField,
+  id: "server_url",
+  label: "URL",
+}, {
+  name: "description",
+  component: TextArea,
+  id: "server_description"
+}, {
+  name: "configuration",
+  component: TextArea,
+  id: "server_config"
+}];
 
-  const initialState = { message: null, errors: {} };
-  const [state, formAction] = useActionState(async function() {
-    let res = await action(...arguments);
-    //artificial delay
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    setRunningSubmission(false);
-    if (!res) {
-      onSuccess();
-    }
-    return res;
-  }, initialState);
-
-  const hasErrors = state => state && Object.keys(state.errors).length > 0;
-
-  function handleSubmit(e) {
-    console.log("handling submit", e);
-    setRunningSubmission(true);
-  }
-
-  const disabledButton = runningSubmission;
-
+function renderFields(formFields) {
   return (
-    <form action={formAction} onSubmit={handleSubmit}>
-      {/* Name Field */}
-      <div className="mb-5">
-        <TextField id="name" value={name} errors={state?.errors?.name}
-            onChange={(e) => setName(e.target.value)}
-            disabled={runningSubmission}    
-        />
-      </div>
-
-      {/* URL Field */}
-      <div className="mb-5">
-        <TextField id="url" label="URL" type="url" value={url} errors={state?.errors?.url}
-            onChange={(e) => setUrl(e.target.value)}
-            disabled={runningSubmission}
-        />
-      </div>
-
+    <div>
+      <div className="mb-4">{formFields.name}</div>
+      <div className="mb-4">{formFields.url}</div>
       <details>
-        <summary className="mb-5 cursor-pointer">Optional fields</summary>
-            {/* Description Field */}
+        <summary className="mb-4 cursor-pointer">Optional fields</summary>
         <div>
-            <div className="mb-5">
-                <TextArea id="description" label="Description" value={description}
-                    errors={state?.errors?.description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    disabled={runningSubmission}
-                />
-            </div>
-
-            {/* Configuration Field */}
-            
-            <div className="mb-5">
-                <TextArea id="configuration" value={configuration} placeholder={jsonPlaceholder}
-                    errors={state?.errors?.configuration}
-                    onChange={(e) => setConfiguration(e.target.value)}
-                    disabled={runningSubmission}
-                />
-            </div>
+          <div className="mb-4">{formFields.description}</div>
+          <div className="mb-4">{formFields.configuration}</div>
         </div>
       </details>
-
-      {state?.message && 
-        <div className="mt-5 mb-5">
-          <Alert text={state.message} level="danger" />
-        </div>}
-    
-      <div className="flex justify-center">
-          <SubmitButton disabled={disabledButton}>
-            {runningSubmission && <span className="ml-2"><FontAwesomeIcon icon={faCog} spin /></span>}
-          </SubmitButton>
-      </div>
-    </form>
+    </div>
   );
-};
+}
+
+const ServerForm = formFactory(fields, renderFields);
+
 
 export function CreateServerForm({ onSuccess }) {
   return (
@@ -106,13 +62,14 @@ export function CreateServerForm({ onSuccess }) {
 export function EditServerForm({ server, onSuccess }) {
   const updateAction = updateServerEntry.bind(null, server.id);
   const configuration = server.configuration && JSON.stringify(server.configuration, null, 2);
+
+  const { name, url, description } = server;
+  const defaults = {
+    name, url, description, configuration
+  };
   return (
     <div>
-      <ServerForm action={updateAction} onSuccess={onSuccess}
-        defaultName={server.name}
-        defaultUrl={server.url}
-        defaultDescription={server.description}
-        defaultConfiguration={configuration}>
+      <ServerForm defaults={defaults} action={updateAction} onSuccess={onSuccess}>
       </ServerForm>
     </div>
   );
