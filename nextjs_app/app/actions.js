@@ -123,11 +123,8 @@ class ActionSet {
     }
 
     getActionFunctions() {
-        return {
-            create: async function() {
-                return await this.create(...arguments);
-            }
-        }
+        const self = this;
+        return [self.create.bind(this), self.update.bind(this), self.destroy.bind(this)];
     }
 }
 
@@ -145,26 +142,19 @@ const presetActionSet = new ActionSet({
     itemName: "preset"
 });
 
-export async function createServerEntry() {
-    return await serverActionSet.create(...arguments);
-}
+const configActionSet = new ActionSet({
+    listUrl: "http://django:8000/api/configurations/",
+    pathToRevalidate: "/configuration",
+    excludeBlanks: ["extra_params"],
+    itemName: "configuration"
+});
 
-export async function updateServerEntry() {
-    return await serverActionSet.update(...arguments);
-}
+const [createServerEntry, updateServerEntry, deleteServerEntry] = serverActionSet.getActionFunctions();
+const [createPresetEntry, updatePresetEntry, deletePresetEntry] = presetActionSet.getActionFunctions();
+const [createConfigEntry, updateConfigEntry, deleteConfigEntry] = configActionSet.getActionFunctions();
 
-export async function deleteServerEntry() {
-    return await serverActionSet.destroy(...arguments);
-}
-
-export async function createPresetEntry() {
-    return await presetActionSet.create(...arguments);
-}
-
-export async function updatePresetEntry() {
-    return await presetActionSet.update(...arguments);
-}
-
-export async function deletePresetEntry() {
-    return await presetActionSet.destroy(...arguments);
-}
+export {
+    createServerEntry, updateServerEntry, deleteServerEntry,
+    createPresetEntry, updatePresetEntry, deletePresetEntry,
+    createConfigEntry, updateConfigEntry, deleteConfigEntry
+ };
