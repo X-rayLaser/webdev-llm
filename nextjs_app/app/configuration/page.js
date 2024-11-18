@@ -56,8 +56,8 @@ export default async function Page() {
   }
 
   return (
-    <div className="md:w-3/4 ml-auto mr-auto">
-      <div className="pt-4 pb-4">
+    <div>
+      <div className="mt-4">
         <ServerPanel servers={servers} />
       </div>
       <div className="pt-4 pb-4">
