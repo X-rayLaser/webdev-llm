@@ -21,7 +21,6 @@ function ServerPanel({ servers }) {
 
 
 function PresetPanel({ presets }) {
-  console.log("presets", presets)
   const elements = presets.map((entry, idx) => <PresetItem key={idx} preset={entry} />);
   return (
     <Panel 
@@ -52,7 +51,7 @@ export default async function Page() {
     servers = await fetchData("http://django:8000/api/servers/", "Failed to fetch server entries");
     presets = await fetchData("http://django:8000/api/presets/", "Failed to fetch preset entries");
   } catch (error) {
-    console.error("ERROR SERVER PANEL:", error);
+    console.error(error);
     return <div>{error}</div>
   }
 
