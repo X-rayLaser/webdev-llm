@@ -21,6 +21,7 @@ const fields = [{
   component: TextField,
   id: "server_url",
   label: "URL",
+  type: "url"
 }, {
   name: "description",
   component: TextArea,

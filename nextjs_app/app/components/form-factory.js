@@ -9,7 +9,7 @@ import { faCog } from '@fortawesome/free-solid-svg-icons';
 
 
 function cleanDefault(defaults, fieldName) {
-    let defaultValue;
+    let defaultValue = "";
     if (defaults && defaults.hasOwnProperty(fieldName)) {
         let fieldVal = defaults[fieldName];
         if (fieldVal === 0) {
@@ -18,8 +18,6 @@ function cleanDefault(defaults, fieldName) {
             defaultValue = false;
         } else if (fieldVal) {
             defaultValue = fieldVal;
-        } else {
-            defaultValue = "";
         }
     }
 

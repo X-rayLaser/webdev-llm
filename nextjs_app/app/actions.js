@@ -49,105 +49,122 @@ async function sendData({ url, method="POST", prevState, formData, serverErrorMe
 }
 
 
-export async function createServerEntry(prevState, formData) {
-    removeBlankField(formData, "description");
-    removeBlankField(formData, "configuration");
+class ActionSet {
+    constructor({ listUrl, pathToRevalidate, excludeBlanks=[], errorMessages, itemName="entry" }) {
+        this.listUrl = listUrl;
+        this.pathToRevalidate = pathToRevalidate
+        this.excludeBlanks = excludeBlanks || [];
 
-    const errorResult = await sendData({
-        url: "http://django:8000/api/servers/",
-        prevState,
-        formData,
-        serverErrorMessage: 'Failed to create server entry.' 
-    });
-
-    if (errorResult) {
-        return errorResult;
+        const template = (verb) => `Failed to ${verb} ${itemName}`;
+        this.errorMessages = errorMessages || {
+            createError: template("create"),
+            updateError: template("update"),
+            destroyError: template("destroy"),
+        };
     }
 
-    revalidatePath("/configuration");
-}
-
-export async function updateServerEntry(id, prevState, formData) {
-    removeBlankField(formData, "description");
-    removeBlankField(formData, "configuration");
-    console.log("update: ", id);
-    const errorResult = await sendData({
-        url: `http://django:8000/api/servers/${id}/`,
-        method: "PUT",
-        prevState,
-        formData,
-        serverErrorMessage: 'Failed to update server entry.' 
-    });
-
-    if (errorResult) {
-        return errorResult;
-    }
-
-    revalidatePath("/configuration");
-}
-
-export async function deleteServerEntry(id) {
-    console.log('about to delete!')
-
-    let message = 'Failed to delete server entry.';
-
-    // todo: return 404 response if not found
-    try {
-        const url = `http://django:8000/api/servers/${id}/`;
-        const response = await fetch(url, {
-            method: "delete"
+    async create(prevState, formData) {
+        return await this.mutateData({
+            url: this.listUrl,
+            prevState,
+            formData,
+            errorMsg: this.errorMessages.createError
         });
+    }
 
-        if (!response.ok) {
-            console.error("NOT OK ON DELETION:", response.status, response.json());
+    async update(id, prevState, formData) {
+        const url = `${this.listUrl}${id}/`;
+        return await this.mutateData({
+            url,
+            method: "PUT",
+            prevState,
+            formData,
+            errorMsg: this.errorMessages.updateError
+        });
+    }
+
+    async destroy(id) {
+        let message = this.errorMessages.destroyError;
+
+        // todo: return 404 response if not found
+        try {
+            const url = `${this.listUrl}${id}/`;
+            const response = await fetch(url, { method: "delete" });
+    
+            if (!response.ok) {
+                console.error("NOT OK ON DELETION:", response.status, response.json());
+                return { message };
+            }
+        } catch (error) {
             return { message };
         }
-    } catch (error) {
-        return { message };
+    
+        revalidatePath(this.pathToRevalidate);
     }
 
-    revalidatePath('/configuration');
+    async mutateData({ url, method, prevState, formData, errorMsg }) {
+        for (let field of this.excludeBlanks) {
+            removeBlankField(formData, field);
+        }
+
+        const errorResult = await sendData({
+            url,
+            method,
+            prevState,
+            formData,
+            serverErrorMessage: errorMsg
+        });
+
+        if (errorResult) {
+            return errorResult;
+        }
+
+        revalidatePath(this.pathToRevalidate);
+    }
+
+    getActionFunctions() {
+        return {
+            create: async function() {
+                return await this.create(...arguments);
+            }
+        }
+    }
 }
 
+const serverActionSet = new ActionSet({
+    listUrl: "http://django:8000/api/servers/",
+    pathToRevalidate: "/configuration",
+    excludeBlanks: ["description", "configuration"],
+    itemName: "server"
+});
 
-export async function createPresetEntry(prevState, formData) {
-    removeBlankField(formData, "extra_params");
+const presetActionSet = new ActionSet({
+    listUrl: "http://django:8000/api/presets/",
+    pathToRevalidate: "/configuration",
+    excludeBlanks: ["extra_params"],
+    itemName: "preset"
+});
 
-    const errorResult = await sendData({
-        url: "http://django:8000/api/presets/",
-        prevState,
-        formData,
-        serverErrorMessage: 'Failed to create preset entry.' 
-    });
-
-    if (errorResult) {
-        return errorResult;
-    }
-
-    revalidatePath("/configuration");
+export async function createServerEntry() {
+    return await serverActionSet.create(...arguments);
 }
 
+export async function updateServerEntry() {
+    return await serverActionSet.update(...arguments);
+}
 
-export async function updatePresetEntry(id, prevState, formData) {
-    removeBlankField(formData, "extra_params");
+export async function deleteServerEntry() {
+    return await serverActionSet.destroy(...arguments);
+}
 
-    const errorResult = await sendData({
-        url: `http://django:8000/api/presets/${id}/`,
-        method: "PUT",
-        prevState,
-        formData,
-        serverErrorMessage: 'Failed to update preset entry.' 
-    });
+export async function createPresetEntry() {
+    return await presetActionSet.create(...arguments);
+}
 
-    if (errorResult) {
-        return errorResult;
-    }
-
-    revalidatePath("/configuration");
+export async function updatePresetEntry() {
+    return await presetActionSet.update(...arguments);
 }
 
 export async function deletePresetEntry() {
-
+    return await presetActionSet.destroy(...arguments);
 }
-
-// todo: group related actions together represented by Actor class, create inherited classes for each viewset
