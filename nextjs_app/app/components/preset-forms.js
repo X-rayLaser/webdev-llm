@@ -62,22 +62,6 @@ const fields = [{
   label: "Additional parameters"
 }];
 
-function renderFields(formFields) {
-  console.log("renderfields", formFields)
-  return (
-    <div>
-      <div className="mb-4">{formFields.name}</div>
-      <div className="mb-4">{formFields.temperature}</div>
-      <div className="mb-4">{formFields.top_k}</div>
-      <div className="mb-4">{formFields.top_p}</div>
-      <div className="mb-4">{formFields.min_p}</div>
-      <div className="mb-4">{formFields.repeat_penalty}</div>
-      <div className="mb-4">{formFields.n_predict}</div>
-      <div className="mb-4">{formFields.extra_params}</div>
-    </div>
-  );
-}
-
 const PresetForm = formFactory(fields, getTopDownRenderer());
 
 export function CreatePresetForm({ onSuccess }) {

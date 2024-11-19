@@ -104,3 +104,37 @@ export function formFactory(fields, renderFields) {
 
     return FormComponent;
 };
+
+
+export function makeCreateForm(actionlessForm, actionCreate) {
+    const FormComponent = actionlessForm;
+
+    function CreateForm({ onSuccess }) {
+        return (
+            <div>
+                <FormComponent action={actionCreate} onSuccess={onSuccess}>
+                </FormComponent>
+            </div>
+        );
+    }
+
+    return CreateForm;
+}
+
+
+export function makeEditForm(actionlessForm, actionUpdate) {
+    const FormComponent = actionlessForm;
+
+    function EditForm({ data, onSuccess }) {
+        const { id, ...defaults } = data;
+        const updateAction = actionUpdate.bind(null, id);
+        return (
+            <div>
+                <FormComponent defaults={defaults} action={updateAction} onSuccess={onSuccess}>
+                </FormComponent>
+            </div>
+        );
+    }
+
+    return EditForm;
+}
