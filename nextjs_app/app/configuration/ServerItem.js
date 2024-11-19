@@ -4,20 +4,11 @@ import { deleteServerEntry } from '@/app/actions';
 import { EditServerForm } from '../components/server-forms';
 import Expandable from '../components/expandable';
 import { PanelItem } from "../components/panels";
-
+import { ItemHeader } from '../components/panels';
 
 
 export function ServerItem({ server }) {
-  const headerSection = (
-    <header className="bg-blue-200 rounded-t-lg pt-2 pb-2 pl-4 pr-4 text-center">
-      <h2 className="block text-lg font-bold p-0">
-        {server.name}
-        <span className="ml-2 text-white">
-          <FontAwesomeIcon icon={faServer} size="lg" />
-        </span>
-      </h2>
-    </header>
-  );
+  const headerSection = <ItemHeader title={server.name} icon={faServer} />
 
   const bodySection = (
     <div>

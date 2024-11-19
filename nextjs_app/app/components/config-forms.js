@@ -1,7 +1,10 @@
 "use client"
 import React, { useState } from 'react';
-import { TextField, NumberField, TextArea, Form } from './common-forms';
+import { TextField, NumberField, TextArea, SelectField, CheckboxField, Form } from './common-forms';
 import { SubmitButton } from './buttons';
+import { createConfigEntry, updateConfigEntry } from '../actions';
+import { formFactory } from './form-factory';
+import { getTopDownRenderer } from './fieldset-renderers';
 
 
 const ConfigurationForm = ({ presets, servers }) => {
@@ -103,4 +106,90 @@ const ConfigurationForm = ({ presets, servers }) => {
   );
 };
 
-export default ConfigurationForm;
+
+function generateFields(servers, presets) {
+  return [
+    {
+      name: "name",
+      component: TextField,
+      id: "create_configuration_name",
+      label: "Name",
+      placeholder: "Enter the configuration name",
+    },
+    {
+      name: "description",
+      component: TextArea,
+      id: "create_configuration_description",
+      label: "Description",
+      placeholder: "Provide a brief description",
+    },
+    {
+      name: "system_message",
+      component: TextArea,
+      id: "create_configuration_system_message",
+      label: "System Message",
+      placeholder: "Enter the system message",
+    },
+    {
+      name: "preset",
+      component: SelectField,
+      id: "create_configuration_preset",
+      label: "Preset",
+      options: presets.map(p => ({ label: p.name, value: p.name})),
+      placeholder: "Select a preset",
+    },
+    {
+      name: "llm_server",
+      component: SelectField,
+      id: "create_configuration_llm_server",
+      label: "LLM Server",
+      options: servers.map(s => ({ label: s.name, value: s.name})),
+      placeholder: "Select an LLM server",
+    },
+    {
+      name: "autorun",
+      component: CheckboxField,
+      id: "create_configuration_autorun",
+      label: "Auto Run",
+      type: "checkbox",
+    },
+    {
+      name: "max_iterations",
+      component: NumberField,
+      id: "create_configuration_max_iterations",
+      label: "Max Iterations",
+      placeholder: "Enter the maximum number of iterations",
+    },
+  ];
+}
+
+export function getConfigurationForm({ servers, presets }) {
+  const fields = generateFields(servers, presets);
+
+  const FormComponent = formFactory(fields, getTopDownRenderer());
+
+  function CreateComponent({ onSuccess }) {
+    return <FormComponent action={createConfigEntry} onSuccess={onSuccess} />
+  }
+
+  return CreateComponent;
+}
+
+export function getConfigurationUpdateForm({ servers, presets }) {
+  const fields = generateFields(servers, presets);
+
+  const FormComponent = formFactory(fields, getTopDownRenderer());
+
+  function CreateComponent({ data, onSuccess }) {
+
+  const { id, ...defaults } = data;
+    const updateAction = updateConfigEntry.bind(null, id);
+    return <FormComponent defaults={defaults} action={updateAction} onSuccess={onSuccess} />
+  }
+
+  return CreateComponent;
+}
+
+
+export default getConfigurationForm;
+// todo: these components are not reusable => move them to the module they are used from

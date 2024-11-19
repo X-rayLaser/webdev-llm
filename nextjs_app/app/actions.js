@@ -143,7 +143,7 @@ const presetActionSet = new ActionSet({
 });
 
 const configActionSet = new ActionSet({
-    listUrl: "http://django:8000/api/configurations/",
+    listUrl: "http://django:8000/api/configs/",
     pathToRevalidate: "/configuration",
     excludeBlanks: ["extra_params"],
     itemName: "configuration"

@@ -1,11 +1,11 @@
 import React from "react";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faServer } from '@fortawesome/free-solid-svg-icons';
+import { faSliders } from '@fortawesome/free-solid-svg-icons';
 import { deletePresetEntry } from '@/app/actions';
 import { EditPresetForm } from "@/app/components/preset-forms";
 import Expandable from '../components/expandable';
 import { PanelItem } from "../components/panels";
-
+import { ItemHeader } from "../components/panels";
 
 const PresetItem = ({ preset }) => {
   if (!preset) {
@@ -23,16 +23,7 @@ const PresetItem = ({ preset }) => {
     extra_params,
   } = preset;
 
-  const headerSection = (
-    <header className="bg-blue-200 rounded-t-lg pt-2 pb-2 pl-4 pr-4 text-center">
-      <h2 className="block text-lg font-bold p-0">
-        {preset.name}
-        <span className="ml-2 text-white">
-          <FontAwesomeIcon icon={faServer} size="lg" />
-        </span>
-      </h2>
-    </header>
-  );
+  const headerSection = <ItemHeader title={preset.name} icon={faSliders} />
 
   const bodySection = (
     <div className="">

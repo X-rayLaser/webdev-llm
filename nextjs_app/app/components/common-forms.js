@@ -14,6 +14,19 @@ function FlexInputField(props) {
     );
 }
 
+function FlexSelectField({ extraInputClasses, initialText="Select an item", options, ...other }) {
+    const optionList = options.map((opt, idx) =>  
+        <option key={idx} value={opt.value}>{opt.value}</option>
+    );
+    return (
+        <select className={`ml-2 rounded-lg p-2 grow min-w-0 ${extraInputClasses}`}
+                type="select" {...other}>
+            <option value="">{initialText}</option>
+            {optionList}
+        </select>
+    );
+}
+
 
 function TextAreaField({ extraInputClasses, value="", ...other }) {
     if (typeof value === "object") {
@@ -48,7 +61,7 @@ function FormFieldWithErrors({ errors=[], children } ) {
 
 
 function InlineFormField({ label, field, errors=[] }) {
-    const extraLabelClasses = errors.length > 0 ? "text-red-600" : ""
+    const extraLabelClasses = errors.length > 0 ? "text-red-600" : "";
     return (
         <FormFieldWithErrors errors={errors}>
             <div className="flex items-center">
@@ -111,6 +124,32 @@ export function NumberField(props) {
 
 export function TextArea(props) {
     return <WrappedField FieldComponent={TextAreaField} FieldContainer={BlockedFormField} {...props} />
+}
+
+export function SelectField(props) {
+    return <WrappedField FieldComponent={FlexSelectField} FieldContainer={InlineFormField} {...props} />
+}
+
+function CheckBox({ extraInputClasses, ...props }) {
+    return <input type="checkbox" className={`${extraInputClasses}`} {...props} />
+}
+
+function CheckBoxFieldRow({ label, field, errors=[] }) {
+    const extraLabelClasses = errors.length > 0 ? "text-red-600" : "";
+    return (
+        <FormFieldWithErrors errors={errors}>
+            <div>
+                <span>{field}</span>
+                <span className={`ml-2 font-semibold ${extraLabelClasses}`}>
+                    {label}
+                </span>
+            </div>
+        </FormFieldWithErrors>
+    );
+}
+
+export function CheckboxField(props) {
+    return <WrappedField FieldComponent={CheckBox} FieldContainer={CheckBoxFieldRow} {...props} />
 }
 
 

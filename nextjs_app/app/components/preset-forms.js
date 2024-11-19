@@ -4,6 +4,7 @@ import { TextField, TextArea, NumberField, Form, jsonPlaceholder } from './commo
 import { SubmitButton } from './buttons';
 import { formFactory } from './form-factory';
 import { createPresetEntry, updatePresetEntry } from '../actions';
+import { getTopDownRenderer } from './fieldset-renderers';
 
 const fields = [{
   name: "name",
@@ -77,7 +78,7 @@ function renderFields(formFields) {
   );
 }
 
-const PresetForm = formFactory(fields, renderFields);
+const PresetForm = formFactory(fields, getTopDownRenderer());
 
 export function CreatePresetForm({ onSuccess }) {
   return (

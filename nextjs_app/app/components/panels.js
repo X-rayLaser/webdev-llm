@@ -3,7 +3,7 @@ import Modal from "@/app/components/modal";
 import { useState } from "react";
 import { ProminentButton } from "../components/buttons";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faPencil, faTrash, faCog } from '@fortawesome/free-solid-svg-icons'
+import { faPencil, faTrash, faCog, faServer } from '@fortawesome/free-solid-svg-icons'
 import { ConfirmationModal } from '../components/modal';
 
 
@@ -22,14 +22,25 @@ function FlexRowPanel({ children }) {
 }
 
 
-export default function Panel({ title, addButtonText, noElementsText="No items so far", elements, createForm }) {
+export default function Panel({ title, icon, addButtonText, noElementsText="No items so far", elements, createForm, formArgs }) {
   const [showModal, setShowModal] = useState(false);
-  const CreateForm = createForm;
+  
+  let CreateForm;
+  if (formArgs) {
+    //createForm is a component factory in this case
+    CreateForm = createForm(formArgs);
+  } else {
+    //createForm is already a component
+    CreateForm = createForm;
+  }
+
   return (
   <div className="border-2 rounded-md shadow-lg border-stone-200 p-4">
-      <h4 className="mb-5 text-center font-bold">{title}</h4>
+      <h4 className="mb-5 text-center font-bold text-2xl">
+        {title} <FontAwesomeIcon icon={icon} />
+      </h4>
       {elements.length > 0 && <FlexRowPanel>{elements}</FlexRowPanel>}
-      {elements.length === 0 && <h5>{noElementsText}</h5>}
+      {elements.length === 0 && <h5 className="text-lg text-center">{noElementsText}</h5>}
       <div className="mt-4 flex justify-center md:justify-start">
           <ProminentButton onClick={() => setShowModal(true)}>
             {addButtonText}
@@ -45,7 +56,7 @@ export default function Panel({ title, addButtonText, noElementsText="No items s
 }
 
 
-export function PanelItem({ data, editComponent, deleteAction, headerSection, bodySection, 
+export function PanelItem({ data, editComponent, componentArgs, deleteAction, headerSection, bodySection, 
                      editTitle="Edit item", deletionTitle="", deletionText="" }) {
   deletionTitle = deletionTitle || "Do you want to proceed?";
   deletionText = deletionText || "Are you sure that you want to permanently delete the entry?";
@@ -83,7 +94,12 @@ export function PanelItem({ data, editComponent, deleteAction, headerSection, bo
     setCounter(counter + 1);
   }
 
-  const EditFormComponent = editComponent;
+  let EditFormComponent;
+  if (componentArgs) {
+    EditFormComponent = editComponent(componentArgs);
+  } else {
+    EditFormComponent = editComponent;
+  }
 
   return (
     <div className="border rounded-lg shadow w-full md:w-96 h-auto">
@@ -123,5 +139,16 @@ export function PanelItem({ data, editComponent, deleteAction, headerSection, bo
         </div>
       </Modal>
     </div>
+  );
+}
+
+
+export function ItemHeader({ title }) {
+  return (
+    <header className=" border-b-2 rounded-t-lg pt-2 pb-2 pl-4 pr-4 text-center">
+      <h2 className="block text-lg font-bold p-0">
+        {title}
+      </h2>
+    </header>
   );
 }

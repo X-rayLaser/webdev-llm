@@ -42,8 +42,7 @@ export function formFactory(fields, renderFields) {
         const initialState = { message: null, errors: {} };
         const [formState, formAction] = useActionState(async function() {
             let res = await action(...arguments);
-            //artificial delay
-            await new Promise(resolve => setTimeout(resolve, 2000))
+
             setRunningSubmission(false);
             if (!res) {
                 onSuccess();
@@ -52,6 +51,8 @@ export function formFactory(fields, renderFields) {
         }, initialState);
 
         let elementsMapping = {};
+        let elementNames = [];
+
         fields.forEach((spec, idx) => {
             const { name, component, ...props } = spec;
             let Component = component;
@@ -75,6 +76,7 @@ export function formFactory(fields, renderFields) {
             );
 
             elementsMapping[name] = element;
+            elementNames.push(name);
         });
 
         function handleSubmit(e) {
@@ -84,7 +86,7 @@ export function formFactory(fields, renderFields) {
 
         return (
             <form action={formAction} onSubmit={handleSubmit}>
-                <div>{renderFields(elementsMapping)}</div>
+                <div>{renderFields(elementsMapping, elementNames)}</div>
                 {formState?.message && (
                     <div className="mt-5 mb-5">
                         <Alert text={formState.message} level="danger" />
