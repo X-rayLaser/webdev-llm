@@ -8,8 +8,9 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCog } from '@fortawesome/free-solid-svg-icons';
 
 
-function cleanDefault(defaults, fieldName) {
-    let defaultValue = "";
+function cleanDefault(defaults, fieldName, type) {
+    let defaultValue = (type === "checkbox" ? false : "");
+
     if (defaults && defaults.hasOwnProperty(fieldName)) {
         let fieldVal = defaults[fieldName];
         if (fieldVal === 0) {
@@ -33,7 +34,7 @@ export function formFactory(fields, renderFields) {
 
         for (let fieldSpec of fields) {
             let name = fieldSpec.name;
-            let defaultValue = cleanDefault(defaults, name);
+            let defaultValue = cleanDefault(defaults, name, fieldSpec.type);
             let [value, setValue] = useState(defaultValue);
             states[name] = value;
             setters[name] = setValue;
@@ -56,22 +57,34 @@ export function formFactory(fields, renderFields) {
         fields.forEach((spec, idx) => {
             const { name, component, ...props } = spec;
             let Component = component;
-            const fieldValue = states[name];
-            let fieldErrors = [];
+            const value = states[name];
+            let errors = [];
             if (formState?.errors) {
-                fieldErrors = formState.errors[name];
+                errors = formState.errors[name];
             }
             const setValue = setters[name];
 
+            function onChange(e) {
+                const newValue = spec.type === "checkbox" ? e.target.checked : e.target.value;
+                setValue(newValue);
+            }
+
+            const componentProps = {
+                name,
+                value,
+                errors,
+                onChange,
+                disabled: runningSubmission,
+                ...props
+            }
+            
+            if (spec.type === "checkbox") {
+                componentProps.checked = value;
+            }
+
             const element = (
                 <div key={idx}>
-                    <Component 
-                        name={name}
-                        value={fieldValue}
-                        errors={fieldErrors}
-                        onChange={(e) => setValue(e.target.value)}
-                        disabled={runningSubmission}
-                        {...props} />
+                    <Component {...componentProps} />
                 </div>
             );
 
