@@ -130,8 +130,9 @@ export function SelectField(props) {
     return <WrappedField FieldComponent={FlexSelectField} FieldContainer={InlineFormField} {...props} />
 }
 
-function CheckBox({ extraInputClasses, ...props }) {
-    return <input type="checkbox" className={`${extraInputClasses}`} {...props} />
+function CheckBox({ extraInputClasses, checked, ...props }) {
+    const className = `${extraInputClasses}`;
+    return <input type="checkbox" className={className} checked={checked} {...props} />
 }
 
 function CheckBoxFieldRow({ label, field, errors=[] }) {
@@ -139,6 +140,7 @@ function CheckBoxFieldRow({ label, field, errors=[] }) {
     return (
         <FormFieldWithErrors errors={errors}>
             <div>
+
                 <span>{field}</span>
                 <span className={`ml-2 font-semibold ${extraLabelClasses}`}>
                     {label}

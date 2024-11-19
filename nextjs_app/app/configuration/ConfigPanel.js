@@ -50,18 +50,18 @@ function generateFields(servers, presets) {
         placeholder: "Select an LLM server",
       },
       {
-        name: "autorun",
-        component: CheckboxField,
-        id: "create_configuration_autorun",
-        label: "Auto Run",
-        type: "checkbox",
-      },
-      {
         name: "max_iterations",
         component: NumberField,
         id: "create_configuration_max_iterations",
         label: "Max Iterations",
         placeholder: "Enter the maximum number of iterations",
+      },
+      {
+        name: "autorun",
+        component: CheckboxField,
+        id: "create_configuration_autorun",
+        label: "Auto Run",
+        type: "checkbox",
       },
     ];
 }
