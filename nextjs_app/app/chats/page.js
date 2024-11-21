@@ -32,7 +32,7 @@ export default function Page() {
         </div>
     ));
     return (
-        <div className="p-5">
+        <div className="p-5 w-1/2">
             <NewChatForm />
             <div>{items}</div>
     </div>
