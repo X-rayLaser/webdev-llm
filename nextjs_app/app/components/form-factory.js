@@ -92,6 +92,23 @@ export function formFactory(fields, renderFields) {
             elementNames.push(name);
         });
 
+        const submitButton = (
+            <div>
+                <SubmitButton disabled={runningSubmission}>
+                {runningSubmission && <span className="ml-2"><FontAwesomeIcon icon={faCog} spin /></span>}
+                </SubmitButton>
+            </div>
+        );
+
+        let errorMessageBlock = <div></div>;
+        if (formState?.message) {
+            errorMessageBlock = (
+                <div className="mt-5 mb-5">
+                    <Alert text={formState.message} level="danger" />
+                </div>
+            );
+        }
+
         function handleSubmit(e) {
             console.log("handling submit", e);
             setRunningSubmission(true);
@@ -99,18 +116,7 @@ export function formFactory(fields, renderFields) {
 
         return (
             <form action={formAction} onSubmit={handleSubmit}>
-                <div>{renderFields(elementsMapping, elementNames)}</div>
-                {formState?.message && (
-                    <div className="mt-5 mb-5">
-                        <Alert text={formState.message} level="danger" />
-                    </div>
-                )}
-            
-                <div className="flex justify-center">
-                    <SubmitButton disabled={runningSubmission}>
-                    {runningSubmission && <span className="ml-2"><FontAwesomeIcon icon={faCog} spin /></span>}
-                    </SubmitButton>
-                </div>
+                <div>{renderFields(elementsMapping, elementNames, errorMessageBlock, submitButton)}</div>
             </form>
         );
     }

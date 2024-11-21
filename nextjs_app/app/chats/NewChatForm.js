@@ -63,7 +63,17 @@ const NewChatForm = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-96 mx-auto">
+    <form onSubmit={handleSubmit} className="w-full md:w-1/2 mx-auto">
+      <div>
+        <textarea
+          ref={textareaRef}
+          value={text}
+          onChange={handleTextChange}
+          rows={rows}
+          className="border p-2 w-full rounded"
+          placeholder="Type here..."
+        />
+      </div>
       <div className="flex items-center mb-4">
         <label htmlFor="configuration" className="mr-4 font-medium">
           Configuration:
@@ -72,7 +82,7 @@ const NewChatForm = () => {
           id="configuration"
           value={configuration}
           onChange={handleConfigurationChange}
-          className="border px-3 py-2 rounded mr-4 w-full sm:w-auto"
+          className="border px-3 py-2 rounded mr-4 w-full sm:w-auto shrink"
           required
         >
           <option value="" disabled>
@@ -88,16 +98,6 @@ const NewChatForm = () => {
         >
           Submit
         </button>
-      </div>
-      <div>
-        <textarea
-          ref={textareaRef}
-          value={text}
-          onChange={handleTextChange}
-          rows={rows}
-          className="border p-2 w-full rounded"
-          placeholder="Type here..."
-        />
       </div>
     </form>
   );

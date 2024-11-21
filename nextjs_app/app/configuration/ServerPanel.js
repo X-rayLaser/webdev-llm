@@ -31,7 +31,7 @@ const fields = [{
 }];
 
 
-function renderFields(formFields) {
+function renderFields(formFields, names, errorMessage, submitButton) {
   return (
     <div>
       <div className="mb-4">{formFields.name}</div>
@@ -43,6 +43,8 @@ function renderFields(formFields) {
           <div className="mb-4">{formFields.configuration}</div>
         </div>
       </details>
+      {errorMessage}
+      {submitButton}
     </div>
   );
 }
