@@ -1,55 +1,11 @@
 "use client"
 import React, { useState, useEffect, useRef } from "react";
-
-
-function getTextWidth(text, font) {
-    const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
-  
-    context.font = font || getComputedStyle(document.body).font;
-  
-    return context.measureText(text).width;
-}
-
+import { AutoExpandingTextArea } from "../components/common-forms";
 
 const NewChatForm = () => {
   const [text, setText] = useState("");
-  const [rows, setRows] = useState(1);
-  const [textAreaEffectiveWidth, setTextAreaEffectiveWidth] = useState(0);
-  const textareaRef = useRef(null);
 
-  useEffect(() => {
-    if (textareaRef.current) {
-      const textarea = textareaRef.current;
-      const textareaWidth = textarea.offsetWidth;
-
-      // Get computed styles to account for padding and borders
-      const style = getComputedStyle(textarea);
-      const padding =
-        parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
-      const border =
-        parseFloat(style.borderLeftWidth) + parseFloat(style.borderRightWidth);
-
-      // Effective width after subtracting padding and borders
-      const effectiveWidth = textareaWidth - padding - border;
-      setTextAreaEffectiveWidth(effectiveWidth)
-    }
-  }, [textareaRef]);
-
-  const handleTextChange = (e) => {
-    const newText = e.target.value;
-    setText(newText);
-
-    // Calculate rows needed based on text and max characters per line
-    const lineCount = newText.split("\n").length;
-    const textWithoutBreaks = newText.replace(/\n/g, "");
-    const font = getComputedStyle(textareaRef.current).font;
-    const textWidth = getTextWidth(textWithoutBreaks, font);
-    const extraRows = Math.ceil(textWidth / textAreaEffectiveWidth)
-    //todo: add optionall word-wrap:break-word; word-break:break-all; to allow breaking word when wrapping text
-
-    setRows(Math.max(lineCount + extraRows, 1));
-  };
+  const handleTextChange = (e) => setText(e.target.value);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -65,12 +21,10 @@ const NewChatForm = () => {
   return (
     <form onSubmit={handleSubmit} className="w-full md:w-1/2 mx-auto">
       <div>
-        <textarea
-          ref={textareaRef}
+        <AutoExpandingTextArea
+          name="prompt"
           value={text}
           onChange={handleTextChange}
-          rows={rows}
-          className="border p-2 w-full rounded"
           placeholder="Type here..."
         />
       </div>

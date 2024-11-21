@@ -1,6 +1,5 @@
 "use client"
-
-import React from 'react';
+import React, { useState, useEffect, useRef } from "react";
 import { Alert } from './alerts';
 
 
@@ -39,6 +38,66 @@ function TextAreaField({ extraInputClasses, value="", ...other }) {
             {...other}
         />
     )
+}
+
+
+function getTextWidth(text, font) {
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+  
+    context.font = font || getComputedStyle(document.body).font;
+  
+    return context.measureText(text).width;
+}
+
+
+export function AutoExpandingTextAreaField({ extraInputClasses = "", value = "", onChange, ...otherProps }) {
+    if (typeof value === "object") {
+        value = JSON.stringify(value, null, 2);
+    }
+    const [rows, setRows] = useState(1);
+    const [textAreaEffectiveWidth, setTextAreaEffectiveWidth] = useState(0);
+    const textareaRef = useRef(null);
+
+    useEffect(() => {
+        if (textareaRef.current) {
+            const textarea = textareaRef.current;
+            const textareaWidth = textarea.offsetWidth;
+
+            const style = getComputedStyle(textarea);
+            const padding = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
+            const border = parseFloat(style.borderLeftWidth) + parseFloat(style.borderRightWidth);
+
+            const effectiveWidth = textareaWidth - padding - border;
+            setTextAreaEffectiveWidth(effectiveWidth)
+        }
+    }, [textareaRef]);
+
+    const handleTextChange = (e) => {
+        const newText = e.target.value;
+        onChange(e);
+
+        // Calculate rows needed based on text and max characters per line
+        const lineCount = newText.split("\n").length;
+        const textWithoutBreaks = newText.replace(/\n/g, "");
+        const font = getComputedStyle(textareaRef.current).font;
+        const textWidth = getTextWidth(textWithoutBreaks, font);
+        const extraRows = Math.ceil(textWidth / textAreaEffectiveWidth)
+        //todo: add optionall word-wrap:break-word; word-break:break-all; to allow breaking word when wrapping text
+
+        setRows(Math.max(lineCount + extraRows, 1));
+    };
+    console.log("extraInputClasses", extraInputClasses)
+    return (
+        <textarea
+            ref={textareaRef}
+            value={value}
+            onChange={handleTextChange}
+            rows={rows}
+            className={`block w-full rounded-lg p-2 ${extraInputClasses}`}
+            {...otherProps}
+        />
+    );
 }
 
 
@@ -89,6 +148,12 @@ function BlockedFormField({ label, field, errors=[] } ) {
     );
 }
 
+function LabelessFormField({ field, errors=[] }) {
+    return (
+        <FormFieldWithErrors errors={errors}>{field}</FormFieldWithErrors>
+    );
+}
+
 
 function WrappedField({ name, id="", label="", placeholder="", errors=[], FieldComponent, FieldContainer, ...rest }) {
     label = label || capitalize(name);
@@ -124,6 +189,10 @@ export function NumberField(props) {
 
 export function TextArea(props) {
     return <WrappedField FieldComponent={TextAreaField} FieldContainer={BlockedFormField} {...props} />
+}
+
+export function AutoExpandingTextArea(props) {
+    return <WrappedField FieldComponent={AutoExpandingTextAreaField} FieldContainer={LabelessFormField} {...props} />
 }
 
 export function SelectField(props) {
