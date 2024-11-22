@@ -19,7 +19,10 @@ const exampleData = {
     createdAt: "2024-11-12T09:30:00",
 };
 
-export default function Page() {
+export default async function Page() {
+    const configsResponse = await fetch("http://django:8000/api/configs/");
+    const configs = await configsResponse.json();
+    
     let items = [1,2,3,4].map(() => (
         <div className="mb-4">
             <Card
@@ -33,7 +36,7 @@ export default function Page() {
     ));
     return (
         <div className="p-5 w-1/2">
-            <NewChatForm />
+            <NewChatForm configs={configs} />
             <div>{items}</div>
     </div>
     );

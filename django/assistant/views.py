@@ -73,6 +73,18 @@ class ChatViewSet(viewsets.ModelViewSet):
     queryset = Chat.objects.all()
     serializer_class = ChatSerializer
 
+    @decorators.action(methods=['post'], detail=False, url_path="start-new-chat")
+    def start_new_chat(self, request):
+        serializer = ChatSerializer(data=request.data, context={'request': request}) # todo: need to use new serializer with prompt field
+        prompt = request.data["prompt"]
+        # todo: automatically generate unique name for a chat
+        
+        serializer.is_valid(raise_exception=True)
+        chat = serializer.save()
+        modality = Modality.objects.create(modality_type="text", text=prompt)
+        message = MultimediaMessage.objects.create(role="user", content=modality, chat=chat)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
 
 class MultimediaMessageViewSet(viewsets.ModelViewSet):
     queryset = MultimediaMessage.objects.all()

@@ -299,7 +299,7 @@ class ChatSerializer(serializers.HyperlinkedModelSerializer):
     )
     messages = serializers.HyperlinkedRelatedField(
         many=True,
-        view_name='multimedia-message-detail',
+        view_name='multimediamessage-detail',
         read_only=True
     )
 

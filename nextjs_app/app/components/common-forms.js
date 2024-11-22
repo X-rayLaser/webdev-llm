@@ -15,7 +15,7 @@ function FlexInputField(props) {
 
 function FlexSelectField({ extraInputClasses, initialText="Select an item", options, ...other }) {
     const optionList = options.map((opt, idx) =>  
-        <option key={idx} value={opt.value}>{opt.value}</option>
+        <option key={idx} value={opt.value}>{opt.label}</option>
     );
     return (
         <select className={`ml-2 rounded-lg p-2 grow min-w-0 ${extraInputClasses}`}

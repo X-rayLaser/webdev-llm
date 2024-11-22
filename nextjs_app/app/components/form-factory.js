@@ -45,10 +45,11 @@ export function formFactory(fields, renderFields) {
             let res = await action(...arguments);
 
             setRunningSubmission(false);
-            if (!res) {
+            if (res.success) {
                 onSuccess();
+            } else {
+                return res.responseData;
             }
-            return res;
         }, initialState);
 
         let elementsMapping = {};

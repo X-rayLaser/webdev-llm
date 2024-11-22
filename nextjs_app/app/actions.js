@@ -11,40 +11,56 @@ function removeBlankField(formData, field) {
     }
 }
 
+async function sendForm(url, method="POST", formData) {
+    let message = 'Unknown error';
+    
+    let response = await fetch(url, {
+        method,
+        body: formData,
+        headers: {
+            "Accept": "application/json"
+        }
+    });
+
+    const responseData = await response.json();
+
+    if (!response.ok) {
+        let errors = responseData;
+        console.log("errors", errors, formData)
+        if (response.status == 400) {
+            message = "Some fields contain incorrect data. Please try again.";
+        } else if (response.status == 405) {
+            message = errors.detail;
+        }
+
+        throw {
+            message,
+            errors
+        };
+    }
+
+    return prepareResultMessage(true, responseData);
+}
+
+
+function prepareResultMessage(success, responseData) {
+    return {
+        success,
+        responseData
+    };
+}
+
 
 async function sendData({ url, method="POST", prevState, formData, serverErrorMessage="Something went wrong" }) {
-    let message = 'Failed to Create server entry.';
-    
     console.log('about to post!', formData)
 
     try {
-        let response = await fetch(url, {
-            method,
-            body: formData,
-            headers: {
-                "Accept": "application/json"
-            }
-        });
-
-        if (!response.ok) {
-            let errors = await response.json();
-            console.log("errors", errors, formData)
-            if (response.status == 400) {
-                message = "Some fields contain incorrect data. Please try again.";
-            } else if (response.status == 405) {
-                message = errors.detail;
-            }
-
-            throw {
-                message,
-                errors
-            };
-        }
+        return await sendForm(url, method, formData);
     } catch (error) {
-        return {
+        return prepareResultMessage(false, {
             message: error.message || serverErrorMessage,
             errors: error?.errors
-        };
+        });
     }
 }
 
@@ -93,13 +109,14 @@ class ActionSet {
     
             if (!response.ok) {
                 console.error("NOT OK ON DELETION:", response.status, response.json());
-                return { message };
+                throw { message };
             }
         } catch (error) {
-            return { message };
+            return prepareResultMessage(false, message);
         }
     
         revalidatePath(this.pathToRevalidate);
+        return { success: true };
     }
 
     async mutateData({ url, method, prevState, formData, errorMsg }) {
@@ -107,7 +124,7 @@ class ActionSet {
             removeBlankField(formData, field);
         }
 
-        const errorResult = await sendData({
+        const result = await sendData({
             url,
             method,
             prevState,
@@ -115,11 +132,11 @@ class ActionSet {
             serverErrorMessage: errorMsg
         });
 
-        if (errorResult) {
-            return errorResult;
+        if (result.success) {
+            revalidatePath(this.pathToRevalidate);
         }
 
-        revalidatePath(this.pathToRevalidate);
+        return result;
     }
 
     getActionFunctions() {
@@ -149,12 +166,69 @@ const configActionSet = new ActionSet({
     itemName: "configuration"
 });
 
+const chatActionSet = new ActionSet({
+    listUrl: "http://django:8000/api/chats/start-new-chat/",
+    pathToRevalidate: "/chats",
+    itemName: "chat"
+});
+
+
 const [createServerEntry, updateServerEntry, deleteServerEntry] = serverActionSet.getActionFunctions();
 const [createPresetEntry, updatePresetEntry, deletePresetEntry] = presetActionSet.getActionFunctions();
 const [createConfigEntry, updateConfigEntry, deleteConfigEntry] = configActionSet.getActionFunctions();
 
+
+async function fetchJson(url, method, data) {
+
+    let response = await fetch(url, {
+        method,
+        headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+        },
+        body: JSON.stringify(data)
+    });
+
+    return response;
+}
+
+
+async function startNewChat(prevState, formData) {
+    const prompt = formData.get("prompt");
+    if (!prompt) {
+        return prepareResultMessage(false, {
+            errors: {
+                prompt: ["This field is required"]
+            },
+            message: "Some fields are incorrect or missing. Please try again"
+        });
+    }
+
+    formData.append("name", prompt.substring(0, 255));
+    const result = await chatActionSet.create(prevState, formData);
+
+    if (result.success) {
+        const id = result.responseData["id"];
+        redirect(`/chats/${id}`);
+    }
+
+    if (!result.success) {
+        const errors = result.responseData.errors;
+        if (errors.hasOwnProperty("name")) {
+            const { name, ...rest} = errors;
+            return prepareResultMessage(false, {
+                errors: { prompt: name, ...rest },
+                message: result.responseData.message
+            });
+        }
+    }
+
+    return result;
+}
+
 export {
     createServerEntry, updateServerEntry, deleteServerEntry,
     createPresetEntry, updatePresetEntry, deletePresetEntry,
-    createConfigEntry, updateConfigEntry, deleteConfigEntry
+    createConfigEntry, updateConfigEntry, deleteConfigEntry,
+    startNewChat
  };
