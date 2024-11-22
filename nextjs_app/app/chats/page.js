@@ -20,15 +20,50 @@ const exampleData = {
 };
 
 export default async function Page() {
+    //todo: error handling
     const configsResponse = await fetch("http://django:8000/api/configs/");
     const configs = await configsResponse.json();
+
+    const chatsResponse = await fetch("http://django:8000/api/chats/");
+    const chats = await chatsResponse.json();
+
+    async function fetchMessage(url) {
+        const response = await fetch(url);
+        return await response.json();
+    }
+
+    async function getPrompt(chat) {
+        return await fetchMessage(chat.messages[0]);
+    }
+
+    async function getLastMessage(chat) {
+        const lastUrl = chat.messages[chat.messages.length - 1];
+        return await fetchMessage(lastUrl);
+    }
+
+    async function getFirstAndLastMessages(chat) {
+        const [prompt, lastMessage] = await Promise.all([getPrompt(chat), getLastMessage(chat)]);
+        return { prompt, lastMessage };
+    }
+
+    const promises = chats.map(chat => 
+        new Promise(
+            resolve => getFirstAndLastMessages(chat).then(res => {
+                resolve({ chat, prompt: res.prompt, lastMessage: res.lastMessage });
+            })
+        )
+    );
+
+    const chatsWithMessages = await Promise.all(promises);
+    console.log("chatsWithMessages", chatsWithMessages)
     
-    let items = [1,2,3,4].map(() => (
-        <div className="mb-4">
+    let items = chatsWithMessages.map((obj, idx) => (
+        <div key={idx} className="mb-4">
             <Card
-                header={exampleChat.summary}
+                header={obj.chat.name}
                 imageUrl={exampleData.imageUrl}
-                text={exampleChat.lastMessage}
+                prompt={obj.lastMessage.content_ro.text}
+                lastMessage={obj.lastMessage.content_ro.text}
                 buttonLabel={exampleData.buttonLabel}
                 createdAt={exampleData.createdAt}
             />

@@ -9,7 +9,7 @@ export default async function Page(props) {
     return (
         <div>
             <div>{data.name}</div>
-            <div>{data.messages.map(msg => <div>msg</div>)}</div>
+            <div>{data.messages.map(msg => <div>{msg}</div>)}</div>
         </div>
     );
 }
