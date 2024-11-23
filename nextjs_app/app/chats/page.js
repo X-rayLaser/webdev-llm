@@ -75,9 +75,10 @@ export default async function Page() {
         <div className="p-5 w-1/2">
             <NewChatForm configs={configs} />
 
-
-            <h4 className="text-2xl my-4 text-center font-bold">Recent chats</h4>
-            <div>{items}</div>
+            <div className="mt-16">
+                <h4 className="text-2xl mb-4 text-center font-bold">Recent chats</h4>
+                <div>{items}</div>
+            </div>
     </div>
     );
 }

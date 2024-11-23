@@ -22,6 +22,17 @@ export function ProminentButton({ className, children, ...rest }) {
 }
 
 
+export function OutlineButton({ className, children, ...rest }) {
+    return (
+        <button className="px-12 py-2 hover:bg-sky-800 hover:text-white hover:border-violet-800 text-gray-800 border-2
+                         border-sky-800 rounded-md text-lg font-semibold"
+                {...rest}>
+            {children}
+        </button>
+    );
+}
+
+
 export function ButtonGroup({ children }) {
     return (
         <div className="[&>*:first-child]:rounded-l-md [&>*:last-child]:rounded-r-md *:border-cyan-950 *:border-2

@@ -1,6 +1,7 @@
 "use client"
 import React from 'react';
 import Expandable from '../components/expandable';
+import { OutlineButton } from '../components/buttons';
 
 export function Card({ header, imageUrl, textTitle="Last message", prompt, lastMessage="", buttonLabel, onButtonClick, createdAt }) {
   const maxLen = 40;
@@ -36,12 +37,9 @@ export function Card({ header, imageUrl, textTitle="Last message", prompt, lastM
       <div className="p-4 bg-slate-100">
         <h6 className="font-bold text-left text-lg mb-2">Last message:</h6>
         <Expandable collapsedHeight={150}>{lastMessage}</Expandable>
-        <button
-              className="mt-4 bg-blue-500 text-white px-8 py-1 text-lg rounded shadow hover:bg-blue-600"
-              onClick={onButtonClick}
-        >
-          {buttonLabel}
-        </button>
+        <div className="mt-4">
+          <OutlineButton onClick={onButtonClick}>{buttonLabel}</OutlineButton>
+        </div>
       </div>
 
       {/* Footer */}
