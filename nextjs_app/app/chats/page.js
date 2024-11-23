@@ -27,6 +27,8 @@ export default async function Page() {
     const chatsResponse = await fetch("http://django:8000/api/chats/");
     const chats = await chatsResponse.json();
 
+    const topChats = chats.slice(2);
+
     async function fetchMessage(url) {
         const response = await fetch(url);
         return await response.json();
@@ -46,7 +48,7 @@ export default async function Page() {
         return { prompt, lastMessage };
     }
 
-    const promises = chats.map(chat => 
+    const promises = topChats.map(chat => 
         new Promise(
             resolve => getFirstAndLastMessages(chat).then(res => {
                 resolve({ chat, prompt: res.prompt, lastMessage: res.lastMessage });
@@ -61,7 +63,7 @@ export default async function Page() {
         <div key={idx} className="mb-4">
             <Card
                 header={obj.chat.name}
-                imageUrl={exampleData.imageUrl}
+                imageUrl="/app/test-image.jpeg"
                 prompt={obj.lastMessage.content_ro.text}
                 lastMessage={obj.lastMessage.content_ro.text}
                 buttonLabel={exampleData.buttonLabel}
@@ -72,6 +74,9 @@ export default async function Page() {
     return (
         <div className="p-5 w-1/2">
             <NewChatForm configs={configs} />
+
+
+            <h4 className="text-2xl my-4 text-center font-bold">Recent chats</h4>
             <div>{items}</div>
     </div>
     );

@@ -3,6 +3,9 @@ import React from 'react';
 import Expandable from '../components/expandable';
 
 export function Card({ header, imageUrl, textTitle="Last message", prompt, lastMessage="", buttonLabel, onButtonClick, createdAt }) {
+  const maxLen = 40;
+  header = header.length < maxLen ? header : `${header.substring(0, maxLen)}...`;
+
   return (
     <div className="border rounded-lg shadow-md bg-white w-full">
       {/* Header */}
@@ -22,29 +25,27 @@ export function Card({ header, imageUrl, textTitle="Last message", prompt, lastM
         </div>
 
         {/* Text and Button */}
-        <div className="ml-4 grow h-52">
-          <div className="flex gap-8 max-h-36 mt-2">
-            <div className="w-full">
-              <h6 className="font-bold mb-2 text-center">First message:</h6>
-              <p className="text-md text-gray-700 max-h-28 overflow-auto text-justify leading-2 pr-2">{prompt}</p>
-            </div>
+        <div className="grow h-52 bg-sky-800">
+          <h6 className="font-bold text-left text-lg text-white ml-4 my-2 leading-4 h-4">Prompt:</h6>
+          <div className="max-h-40 mx-4 bg-white overflow-auto rounded-lg shadow p-2">
+            <p className="text-md text-gray-700 text-justify leading-2">{prompt}</p>
           </div>
-        
-          <button
-            className="mt-4 self-start bg-blue-500 text-white px-8 py-1 text-sm rounded shadow hover:bg-blue-600"
-            onClick={onButtonClick}
-          >
-            {buttonLabel}
-          </button>
         </div>
       </div>
 
-      <div className="p-4">
+      <div className="p-4 bg-slate-100">
+        <h6 className="font-bold text-left text-lg mb-2">Last message:</h6>
         <Expandable collapsedHeight={150}>{lastMessage}</Expandable>
+        <button
+              className="mt-4 bg-blue-500 text-white px-8 py-1 text-lg rounded shadow hover:bg-blue-600"
+              onClick={onButtonClick}
+        >
+          {buttonLabel}
+        </button>
       </div>
 
       {/* Footer */}
-      <div className="text-sm text-gray-500 text-left p-4 border-t">
+      <div className="text-sm text-gray-200 bg-gray-700 text-left p-4 border-t rounded-b-lg">
         Created at: {new Date(createdAt).toLocaleString()}
       </div>
     </div>
