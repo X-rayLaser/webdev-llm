@@ -1,6 +1,6 @@
 import { Card } from "@/app/chats/ChatItem";
 import NewChatForm from "./NewChatForm";
-
+import ChatSidePanel from "./ChatSidePanel";
 
 const exampleChat = {
     systemMessage: "Please ensure that all responses are concise, informative, and polite. Additionally, maintain a tone that is approachable and friendly. Avoid using overly technical jargon unless specifically requested by the user. If a question is ambiguous or lacks sufficient details, ask clarifying questions before providing an answer.",
@@ -19,14 +19,38 @@ const exampleData = {
     createdAt: "2024-11-12T09:30:00",
 };
 
-export default async function Page() {
+
+async function fetchChats(baseUrl, query) {
+    let chats = [];
+
+    try {
+        const extra = query ? `?${query}` : "";
+        const response = await fetch(`${baseUrl}${extra}`);
+        const data = await response.json();
+        chats = data.results;
+        console.log("CHATS !", data)
+    } catch (error) {
+        console.error("Failed to fetch chats:", error);
+        throw error;
+    }
+
+    return chats;
+}
+
+export default async function Page(props) {
+    const params = await props.params;
+
+    const query = await props.searchParams;
+    console.log("query:", query, props);
+
     //todo: error handling
     const configsResponse = await fetch("http://django:8000/api/configs/");
     const configs = await configsResponse.json();
 
-    const chatsResponse = await fetch("http://django:8000/api/chats/");
-    const chats = await chatsResponse.json();
+    const panelChats = await fetchChats("http://django:8000/api/chats/", query);
 
+
+    const chats = await fetchChats("http://django:8000/api/chats/");
     const topChats = chats.slice(2);
 
     async function fetchMessage(url) {
@@ -72,13 +96,46 @@ export default async function Page() {
         </div>
     ));
     return (
-        <div className="p-5 w-1/2">
-            <NewChatForm configs={configs} />
+        <div>
+            <div className="md:hidden">
+                <div className="w-80">
+                    <div className="fixed w-[inherit] max-w-[inherit] h-dvh">
+                        <ChatSidePanel chats={panelChats} />
+                    </div>
+                            
+                </div>
 
-            <div className="mt-16">
-                <h4 className="text-2xl mb-4 text-center font-bold">Recent chats</h4>
-                <div>{items}</div>
+                <div className="ml-8">
+                    <NewChatForm configs={configs} />
+
+                    <div className="mt-16">
+                        <h4 className="text-2xl mb-4 text-center font-bold">Recent chats</h4>
+                        <div>{items}</div>
+                    </div>
+                </div>
             </div>
-    </div>
+            <div className="hidden md:block">
+                <div className="flex items-start">
+                    <div className="shrink-0 grow-0 w-10/12 sm:w-96 max-w-[800px]">
+                        <div className="fixed w-[inherit] max-w-[inherit]">
+                            <ChatSidePanel chats={panelChats} />
+                        </div>
+                                
+                    </div>
+
+                    <div className="grow p-4">
+                        <div className="w-2/3 mx-auto p-4 border border-blue-800 rounded-lg shadow-lg">
+                            <h2 className="text-center font-bold text-2xl mb-2">Start new chat</h2>
+                            <NewChatForm configs={configs} />
+                        </div>
+
+                        <div className="mt-16">
+                            <h2 className="text-2xl mb-4 text-center font-bold">Recent chats</h2>
+                            <div>{items}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     );
 }

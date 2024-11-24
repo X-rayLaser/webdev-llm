@@ -3,7 +3,9 @@ from rest_framework import generics, mixins
 from rest_framework import decorators
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.pagination import PageNumberPagination
 from django.conf import settings
+
 
 from .models import (
     Configuration, Server, Preset, Build, LinterCheck, TestRun, OperationSuite,
@@ -69,9 +71,17 @@ class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
 
 
+class StandardResultsSetPagination(PageNumberPagination):
+    page_size = 100
+    page_size_query_param = 'page_size'
+    max_page_size = 1000
+
+
 class ChatViewSet(viewsets.ModelViewSet):
     queryset = Chat.objects.all()
     serializer_class = ChatSerializer
+    pagination_class = StandardResultsSetPagination
+    # todo: fix tests if any were broken by this
 
     @decorators.action(methods=['post'], detail=False, url_path="start-new-chat")
     def start_new_chat(self, request):
