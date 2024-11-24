@@ -22,36 +22,42 @@ const exampleData = {
 
 async function fetchChats(baseUrl, query) {
     let chats = [];
+    let totalPages = 1;
 
     try {
         const extra = query ? `?${query}` : "";
         const response = await fetch(`${baseUrl}${extra}`);
         const data = await response.json();
         chats = data.results;
+        // todo: modify API to return totalPages in response
+        totalPages = Math.ceil(data.count / 2);
         console.log("CHATS !", data)
     } catch (error) {
         console.error("Failed to fetch chats:", error);
         throw error;
     }
 
-    return chats;
+    return [ chats, totalPages ];
 }
 
 export default async function Page(props) {
     const params = await props.params;
 
     const query = await props.searchParams;
-    console.log("query:", query, props);
+
+    
+    console.log("query:", query, "params:", (new URLSearchParams(query)).toString());
+    const queryString = (new URLSearchParams(query)).toString();
 
     //todo: error handling
     const configsResponse = await fetch("http://django:8000/api/configs/");
     const configs = await configsResponse.json();
 
-    const panelChats = await fetchChats("http://django:8000/api/chats/", query);
+    const [ panelChats, totalPages ] = await fetchChats("http://django:8000/api/chats/", queryString);
 
 
-    const chats = await fetchChats("http://django:8000/api/chats/");
-    const topChats = chats.slice(2);
+    const [ chats, ...rest ] = await fetchChats("http://django:8000/api/chats/");
+    const topChats = chats.slice(0);
 
     async function fetchMessage(url) {
         const response = await fetch(url);
@@ -95,12 +101,14 @@ export default async function Page(props) {
             />
         </div>
     ));
+
+    let chatsPanel = <ChatSidePanel chats={panelChats} totalPages={totalPages} />;
     return (
         <div>
             <div className="md:hidden">
                 <div className="w-80">
                     <div className="fixed w-[inherit] max-w-[inherit] h-dvh">
-                        <ChatSidePanel chats={panelChats} />
+                        {chatsPanel}
                     </div>
                             
                 </div>
@@ -116,15 +124,14 @@ export default async function Page(props) {
             </div>
             <div className="hidden md:block">
                 <div className="flex items-start">
-                    <div className="shrink-0 grow-0 w-10/12 sm:w-96 max-w-[800px]">
+                    <div className="shrink-0 grow-0 w-10/12 sm:w-80 max-w-[800px]">
                         <div className="fixed w-[inherit] max-w-[inherit]">
-                            <ChatSidePanel chats={panelChats} />
+                        {chatsPanel}
                         </div>
-                                
                     </div>
 
                     <div className="grow p-4">
-                        <div className="w-2/3 mx-auto p-4 border border-blue-800 rounded-lg shadow-lg">
+                        <div className="w-full lg:w-3/4 xl:w-1/2 mx-auto p-4 border border-blue-800 rounded-lg shadow-lg">
                             <h2 className="text-center font-bold text-2xl mb-2">Start new chat</h2>
                             <NewChatForm configs={configs} />
                         </div>

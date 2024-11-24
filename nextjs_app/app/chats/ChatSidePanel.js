@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
 
-export default function ChatSidePanel({ chats }) {
+export default function ChatSidePanel({ chats, totalPages }) {
   //const [chats, setChats] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -13,7 +13,6 @@ export default function ChatSidePanel({ chats }) {
   const [contentFilter, setContentFilter] = useState("all");
   const [advancedSettingsOpen, setAdvancedSettingsOpen] = useState(false);
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -128,7 +127,7 @@ function SearchSettings({ sortOption, onSortChange, onContentFilterChange, conte
 }
 
 function ChatList({ chats }) {
-  const maxLen = 30;
+  const maxLen = 25;
   const truncate = text => text.length < maxLen ? text : text.substring(0, maxLen) + "...";
   return (
     <div className="space-y-4">
