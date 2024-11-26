@@ -1,139 +1,39 @@
-"use client";
-
-import React, { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import React from "react";
 import Link from "next/link";
+import { SearchBar } from "./SearchBar";
+import { Suspense } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faSpinner } from '@fortawesome/free-solid-svg-icons';
 
 
-export default function ChatSidePanel({ chats, totalPages }) {
-  //const [chats, setChats] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [sortOption, setSortOption] = useState("newest");
-  const [contentFilter, setContentFilter] = useState("all");
-  const [advancedSettingsOpen, setAdvancedSettingsOpen] = useState(false);
-  const [page, setPage] = useState(1);
-
-  const router = useRouter();
-  const searchParams = useSearchParams();
-
-  // Sync search params with UI state
-  useEffect(() => {
-    const term = searchParams.get("term") || "";
-    const currentPage = parseInt(searchParams.get("page") || "1", 10);
-    setSearchTerm(term);
-    setPage(currentPage);
-  }, [searchParams]);
-
-  const handleSearchChange = (e) => {
-    const term = e.target.value;
-    setSearchTerm(term);
-    router.push(`/chats?term=${term}&page=1`);
-  };
-
-  const handleAdvancedToggle = () => {
-    setAdvancedSettingsOpen(!advancedSettingsOpen);
-  };
-
-  const handleSortChange = (e) => {
-    setSortOption(e.target.value);
-    router.push(`/chats?term=${searchTerm}&page=1`);
-  };
-
-  const handleContentFilterChange = (e) => {
-    setContentFilter(e.target.value);
-    router.push(`/chats?term=${searchTerm}&page=1`);
-  };
-
-  const handlePageChange = (newPage) => {
-    setPage(newPage);
-    router.push(`/chats?term=${searchTerm}&page=${newPage}`);
-  };
+export default function ChatSidePanel({ queryParams }) {
+  const { term="", sortby="newest", filter="all", page=1, advanced=false } = queryParams;
+  const suspenseKey = term + page + sortby + filter;
 
   return (
     <div className="p-4 border-r overflow-y-auto bg-slate-200 h-dvh">
       {/* Search Form */}
-      <div className="mb-4">
-        <div className="flex items-center space-x-2 mb-2">
-          <div className="relative flex-grow">
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={handleSearchChange}
-              placeholder="Search..."
-              className="w-full border px-3 py-2 rounded pr-10"
-            />
-            <span className="absolute right-3 top-2 text-gray-500">
-              🔍
-            </span>
-          </div>
-          <button
-            onClick={() => router.push(`/chats?term=${searchTerm}&page=1`)}
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-          >
-            Go
-          </button>
-        </div>
-        <button
-          onClick={handleAdvancedToggle}
-          className="text-sm text-gray-700 flex items-center space-x-2"
-        >
-          ⚙️ Advanced settings
-        </button>
-        {advancedSettingsOpen && (
-          <SearchSettings
-            sortOption={sortOption}
-            contentFilter={contentFilter}
-            onSortChange={handleSortChange}
-            onContentFilterChange={handleContentFilterChange} />
-        )}
-      </div>
+      <SearchBar queryParams={queryParams} />
 
       {/* Chat List */}
-      <ChatList chats={chats} />
-
-      {/* Pagination */}
-      {totalPages > 0 && (
-        <Pagination page={page} totalPages={totalPages} onPageChange={handlePageChange} />
-      )}
+      <Suspense key={suspenseKey} fallback={<Loader />}>
+        <ChatList queryParams={queryParams} />
+      </Suspense>
     </div>
   );
 };
 
-function SearchSettings({ sortOption, onSortChange, onContentFilterChange, contentFilter }) {
-  const Radio = radioFactory("contentFilter", onContentFilterChange);
+async function ChatList({ queryParams }) {
+  const queryString = (new URLSearchParams(queryParams)).toString();
 
-  return <div className="mt-2 space-y-2">
-    {/* Sort Options */}
-    <div>
-      <label className="block text-sm font-medium">Sort By:</label>
-      <select
-        value={sortOption}
-        onChange={onSortChange}
-        className="w-full border px-3 py-2 rounded"
-      >
-        <option value="newest">Newest First</option>
-        <option value="oldest">Oldest First</option>
-      </select>
-    </div>
-    {/* Content Filter */}
-    <div>
-      <label className="block text-sm font-medium">Content Filter:</label>
-      <div className="flex items-center space-x-2">
-        <Radio label="All" value="all" checked={contentFilter === "all"} />
-        <Radio label="With Code" value="withCode" checked={contentFilter === "withCode"} />
-        <Radio label="No Code" value="noCode" checked={contentFilter === "noCode"} />
-      </div>
-    </div>
-  </div>;
-}
+  const [ chats, totalPages ] = await fetchChats("http://django:8000/api/chats/", queryString);
 
-function ChatList({ chats }) {
   const maxLen = 25;
   const truncate = text => text.length < maxLen ? text : text.substring(0, maxLen) + "...";
+
   return (
     <div className="space-y-4">
-      {chats.length > 0 ? (
+      {chats && chats.length > 0 ? (
         chats.map((chat) => (
           <div key={chat.id} className="flex items-center space-x-4">
             <img
@@ -148,49 +48,80 @@ function ChatList({ chats }) {
       ) : (
         <p>No chats found.</p>
       )}
+      {/* Pagination */}
+      {totalPages > 0 && (
+        <Pagination queryParams={queryParams} totalPages={totalPages} />
+      )}
     </div>
   );
 }
 
-function Pagination({ page, onPageChange, totalPages }) {
+function Pagination({ queryParams, totalPages }) {
+  const { term="", page=1, advanced, filter } = queryParams;
+  let pageNumber = Number(page);
+
+
+  function buildUrl(pageNo) {
+    const params = new URLSearchParams(queryParams);
+    params.set("page", pageNo);
+    return `/chats?${params.toString()}`;
+  }
+  
+  const prevUrl = buildUrl(pageNumber - 1);
+  const nextUrl = buildUrl(pageNumber + 1);
+  
   return (
     <div className="mt-4 flex justify-between items-center">
-      <button
-        disabled={page === 1}
-        onClick={() => onPageChange(page - 1)}
-        className={`px-4 py-2 border rounded ${page === 1 ? "opacity-50 cursor-not-allowed" : ""}`}
+      <Link 
+        disabled={pageNumber === 1}
+        href={prevUrl}
+        className={`px-4 py-2 border rounded ${pageNumber === 1 ? "opacity-50 cursor-not-allowed" : ""}`}
       >
         Previous
-      </button>
+      </Link>
       <span>
-        Page {page} of {totalPages}
+        Page {pageNumber} of {totalPages}
       </span>
-      <button
-        disabled={page === totalPages}
-        onClick={() => onPageChange(page + 1)}
-        className={`px-4 py-2 border rounded ${page === totalPages ? "opacity-50 cursor-not-allowed" : ""}`}
+      <Link 
+        disabled={pageNumber === 1}
+        href={nextUrl}
+        className={`px-4 py-2 border rounded ${pageNumber === totalPages ? "opacity-50 cursor-not-allowed" : ""}`}
       >
         Next
-      </button>
+      </Link>
     </div>
   );
 }
 
 
-function RadioButton({ label, type="radio",  ...rest }) {
+function Loader() {
   return (
-    <div>
-      <label>
-        <input type="radio" {...rest} />{" "}
-        {label}
-      </label>
-    </div>
+      <div className="mt-12">
+          <div className="text-3xl text-center text-blue-800 font-semibold">
+              <span>Loading... </span>
+              <span><FontAwesomeIcon icon={faSpinner} spin size="lg"/></span>
+          </div>
+      </div>
   );
 }
 
-function radioFactory(name, onChange) {
-  function Component(props) {
-    return <RadioButton name={name} onChange={onChange} {...props} />
+
+async function fetchChats(baseUrl, query) {
+  let chats = [];
+  let totalPages = 1;
+
+  try {
+      const extra = query ? `?${query}` : "";
+      const response = await fetch(`${baseUrl}${extra}`);
+      const data = await response.json();
+
+      chats = data.results;
+      // todo: modify API to return totalPages in response
+      totalPages = Math.ceil(data.count / 2);
+  } catch (error) {
+      console.error("Failed to fetch chats:", error);
+      throw error;
   }
-  return Component;
+
+  return [ chats, totalPages ];
 }

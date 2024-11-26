@@ -97,7 +97,9 @@ class ChatViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         term = self.request.query_params.get("term", "")
-        return self.queryset.filter(name__contains=term)
+        sortby = self.request.query_params.get("sortby", "newest")
+        ordering = "-name" if sortby == "oldest" else "name"
+        return self.queryset.filter(name__contains=term).order_by(ordering)
 
 
 class MultimediaMessageViewSet(viewsets.ModelViewSet):

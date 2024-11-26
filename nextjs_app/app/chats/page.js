@@ -47,14 +47,12 @@ export default async function Page(props) {
 
     
     console.log("query:", query, "params:", (new URLSearchParams(query)).toString());
+
     const queryString = (new URLSearchParams(query)).toString();
 
     //todo: error handling
     const configsResponse = await fetch("http://django:8000/api/configs/");
     const configs = await configsResponse.json();
-
-    const [ panelChats, totalPages ] = await fetchChats("http://django:8000/api/chats/", queryString);
-
 
     const [ chats, ...rest ] = await fetchChats("http://django:8000/api/chats/");
     const topChats = chats.slice(0);
@@ -102,7 +100,7 @@ export default async function Page(props) {
         </div>
     ));
 
-    let chatsPanel = <ChatSidePanel chats={panelChats} totalPages={totalPages} />;
+    let chatsPanel = <ChatSidePanel queryParams={query} />;
     return (
         <div>
             <div className="md:hidden">
