@@ -95,6 +95,10 @@ class ChatViewSet(viewsets.ModelViewSet):
         message = MultimediaMessage.objects.create(role="user", content=modality, chat=chat)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+    def get_queryset(self):
+        term = self.request.query_params.get("term", "")
+        return self.queryset.filter(name__contains=term)
+
 
 class MultimediaMessageViewSet(viewsets.ModelViewSet):
     queryset = MultimediaMessage.objects.all()

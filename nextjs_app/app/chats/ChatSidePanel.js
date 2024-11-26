@@ -93,7 +93,9 @@ export default function ChatSidePanel({ chats, totalPages }) {
       <ChatList chats={chats} />
 
       {/* Pagination */}
-      <Pagination page={page} totalPages={totalPages} onPageChange={handlePageChange} />
+      {totalPages > 0 && (
+        <Pagination page={page} totalPages={totalPages} onPageChange={handlePageChange} />
+      )}
     </div>
   );
 };
