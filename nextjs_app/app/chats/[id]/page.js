@@ -1,5 +1,8 @@
+import PageWithSidePanel from "../PageWithSidePanel";
+
 export default async function Page(props) {
     const params = await props.params;
+    const searchParams = await props.searchParams;
     const id = params.id;
 
     const response = await fetch(`http://django:8000/api/chats/${id}/`);
@@ -7,9 +10,9 @@ export default async function Page(props) {
     console.log(response.status, data)
 
     return (
-        <div>
+        <PageWithSidePanel searchParams={searchParams}>
             <div>{data.name}</div>
             <div>{data.messages.map(msg => <div>{msg}</div>)}</div>
-        </div>
+        </PageWithSidePanel>
     );
 }

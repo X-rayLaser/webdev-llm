@@ -2,7 +2,7 @@ import { Card } from "@/app/chats/ChatItem";
 import NewChatForm from "./NewChatForm";
 import ChatSidePanel from "./ChatSidePanel";
 import { fetchChats } from "../utils";
-
+import PageWithSidePanel from "./PageWithSidePanel";
 
 const exampleData = {
     header: "Introduction to React",
@@ -81,47 +81,29 @@ export default async function Page(props) {
         </div>
     ));
 
-    let chatsPanel = <ChatSidePanel queryParams={query} />;
     return (
-        <div>
+        <PageWithSidePanel searchParams={query}>
             <div className="md:hidden">
-                <div className="w-80">
-                    <div className="fixed w-[inherit] max-w-[inherit] h-dvh">
-                        {chatsPanel}
-                    </div>
-                            
-                </div>
+                <NewChatForm configs={configs} />
 
-                <div className="ml-8">
-                    <NewChatForm configs={configs} />
+                <div className="mt-16">
+                    <h4 className="text-2xl mb-4 text-center font-bold">Recent chats</h4>
+                    <div>{items}</div>
+                </div>
+            </div>
+            <div className="hidden md:block">
+                <div className="grow p-4">
+                    <div className="w-full lg:w-3/4 xl:w-1/2 mx-auto p-4 border border-blue-800 rounded-lg shadow-lg">
+                        <h2 className="text-center font-bold text-2xl mb-2">Start new chat</h2>
+                        <NewChatForm configs={configs} />
+                    </div>
 
                     <div className="mt-16">
-                        <h4 className="text-2xl mb-4 text-center font-bold">Recent chats</h4>
+                        <h2 className="text-2xl mb-4 text-center font-bold">Recent chats</h2>
                         <div>{items}</div>
                     </div>
                 </div>
             </div>
-            <div className="hidden md:block">
-                <div className="flex items-start">
-                    <div className="shrink-0 grow-0 w-10/12 sm:w-80 max-w-[800px]">
-                        <div className="fixed w-[inherit] max-w-[inherit]">
-                        {chatsPanel}
-                        </div>
-                    </div>
-
-                    <div className="grow p-4">
-                        <div className="w-full lg:w-3/4 xl:w-1/2 mx-auto p-4 border border-blue-800 rounded-lg shadow-lg">
-                            <h2 className="text-center font-bold text-2xl mb-2">Start new chat</h2>
-                            <NewChatForm configs={configs} />
-                        </div>
-
-                        <div className="mt-16">
-                            <h2 className="text-2xl mb-4 text-center font-bold">Recent chats</h2>
-                            <div>{items}</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
+        </PageWithSidePanel>
+    )
 }
