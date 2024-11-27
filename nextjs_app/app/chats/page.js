@@ -1,14 +1,7 @@
 import { Card } from "@/app/chats/ChatItem";
 import NewChatForm from "./NewChatForm";
 import ChatSidePanel from "./ChatSidePanel";
-
-const exampleChat = {
-    systemMessage: "Please ensure that all responses are concise, informative, and polite. Additionally, maintain a tone that is approachable and friendly. Avoid using overly technical jargon unless specifically requested by the user. If a question is ambiguous or lacks sufficient details, ask clarifying questions before providing an answer.",
-    prompt: "Can you explain the theory of relativity in simple terms for someone who has no background in physics, but is curious about how it applies to the universe and our understanding of space-time?",
-    summary: "The user asked for a layman's explanation of Einstein's theory of relativity and its significance in understanding the universe.",
-    lastMessage: "Certainly! The theory of relativity, proposed by Albert Einstein, fundamentally changed how we understand space, time, and gravity. The 'special relativity' part explains that time and space are interconnected, forming a single continuum called spacetime. Objects moving close to the speed of light experience time and space differently than stationary ones. The 'general relativity' part explains gravity not as a force but as a curvature in spacetime caused by massive objects. This idea helps explain phenomena like black holes, gravitational waves, and the expansion of the universe.",
-    imageUrl: "/app/test-image.jpeg",
-  };
+import { fetchChats } from "../utils";
 
 
 const exampleData = {
@@ -18,27 +11,6 @@ const exampleData = {
     buttonLabel: "Resume chat",
     createdAt: "2024-11-12T09:30:00",
 };
-
-
-async function fetchChats(baseUrl, query) {
-    let chats = [];
-    let totalPages = 1;
-
-    try {
-        const extra = query ? `?${query}` : "";
-        const response = await fetch(`${baseUrl}${extra}`);
-        const data = await response.json();
-        chats = data.results;
-        // todo: modify API to return totalPages in response
-        totalPages = Math.ceil(data.count / 2);
-        console.log("CHATS !", data)
-    } catch (error) {
-        console.error("Failed to fetch chats:", error);
-        throw error;
-    }
-
-    return [ chats, totalPages ];
-}
 
 export default async function Page(props) {
     const query = await props.searchParams;

@@ -5,7 +5,7 @@ import { Suspense } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSpinner } from '@fortawesome/free-solid-svg-icons';
 import { DeletableChatItem } from "./DeletableChatItem";
-
+import { fetchChats } from "../utils";
 
 export default function ChatSidePanel({ queryParams }) {
   const { term="", sortby="newest", filter="all", page=1, advanced=false } = queryParams;
@@ -16,6 +16,8 @@ export default function ChatSidePanel({ queryParams }) {
       {/* Search Form */}
       <SearchBar queryParams={queryParams} />
 
+
+      <hr className="bg-gray-400 h-[2px] my-4" />
       {/* Chat List */}
       <Suspense key={suspenseKey} fallback={<Loader />}>
         <ChatList queryParams={queryParams} />
@@ -35,7 +37,7 @@ async function ChatList({ queryParams }) {
   }
   return (
     <div>
-      {items.length > 0 ? <div className="space-y-4">{items}</div> : <p>No chats found.</p>}
+      {items.length > 0 ? <div className="space-y-2">{items}</div> : <p>No chats found.</p>}
       {/* Pagination */}
       {totalPages > 0 && (
         <Pagination queryParams={queryParams} totalPages={totalPages} />
@@ -91,25 +93,4 @@ function Loader() {
           </div>
       </div>
   );
-}
-
-
-async function fetchChats(baseUrl, query) {
-  let chats = [];
-  let totalPages = 1;
-
-  try {
-      const extra = query ? `?${query}` : "";
-      const response = await fetch(`${baseUrl}${extra}`);
-      const data = await response.json();
-
-      chats = data.results;
-      // todo: modify API to return totalPages in response
-      totalPages = Math.ceil(data.count / 2);
-  } catch (error) {
-      console.error("Failed to fetch chats:", error);
-      throw error;
-  }
-
-  return [ chats, totalPages ];
 }

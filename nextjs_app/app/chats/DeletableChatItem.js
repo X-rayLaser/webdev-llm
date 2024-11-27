@@ -18,11 +18,11 @@ export function DeletableChatItem({ chat, maxLen = 25 }) {
 
   return (
     <div className="relative">
-      <div key={chat.id} className="flex items-center gap-4">
+      <div key={chat.id} className="flex items-center gap-2 bg-white rounded-md">
         <img
           src="/app/test-image.jpeg"
           alt={chat.name}
-          className="w-12 h-12 rounded" />
+          className="w-12 h-12 rounded-l-md" />
         {!deleting && (
           <Link href={`/chats/${chat.id}`} className="text-blue-500 flex">
             <div className="max-w-44 overflow-hidden whitespace-nowrap inline-block">{chat.name}</div>
@@ -44,7 +44,7 @@ export function DeletableChatItem({ chat, maxLen = 25 }) {
           <div>Are you sure that you wish to delete the chat?</div>
         </ConfirmationModal>
       </div>
-      <div className={`absolute right-0 top-0 h-12 flex justify-center items-center ${deleting ? "hidden" : ""}`}>
+      <div className={`absolute right-2 top-0 h-12 flex justify-center items-center ${deleting ? "hidden" : ""}`}>
         <div className="text-red-400 hover:text-red-800 hover:cursor-pointer">
           <FontAwesomeIcon icon={faTrash} onClick={() => setShow(true)} />
         </div>
