@@ -8,7 +8,8 @@ async function fetchChats(baseUrl, query) {
         const data = await response.json();
         chats = data.results;
         // todo: modify API to return totalPages in response
-        totalPages = Math.ceil(data.count / 2);
+        totalPages = data.num_pages;
+        console.log(data.count, totalPages)
     } catch (error) {
         console.error("Failed to fetch chats:", error);
         throw error;

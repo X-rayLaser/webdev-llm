@@ -1,3 +1,4 @@
+import math
 from rest_framework import viewsets
 from rest_framework import generics, mixins
 from rest_framework import decorators
@@ -72,10 +73,22 @@ class CommentViewSet(viewsets.ModelViewSet):
 
 
 class StandardResultsSetPagination(PageNumberPagination):
-    page_size = 2
+    page_size = 5
     page_size_query_param = 'page_size'
     max_page_size = 1000
 
+    def get_paginated_response(self, data):
+        count = self.page.paginator.count
+        num_pages = math.ceil(count / self.page_size)
+        return Response({
+            'links': {
+                'next': self.get_next_link(),
+                'previous': self.get_previous_link()
+            },
+            'count': count,
+            'num_pages': num_pages,
+            'results': data
+        })
 
 class ChatViewSet(viewsets.ModelViewSet):
     queryset = Chat.objects.all()
