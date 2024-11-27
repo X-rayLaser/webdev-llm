@@ -39,7 +39,7 @@ async function ChatList({ queryParams }) {
     <div>
       {items.length > 0 ? <div className="space-y-2">{items}</div> : <p className="text-center">No chats found.</p>}
       {/* Pagination */}
-      {totalPages > 0 && (
+      {totalPages > 1 && (
         <Pagination totalPages={totalPages} />
       )}
     </div>
