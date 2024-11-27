@@ -226,9 +226,19 @@ async function startNewChat(prevState, formData) {
     return result;
 }
 
+async function deleteChat(id) {
+    const deleationActionSet = new ActionSet({
+        listUrl: "http://django:8000/api/chats/",
+        pathToRevalidate: "/chats",
+        itemName: "chat"
+    });
+    const result = await deleationActionSet.destroy(id)
+    return result;
+}
+
 export {
     createServerEntry, updateServerEntry, deleteServerEntry,
     createPresetEntry, updatePresetEntry, deletePresetEntry,
     createConfigEntry, updateConfigEntry, deleteConfigEntry,
-    startNewChat
+    startNewChat, deleteChat
  };

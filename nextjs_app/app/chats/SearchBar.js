@@ -56,11 +56,6 @@ export function SearchBar({ queryParams }) {
           🔍
         </span>
       </div>
-      <button
-        className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-      >
-        Go
-      </button>
     </div>
     <button
       onClick={handleAdvancedToggle}
@@ -88,7 +83,7 @@ function SearchSettings({ sortOption, onSortChange, onContentFilterChange, conte
       <select
         defaultValue={sortOption}
         onChange={onSortChange}
-        className="w-full border px-3 py-2 rounded"
+        className="w-full border px-2 py-2 rounded"
       >
         <option value="newest">Newest First</option>
         <option value="oldest">Oldest First</option>

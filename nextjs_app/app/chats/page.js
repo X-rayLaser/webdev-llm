@@ -41,14 +41,7 @@ async function fetchChats(baseUrl, query) {
 }
 
 export default async function Page(props) {
-    const params = await props.params;
-
     const query = await props.searchParams;
-
-    
-    console.log("query:", query, "params:", (new URLSearchParams(query)).toString());
-
-    const queryString = (new URLSearchParams(query)).toString();
 
     //todo: error handling
     const configsResponse = await fetch("http://django:8000/api/configs/");
@@ -63,12 +56,18 @@ export default async function Page(props) {
     }
 
     async function getPrompt(chat) {
-        return await fetchMessage(chat.messages[0]);
+        if (chat.messages.length === 0) {
+            throw "Unexpected error - empty chat";
+        }
+        return chat.messages ? await fetchMessage(chat.messages[0]) : "";
     }
 
     async function getLastMessage(chat) {
+        if (chat.messages.length === 0) {
+            throw "Unexpected error - empty chat";
+        }
         const lastUrl = chat.messages[chat.messages.length - 1];
-        return await fetchMessage(lastUrl);
+        return lastUrl ? await fetchMessage(lastUrl) : "";
     }
 
     async function getFirstAndLastMessages(chat) {
@@ -78,13 +77,23 @@ export default async function Page(props) {
 
     const promises = topChats.map(chat => 
         new Promise(
-            resolve => getFirstAndLastMessages(chat).then(res => {
+            (resolve, reject) => getFirstAndLastMessages(chat).then(res => {
                 resolve({ chat, prompt: res.prompt, lastMessage: res.lastMessage });
-            })
+            }).catch(reject)
         )
     );
+    
+    const chatsWithMessages = [];
+    
+    const results = await Promise.allSettled(promises);
+    results.forEach(result => {
+        if (result.status === "fulfilled") {
+            chatsWithMessages.push(result.value);
+        } else {
+            console.error("Promise rejected. Reason: ", result.reason);
+        }
+    });
 
-    const chatsWithMessages = await Promise.all(promises);
     console.log("chatsWithMessages", chatsWithMessages)
     
     let items = chatsWithMessages.map((obj, idx) => (
@@ -92,7 +101,7 @@ export default async function Page(props) {
             <Card
                 header={obj.chat.name}
                 imageUrl="/app/test-image.jpeg"
-                prompt={obj.lastMessage.content_ro.text}
+                prompt={obj.prompt.content_ro.text}
                 lastMessage={obj.lastMessage.content_ro.text}
                 buttonLabel={exampleData.buttonLabel}
                 createdAt={exampleData.createdAt}

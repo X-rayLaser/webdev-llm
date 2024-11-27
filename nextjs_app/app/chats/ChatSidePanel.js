@@ -4,6 +4,7 @@ import { SearchBar } from "./SearchBar";
 import { Suspense } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSpinner } from '@fortawesome/free-solid-svg-icons';
+import { DeletableChatItem } from "./DeletableChatItem";
 
 
 export default function ChatSidePanel({ queryParams }) {
@@ -28,26 +29,13 @@ async function ChatList({ queryParams }) {
 
   const [ chats, totalPages ] = await fetchChats("http://django:8000/api/chats/", queryString);
 
-  const maxLen = 25;
-  const truncate = text => text.length < maxLen ? text : text.substring(0, maxLen) + "...";
-
+  let items = [];
+  if (chats && chats.length > 0) {
+    items = chats.map((chat, idx) => <DeletableChatItem key={idx} chat={chat} />);
+  }
   return (
-    <div className="space-y-4">
-      {chats && chats.length > 0 ? (
-        chats.map((chat) => (
-          <div key={chat.id} className="flex items-center space-x-4">
-            <img
-              src="/app/test-image.jpeg"
-              alt={chat.name}
-              className="w-12 h-12 rounded" />
-            <Link href={`/chats/${chat.id}`} className="text-blue-500">
-              {truncate(chat.name)}
-            </Link>
-          </div>
-        ))
-      ) : (
-        <p>No chats found.</p>
-      )}
+    <div>
+      {items.length > 0 ? <div className="space-y-4">{items}</div> : <p>No chats found.</p>}
       {/* Pagination */}
       {totalPages > 0 && (
         <Pagination queryParams={queryParams} totalPages={totalPages} />
