@@ -1,11 +1,11 @@
 import React from "react";
-import Link from "next/link";
 import { SearchBar } from "./SearchBar";
 import { Suspense } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSpinner } from '@fortawesome/free-solid-svg-icons';
 import { DeletableChatItem } from "./DeletableChatItem";
 import { fetchChats } from "../utils";
+import { Pagination } from "./Pagination";
 
 export default function ChatSidePanel({ queryParams }) {
   const { term="", sortby="newest", filter="all", page=1, advanced=false } = queryParams;
@@ -40,49 +40,11 @@ async function ChatList({ queryParams }) {
       {items.length > 0 ? <div className="space-y-2">{items}</div> : <p className="text-center">No chats found.</p>}
       {/* Pagination */}
       {totalPages > 0 && (
-        <Pagination queryParams={queryParams} totalPages={totalPages} />
+        <Pagination totalPages={totalPages} />
       )}
     </div>
   );
 }
-
-function Pagination({ queryParams, totalPages }) {
-  const { term="", page=1, advanced, filter } = queryParams;
-  let pageNumber = Number(page);
-
-
-  function buildUrl(pageNo) {
-    const params = new URLSearchParams(queryParams);
-    params.set("page", pageNo);
-    return `/chats?${params.toString()}`;
-  }
-  
-  const prevUrl = buildUrl(pageNumber - 1);
-  const nextUrl = buildUrl(pageNumber + 1);
-  
-  return (
-    <div className="mt-4 flex justify-between items-center">
-      <Link 
-        disabled={pageNumber === 1}
-        href={prevUrl}
-        className={`px-4 py-2 border rounded ${pageNumber === 1 ? "opacity-50 cursor-not-allowed" : ""}`}
-      >
-        Previous
-      </Link>
-      <span>
-        Page {pageNumber} of {totalPages}
-      </span>
-      <Link 
-        disabled={pageNumber === 1}
-        href={nextUrl}
-        className={`px-4 py-2 border rounded ${pageNumber === totalPages ? "opacity-50 cursor-not-allowed" : ""}`}
-      >
-        Next
-      </Link>
-    </div>
-  );
-}
-
 
 function Loader() {
   return (
