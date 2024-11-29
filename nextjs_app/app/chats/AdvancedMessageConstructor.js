@@ -52,6 +52,11 @@ export default function AdvancedMessageConstructor() {
         setModalities(updatedModalities);
     }
 
+    function handleSuccessfulTextDelete(id, result) {
+        const updatedModalities = modalities.filter(mod => mod.id !== id);
+        setModalities(updatedModalities);
+    }
+
     const AddTextForm = makeCreateForm(TextForm, createAction);
 
     return (
@@ -60,7 +65,8 @@ export default function AdvancedMessageConstructor() {
             {modalities.length > 0 && (
                 <ModalityMixturePanel 
                     mixture={modalities}
-                    onSuccessfulUpdate={handleSuccessfulTextUpdate} />
+                    onSuccessfulUpdate={handleSuccessfulTextUpdate}
+                    onSuccessfulDelete={handleSuccessfulTextDelete} />
             )}
             {modalities.length === 0 && (
                 <h2 className="text-2xl text-center">
@@ -90,13 +96,15 @@ export default function AdvancedMessageConstructor() {
     );
 }
 
-function ModalityMixturePanel({ mixture, onSuccessfulUpdate }) {
-    console.log("mixture:", mixture)
+function ModalityMixturePanel({ mixture, onSuccessfulUpdate, onSuccessfulDelete }) {
     const items = mixture.map((modData, idx) => {
         const { modality_type, ...rest } = modData;
         let item;
         if (modality_type === "text") {
-            item = <TextModality data={modData} onSuccessfulUpdate={onSuccessfulUpdate} />;
+            item = <TextModality 
+                        data={modData}
+                        onSuccessfulUpdate={onSuccessfulUpdate}
+                        onSuccessfulDelete={onSuccessfulDelete} />;
         } else {
             item =  <div>Unknown modality</div>;
         }
@@ -111,13 +119,19 @@ function ModalityMixturePanel({ mixture, onSuccessfulUpdate }) {
     );
 }
 
-function TextModality({ data, onSuccessfulUpdate }) {
+function TextModality({ data, onSuccessfulUpdate, onSuccessfulDelete }) {
     async function updateAction() {
         const result = await updateTextModality(...arguments);
-        console.log("RESULT IN UPDATE:", result)
         onSuccessfulUpdate(data.id, result);
         return result;
     }
+
+    async function deleteAction() {
+        const result = await deleteTextModality(...arguments);
+        onSuccessfulDelete(data.id, result);
+        return result;
+    }
+
     const EditTextForm = makeEditForm(TextForm, updateAction);
 
     const bodySection = (
@@ -127,11 +141,8 @@ function TextModality({ data, onSuccessfulUpdate }) {
         <PanelItem
             data={data}
             editComponent={EditTextForm}
-            deleteAction={deleteTextModality}
+            deleteAction={deleteAction}
             headerSection={<div></div>}
             bodySection={bodySection} />
     );
-    return (
-        <div className="p-2 border rounded-lg shadow-sm bg-white">{text}</div>
-    )
 }

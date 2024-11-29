@@ -74,7 +74,9 @@ export function PanelItem({ data, editComponent, componentArgs, deleteAction, he
   function handleConfirm() {
     setDeletion(true);
     setShowDialog(false);
-    deleteAction(data.id);
+    deleteAction(data.id).then(res => {
+      setDeletion(false);
+    });
   }
 
   function handleClose() {

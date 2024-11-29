@@ -269,14 +269,6 @@ async function createTextModality(parentId, prevState, formData) {
     return result;
 }
 
-/*
-async function updateTextModality(id, prevState, formData) {
-    //formData.append("modality_type", "text");
-    const result = await textModalityActionSet.update(id, prevState, formData);
-    return result;
-}
-*/
-
 const [_ignored1, updateTextModality, deleteTextModality] = textModalityActionSet.getActionFunctions();
 
 
