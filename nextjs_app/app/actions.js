@@ -245,14 +245,26 @@ async function deleteChat(id) {
 
 async function createMixedModality() {
     const url = `${baseApiUrl}/modalities/`;
-    const response = await fetchJson(url, "POST", { modality_type: "mixture"});
-    if (!response.ok) {
+    try {
+        const response = await fetchJson(url, "POST", { modality_type: "mixture"});
+
+        if (!response.ok) {
+            return prepareResultMessage(false, {
+                message: "Failed to create a mixed modality",
+                errors: []
+            })
+        }
+
+        const responseData = await response.json();
+    
+        return prepareResultMessage(true, responseData);
+    } catch (error) {
+        console.log("Error");
         return prepareResultMessage(false, {
             message: "Failed to create a mixed modality",
             errors: []
         })
     }
-    return await response.json();
 }
 
 const textModalityActionSet = new ActionSet({
@@ -260,6 +272,7 @@ const textModalityActionSet = new ActionSet({
     itemName: "text modality",
     updateMethod: "PATCH"
 });
+
 
 async function createTextModality(parentId, prevState, formData) {
     formData.append("parent", parentId);

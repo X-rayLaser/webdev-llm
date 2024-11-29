@@ -32,7 +32,11 @@ export default function AdvancedMessageConstructor() {
     async function createAction() {
         let parentId;
         if (parent === null) {
-            const responseData = await createMixedModality();
+            const result = await createMixedModality();
+            const { success, responseData } = result;
+            if (!success) {
+                throw responseData.message;
+            }
             parentId = responseData.id;
             setParent(parentId);
         } else {
