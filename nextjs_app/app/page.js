@@ -1,8 +1,5 @@
 import Image from "next/image";
 import "@/app/page.css"
-import ServerForm from "@/app/components/server-forms";
-import PresetForm from "@/app/components/preset-forms";
-import ConfigurationForm from "@/app/components/config-forms";
 
 
 export default function Home() {
@@ -12,9 +9,6 @@ export default function Home() {
   return (
     <div>
       <div className="my-grid-item">Greeting!</div>
-      <ServerForm />
-      <PresetForm />
-      <ConfigurationForm presets={presets} servers={servers} />
     </div>
   );
 }

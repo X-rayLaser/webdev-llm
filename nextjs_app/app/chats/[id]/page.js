@@ -1,4 +1,5 @@
 import PageWithSidePanel from "../PageWithSidePanel";
+import AdvancedMessageConstructor from "../AdvancedMessageConstructor";
 
 export default async function Page(props) {
     const params = await props.params;
@@ -13,6 +14,7 @@ export default async function Page(props) {
         <PageWithSidePanel searchParams={searchParams}>
             <div>{data.name}</div>
             <div>{data.messages.map(msg => <div>{msg}</div>)}</div>
+            <AdvancedMessageConstructor />
         </PageWithSidePanel>
     );
 }

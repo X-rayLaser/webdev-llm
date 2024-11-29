@@ -24,7 +24,7 @@ export function ProminentButton({ className, children, ...rest }) {
 
 export function OutlineButton({ className, children, ...rest }) {
     return (
-        <button className="px-12 py-2 hover:bg-sky-800 hover:text-white hover:border-violet-800 text-gray-800 border-2
+        <button className="px-2 py-2 hover:bg-sky-800 hover:text-white hover:border-violet-800 text-gray-800 border-2
                          border-sky-800 rounded-md text-lg font-semibold"
                 {...rest}>
             {children}

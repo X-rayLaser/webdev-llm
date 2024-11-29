@@ -46,7 +46,7 @@ export function formFactory(fields, renderFields) {
 
             setRunningSubmission(false);
             if (res.success) {
-                onSuccess();
+                onSuccess(res, states);
             } else {
                 return res.responseData;
             }

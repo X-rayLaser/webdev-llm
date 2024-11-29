@@ -15,6 +15,10 @@ export function Alert({ text, level="info", size="lg" }) {
             bgColor = "red";
             borderColor = "orange";
             break;
+        case "info":
+            bgColor = "cyan";
+            borderColor = "blue";
+            break;
         default:
             bgColor = "coral";
             borderColor = "cyan";
@@ -24,6 +28,10 @@ export function Alert({ text, level="info", size="lg" }) {
         case "lg":
             padding = "p-5";
             break;
+        case "md":
+            padding = "p-3";
+        case "sm":
+            padding = "p-2";
         case "xs":
             padding = "p-0";
         default:
@@ -32,9 +40,10 @@ export function Alert({ text, level="info", size="lg" }) {
 
     const bgClass = `bg-${bgColor}-300`;
     const borderColorClass = `border-${bgColor}-600`;
+    const textColor = `text-${bgColor}-800`;
 
     return (
-        <div className={`${bgClass} rounded-sm border-2 ${padding} ${borderColorClass} text-center font-semibold text-red-800 shadow-lg`}>
+        <div className={`${bgClass} rounded-sm border-2 ${padding} ${borderColorClass} text-center font-semibold ${textColor} shadow-lg`}>
             <span>
                 <FontAwesomeIcon icon={faTriangleExclamation} />
             </span>

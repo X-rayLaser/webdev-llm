@@ -66,7 +66,7 @@ async function sendData({ url, method="POST", prevState, formData, serverErrorMe
 
 
 class ActionSet {
-    constructor({ listUrl, pathToRevalidate, excludeBlanks=[], errorMessages, itemName="entry" }) {
+    constructor({ listUrl, pathToRevalidate, excludeBlanks=[], errorMessages, itemName="entry", updateMethod="PUT" }) {
         this.listUrl = listUrl;
         this.pathToRevalidate = pathToRevalidate
         this.excludeBlanks = excludeBlanks || [];
@@ -77,6 +77,8 @@ class ActionSet {
             updateError: template("update"),
             destroyError: template("destroy"),
         };
+
+        this.updateMethod = updateMethod;
     }
 
     async create(prevState, formData) {
@@ -92,7 +94,7 @@ class ActionSet {
         const url = `${this.listUrl}${id}/`;
         return await this.mutateData({
             url,
-            method: "PUT",
+            method: this.updateMethod,
             prevState,
             formData,
             errorMsg: this.errorMessages.updateError
@@ -115,7 +117,9 @@ class ActionSet {
             return prepareResultMessage(false, message);
         }
     
-        revalidatePath(this.pathToRevalidate);
+        if (this.pathToRevalidate) {
+            revalidatePath(this.pathToRevalidate);
+        }
         return { success: true };
     }
 
@@ -132,7 +136,7 @@ class ActionSet {
             serverErrorMessage: errorMsg
         });
 
-        if (result.success) {
+        if (result.success && this.pathToRevalidate) {
             revalidatePath(this.pathToRevalidate);
         }
 
@@ -145,29 +149,31 @@ class ActionSet {
     }
 }
 
+const baseApiUrl = "http://django:8000/api";
+
 const serverActionSet = new ActionSet({
-    listUrl: "http://django:8000/api/servers/",
+    listUrl: `${baseApiUrl}/servers/`,
     pathToRevalidate: "/configuration",
     excludeBlanks: ["description", "configuration"],
     itemName: "server"
 });
 
 const presetActionSet = new ActionSet({
-    listUrl: "http://django:8000/api/presets/",
+    listUrl: `${baseApiUrl}/presets/`,
     pathToRevalidate: "/configuration",
     excludeBlanks: ["extra_params"],
     itemName: "preset"
 });
 
 const configActionSet = new ActionSet({
-    listUrl: "http://django:8000/api/configs/",
+    listUrl: `${baseApiUrl}/configs/`,
     pathToRevalidate: "/configuration",
     excludeBlanks: ["extra_params"],
     itemName: "configuration"
 });
 
 const chatActionSet = new ActionSet({
-    listUrl: "http://django:8000/api/chats/start-new-chat/",
+    listUrl: `${baseApiUrl}/chats/start-new-chat/`,
     pathToRevalidate: "/chats",
     itemName: "chat"
 });
@@ -237,9 +243,48 @@ async function deleteChat(id) {
     return result;
 }
 
+async function createMixedModality() {
+    const url = `${baseApiUrl}/modalities/`;
+    const response = await fetchJson(url, "POST", { modality_type: "mixture"});
+    if (!response.ok) {
+        return prepareResultMessage(false, {
+            message: "Failed to create a mixed modality",
+            errors: []
+        })
+    }
+    return await response.json();
+}
+
+const textModalityActionSet = new ActionSet({
+    listUrl: `${baseApiUrl}/modalities/`,
+    itemName: "text modality",
+    updateMethod: "PATCH"
+});
+
+async function createTextModality(parentId, prevState, formData) {
+    formData.append("parent", parentId);
+    formData.append("modality_type", "text");
+    const result = await textModalityActionSet.create(prevState, formData);
+
+    return result;
+}
+
+/*
+async function updateTextModality(id, prevState, formData) {
+    //formData.append("modality_type", "text");
+    const result = await textModalityActionSet.update(id, prevState, formData);
+    return result;
+}
+*/
+
+const [_ignored1, updateTextModality, deleteTextModality] = textModalityActionSet.getActionFunctions();
+
+
 export {
     createServerEntry, updateServerEntry, deleteServerEntry,
     createPresetEntry, updatePresetEntry, deletePresetEntry,
     createConfigEntry, updateConfigEntry, deleteConfigEntry,
-    startNewChat, deleteChat
+    startNewChat, deleteChat,
+    createMixedModality,
+    createTextModality, updateTextModality, deleteTextModality
  };
