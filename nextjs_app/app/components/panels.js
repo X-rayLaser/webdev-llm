@@ -5,7 +5,7 @@ import { ProminentButton } from "../components/buttons";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPencil, faTrash, faCog, faServer } from '@fortawesome/free-solid-svg-icons'
 import { ConfirmationModal } from '../components/modal';
-
+import { Alert } from "./alerts";
 
 function FlexRowPanel({ children }) {
   return (
@@ -63,6 +63,7 @@ export function PanelItem({ data, editComponent, componentArgs, deleteAction, he
   const [deletion, setDeletion] = useState(false);
   const [showDialog, setShowDialog] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [error, setError] = useState("");
   
   //todo: remove this hack forcing update
   const [counter, setCounter] = useState(false);
@@ -74,7 +75,12 @@ export function PanelItem({ data, editComponent, componentArgs, deleteAction, he
   function handleConfirm() {
     setDeletion(true);
     setShowDialog(false);
+    setError("");
+
     deleteAction(data.id).then(res => {
+      if (!res.success) {
+        setError(res.responseData);
+      }
       setDeletion(false);
     });
   }
@@ -89,6 +95,7 @@ export function PanelItem({ data, editComponent, componentArgs, deleteAction, he
 
   function handleEditClick() {
     setShowForm(true);
+    setError("");
   }
 
   function handleSuccessfulUpdate() {
@@ -119,6 +126,11 @@ export function PanelItem({ data, editComponent, componentArgs, deleteAction, he
                 onClick={handleTrashClick}>
                 <FontAwesomeIcon icon={faTrash} size="lg" />
               </button>
+              {error && (
+                <div className="py-2">
+                  <Alert text={error} level="danger" size="sm" />
+                </div>
+              )}
             </div>
           )}
           {deletion && (

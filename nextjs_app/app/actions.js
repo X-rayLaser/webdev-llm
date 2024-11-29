@@ -22,7 +22,19 @@ async function sendForm(url, method="POST", formData) {
         }
     });
 
-    const responseData = await response.json();
+
+    let responseData;
+    const responseClone = response.clone();
+    try {
+        responseData = await response.json();
+    } catch (error) {
+        responseData = await responseClone.text();
+        console.error("API error:", responseData);
+        throw {
+            message: "Unexpected server error",
+            errors: []
+        };
+    }
 
     if (!response.ok) {
         let errors = responseData;
@@ -110,7 +122,10 @@ class ActionSet {
             const response = await fetch(url, { method: "delete" });
     
             if (!response.ok) {
-                console.error("NOT OK ON DELETION:", response.status, response.json());
+                console.error("NOT OK ON DELETION:", response.status, response.status === 404, response.json());
+                if (response.status == 404) {
+                    return prepareResultMessage(false, `Item to be deleted not found: ${id}`);
+                }
                 throw { message };
             }
         } catch (error) {

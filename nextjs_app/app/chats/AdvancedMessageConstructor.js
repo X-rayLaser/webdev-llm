@@ -124,14 +124,21 @@ function ModalityMixturePanel({ mixture, onSuccessfulUpdate, onSuccessfulDelete 
 }
 
 function TextModality({ data, onSuccessfulUpdate, onSuccessfulDelete }) {
+
     async function updateAction() {
         const result = await updateTextModality(...arguments);
+        if (!result.success) {
+            return result;
+        }
         onSuccessfulUpdate(data.id, result);
         return result;
     }
 
     async function deleteAction() {
         const result = await deleteTextModality(...arguments);
+        if (!result.success) {
+            return result;
+        }
         onSuccessfulDelete(data.id, result);
         return result;
     }
