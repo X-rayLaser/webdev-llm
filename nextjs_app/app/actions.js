@@ -306,7 +306,7 @@ async function createImageModality(parentId, prevState, formData) {
 
 const [_ignored1, updateTextModality, deleteTextModality] = modalityActionSet.getActionFunctions();
 
-
+const updateImageModality = updateTextModality;
 const deleteImageModality = deleteTextModality;
 
 export {
@@ -316,5 +316,5 @@ export {
     startNewChat, deleteChat,
     createMixedModality,
     createTextModality, updateTextModality, deleteTextModality,
-    createImageModality, deleteImageModality
+    createImageModality, updateImageModality, deleteImageModality
  };

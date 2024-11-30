@@ -5,10 +5,10 @@ import { getTopDownRenderer } from '../components/fieldset-renderers';
 import { AutoExpandingTextArea, ImageField } from "../components/common-forms";
 import { OutlineButton } from "../components/buttons";
 import { createTextModality, createMixedModality, updateTextModality, deleteTextModality,
-         createImageModality, deleteImageModality } from '../actions';
+         createImageModality, updateImageModality, deleteImageModality } from '../actions';
 import Modal from '../components/modal';
 import { Alert } from '../components/alerts';
-import { PanelItem } from '../components/panels';
+import { PanelItem, Controls } from '../components/panels';
 
 const textFormFields = [{
     name: "text",
@@ -124,16 +124,18 @@ export default function AdvancedMessageConstructor() {
 }
 
 function ModalityMixturePanel({ mixture, onSuccessfulUpdate, onSuccessfulDelete }) {
-    const items = mixture.map((modData, idx) => {
-        const { modality_type, ...rest } = modData;
+    const items = mixture.map((data, idx) => {
+        const { modality_type, ...rest } = data;
         let item;
+        const props = {
+            data,
+            onSuccessfulUpdate,
+            onSuccessfulDelete
+        }
         if (modality_type === "text") {
-            item = <TextModality 
-                        data={modData}
-                        onSuccessfulUpdate={onSuccessfulUpdate}
-                        onSuccessfulDelete={onSuccessfulDelete} />;
+            item = <TextModality {...props} />;
         } else if (modality_type === "image") {
-            item = <ImageModality data={modData} onSuccessfulDelete={onSuccessfulDelete} />
+            item = <ImageModality {...props} />
         } else {
             item =  <div>Unknown modality</div>;
         }
@@ -170,20 +172,27 @@ function TextModality({ data, onSuccessfulUpdate, onSuccessfulDelete }) {
 
     const EditTextForm = makeEditForm(TextForm, updateAction);
 
-    const bodySection = (
-        <div className="p-2 border rounded-lg shadow-sm bg-white">{data.text}</div>
-    );
     return (
-        <PanelItem
-            data={data}
-            editComponent={EditTextForm}
-            deleteAction={deleteAction}
-            headerSection={<div></div>}
-            bodySection={bodySection} />
+        <div className="p-4 border rounded-lg shadow-sm bg-white">
+            <div className="mb-2">{data.text}</div>
+            <Controls
+                data={data}
+                editComponent={EditTextForm}
+                deleteAction={deleteAction} />
+        </div>
     );
 }
 
-function ImageModality({ data, onSuccessfulDelete }) {
+function ImageModality({ data, onSuccessfulUpdate, onSuccessfulDelete }) {
+    async function updateAction() {
+        const result = await updateImageModality(...arguments);
+        if (!result.success) {
+            return result;
+        }
+        onSuccessfulUpdate(data.id, result);
+        return result;
+    }
+
     async function deleteAction() {
         const result = await deleteImageModality(...arguments);
         if (!result.success) {
@@ -193,21 +202,19 @@ function ImageModality({ data, onSuccessfulDelete }) {
         return result;
     }
 
-    const bodySection = (
-        <div className="p-2 border rounded-lg shadow-sm bg-white">
-            <img src={data.image.replace("django:8000", "localhost")} />
-        </div>
-    );
-
-
-    const EditTextForm = makeEditForm(TextForm, function() {});
+    const EditTextForm = makeEditForm(ImageForm, updateAction);
 
     return (
-        <PanelItem
-            data={data}
-            editComponent={EditTextForm}
-            deleteAction={deleteAction}
-            headerSection={<div></div>}
-            bodySection={bodySection} />
+        <div className="border rounded-lg shadow-sm">
+            <div className="px-2 rounded-lg h-96 bg-blue-950">
+                <img className="h-full border-x-2 border-white mx-auto" src={data.image.replace("django:8000", "localhost")} />
+            </div>
+            <div className="px-2">
+                <Controls
+                    data={data}
+                    editComponent={EditTextForm}
+                    deleteAction={deleteAction} />
+            </div>
+        </div>
     );
 }

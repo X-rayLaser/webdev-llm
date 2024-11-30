@@ -56,7 +56,7 @@ export default function Panel({ title, icon, addButtonText, noElementsText="No i
 }
 
 
-export function PanelItem({ data, editComponent, componentArgs, deleteAction, headerSection, bodySection, 
+export function Controls({ data, editComponent, componentArgs, deleteAction,
                      editTitle="Edit item", deletionTitle="", deletionText="" }) {
   deletionTitle = deletionTitle || "Do you want to proceed?";
   deletionText = deletionText || "Are you sure that you want to permanently delete the entry?";
@@ -111,37 +111,33 @@ export function PanelItem({ data, editComponent, componentArgs, deleteAction, he
   }
 
   return (
-    <div className="border rounded-lg shadow w-full md:w-96 h-auto">
-      {headerSection}
-      <div className="p-4 flex flex-col justify-around">
-        <div>{bodySection}</div>
-        <div className="mt-4">
-          {!deletion && (
-            <div>
-              <button className="border p-1 text-zinc-600 hover:text-zinc-900 hover:bg-gray-500"
-                onClick={handleEditClick}>
-                <FontAwesomeIcon icon={faPencil} size="lg" />
-              </button>
-              <button className="border p-1 text-zinc-600 hover:text-zinc-900 hover:bg-gray-500"
-                onClick={handleTrashClick}>
-                <FontAwesomeIcon icon={faTrash} size="lg" />
-              </button>
-              {error && (
-                <div className="py-2">
-                  <Alert text={error} level="danger" size="sm" />
-                </div>
-              )}
-            </div>
-          )}
-          {deletion && (
-            <div>
-              <span>Deletion...</span>
-              <span className="ml-2">
-                <FontAwesomeIcon icon={faCog} spin></FontAwesomeIcon>
-              </span>
-            </div>
-          )}
-        </div>
+    <div>
+      <div>
+        {!deletion && (
+          <div>
+            <button className="border rounded-s-md p-2 text-zinc-600 hover:text-zinc-900 hover:bg-gray-500"
+              onClick={handleEditClick}>
+              <FontAwesomeIcon icon={faPencil} size="lg" />
+            </button>
+            <button className="border rounded-e-md p-2 text-zinc-600 hover:text-zinc-900 hover:bg-gray-500"
+              onClick={handleTrashClick}>
+              <FontAwesomeIcon icon={faTrash} size="lg" />
+            </button>
+            {error && (
+              <div className="py-2">
+                <Alert text={error} level="danger" size="sm" />
+              </div>
+            )}
+          </div>
+        )}
+        {deletion && (
+          <div>
+            <span>Deletion...</span>
+            <span className="ml-2">
+              <FontAwesomeIcon icon={faCog} spin></FontAwesomeIcon>
+            </span>
+          </div>
+        )}
       </div>
       <ConfirmationModal title={deletionTitle} show={showDialog} onYes={handleConfirm} onClose={handleClose}>
         <div>{deletionText}</div>
@@ -152,6 +148,30 @@ export function PanelItem({ data, editComponent, componentArgs, deleteAction, he
           <EditFormComponent data={data} onSuccess={handleSuccessfulUpdate} />
         </div>
       </Modal>
+    </div>
+  );
+}
+
+export function PanelItem({ data, editComponent, componentArgs, deleteAction, headerSection, bodySection,
+                            editTitle = "Edit item", deletionTitle = "", deletionText = "" }) {
+  return (
+    <div>
+      <div className="border rounded-lg shadow w-full md:w-96 h-auto">
+        {headerSection}
+        <div className="p-4 flex flex-col justify-around">
+          <div>{bodySection}</div>
+          <div className="mt-4">
+            <Controls 
+              data={data}
+              editComponent={editComponent}
+              componentArgs={componentArgs}
+              deleteAction={deleteAction}
+              editTitle={editTitle}
+              deletionTitle={deletionTitle}
+              deletionText={deletionText} />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
