@@ -5,7 +5,7 @@ import { getTopDownRenderer } from '../components/fieldset-renderers';
 import { AutoExpandingTextArea, ImageField } from "../components/common-forms";
 import { OutlineButton } from "../components/buttons";
 import { createTextModality, createMixedModality, updateTextModality, deleteTextModality,
-         createImageModality } from '../actions';
+         createImageModality, deleteImageModality } from '../actions';
 import Modal from '../components/modal';
 import { Alert } from '../components/alerts';
 import { PanelItem } from '../components/panels';
@@ -184,7 +184,15 @@ function TextModality({ data, onSuccessfulUpdate, onSuccessfulDelete }) {
 }
 
 function ImageModality({ data, onSuccessfulDelete }) {
-    console.log("image mod data:", data)
+    async function deleteAction() {
+        const result = await deleteImageModality(...arguments);
+        if (!result.success) {
+            return result;
+        }
+        onSuccessfulDelete(data.id, result);
+        return result;
+    }
+
     const bodySection = (
         <div className="p-2 border rounded-lg shadow-sm bg-white">
             <img src={data.image.replace("django:8000", "localhost")} />
@@ -198,7 +206,7 @@ function ImageModality({ data, onSuccessfulDelete }) {
         <PanelItem
             data={data}
             editComponent={EditTextForm}
-            deleteAction={function () {}}
+            deleteAction={deleteAction}
             headerSection={<div></div>}
             bodySection={bodySection} />
     );
