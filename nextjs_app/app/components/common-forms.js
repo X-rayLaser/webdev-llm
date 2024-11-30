@@ -175,6 +175,89 @@ function WrappedField({ name, id="", label="", placeholder="", errors=[], FieldC
     );
 }
 
+export function ImageField({ name, id = "", label = "", onChange, errors }) {
+    const fileInputRef = useRef(null);
+    const [preview, setPreview] = useState(null);
+    const [dragOver, setDragOver] = useState(false);
+
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            handleImage(file);
+        }
+    };
+
+    const handleImage = (file) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            setPreview(reader.result);
+            if (onChange) onChange(file); // Pass file to the parent component
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const handleDragOver = (e) => {
+        e.preventDefault();
+        setDragOver(true);
+    };
+
+    const handleDragLeave = () => {
+        setDragOver(false);
+    };
+
+    const handleDrop = (e) => {
+        e.preventDefault();
+        setDragOver(false);
+
+        const file = e.dataTransfer.files[0];
+        if (file) {
+            fileInputRef.current.files = e.dataTransfer.files;
+            handleImage(file);
+        }
+    };
+
+    return (
+        <div className="flex flex-col space-y-4">
+            {/* Drop Area */}
+            <div
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                className={`border-2 border-dashed p-4 rounded ${dragOver ? "border-blue-500 bg-blue-100" : "border-gray-300"
+                    }`}
+            >
+                {preview ? (
+                    <div className="flex flex-col items-center space-y-2">
+                        <img
+                            src={preview}
+                            alt="Preview"
+                            className="max-h-48 object-cover rounded"
+                        />
+                        <p className="text-sm text-gray-600">Drag a new image to replace</p>
+                    </div>
+                ) : (
+                    <div className="text-center text-gray-500">
+                        <p>Drag and drop an image here</p>
+                        <p>or</p>
+                        <p>Click to select an image</p>
+                    </div>
+                )}
+            </div>
+
+            {/* File Input */}
+            <input
+                ref={fileInputRef}
+                name={name}
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="file:hidden cursor-pointer"
+            />
+        </div>
+    );
+};
+
+
 export function TextField(props) {
     return <WrappedField type="text" FieldComponent={FlexInputField} FieldContainer={InlineFormField} {...props} />
 }

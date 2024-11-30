@@ -2,9 +2,10 @@
 import React, { useState } from 'react';
 import { formFactory, makeCreateForm, makeEditForm } from "../components/form-factory";
 import { getTopDownRenderer } from '../components/fieldset-renderers';
-import { AutoExpandingTextArea } from "../components/common-forms";
+import { AutoExpandingTextArea, ImageField } from "../components/common-forms";
 import { OutlineButton } from "../components/buttons";
-import { createTextModality, createMixedModality, updateTextModality, deleteTextModality } from '../actions';
+import { createTextModality, createMixedModality, updateTextModality, deleteTextModality,
+         createImageModality } from '../actions';
 import Modal from '../components/modal';
 import { Alert } from '../components/alerts';
 import { PanelItem } from '../components/panels';
@@ -16,9 +17,16 @@ const textFormFields = [{
     label: "Text"
 }];
 
+const imageFormFields = [{
+    name: "image",
+    type: "file",
+    component: ImageField,
+    id: "add_image_modality_id",
+    label: "Image"
+}]
 
 const TextForm = formFactory(textFormFields, getTopDownRenderer());
-
+const ImageForm = formFactory(imageFormFields, getTopDownRenderer());
 
 export default function AdvancedMessageConstructor() {
     const ADD_TEXT = "add_text";
@@ -29,21 +37,24 @@ export default function AdvancedMessageConstructor() {
     const [parent, setParent] = useState(null);
     const [modalities, setModalities] = useState([]);
 
-    async function createAction() {
-        let parentId;
-        if (parent === null) {
-            const result = await createMixedModality();
-            const { success, responseData } = result;
-            if (!success) {
-                throw responseData.message;
+    function actionFactory(modalityAction) {
+        async function createAction() {
+            let parentId;
+            if (parent === null) {
+                const result = await createMixedModality();
+                const { success, responseData } = result;
+                if (!success) {
+                    throw responseData.message;
+                }
+                parentId = responseData.id;
+                setParent(parentId);
+            } else {
+                parentId = parent;
             }
-            parentId = responseData.id;
-            setParent(parentId);
-        } else {
-            parentId = parent;
+            const action = modalityAction.bind(null, parentId);
+            return await action(...arguments);
         }
-        const action = createTextModality.bind(null, parentId);
-        return await action(...arguments);
+        return createAction;
     }
 
     function handleSuccessfulTextSubmission(res) {
@@ -61,7 +72,13 @@ export default function AdvancedMessageConstructor() {
         setModalities(updatedModalities);
     }
 
-    const AddTextForm = makeCreateForm(TextForm, createAction);
+    function handleSuccessfulImageUpload(res) {
+        setMode(null);
+        setModalities([...modalities, res.responseData]);
+    }
+
+    const AddTextForm = makeCreateForm(TextForm, actionFactory(createTextModality));
+    const AddImageForm = makeCreateForm(ImageForm, actionFactory(createImageModality));
 
     return (
         <div className="border rounded-lg shadow-md p-4 bg-slate-200">
@@ -87,13 +104,19 @@ export default function AdvancedMessageConstructor() {
                     Add text
                 </OutlineButton>
                 </div>
-                <OutlineButton>Add image</OutlineButton>
+                <OutlineButton onClick={() => setMode(ADD_IMAGE)}>Add image</OutlineButton>
                 <OutlineButton>Add code</OutlineButton>
             </div>
 
             <Modal show={mode === ADD_TEXT} onClose={() => setMode(null)}>
                 <div className="p-6">
                     <AddTextForm onSuccess={handleSuccessfulTextSubmission} />
+                </div>
+            </Modal>
+
+            <Modal show={mode === ADD_IMAGE} onClose={() => setMode(null)}>
+                <div className="p-6">
+                    <AddImageForm onSuccess={handleSuccessfulImageUpload} />
                 </div>
             </Modal>
         </div>
@@ -109,6 +132,8 @@ function ModalityMixturePanel({ mixture, onSuccessfulUpdate, onSuccessfulDelete 
                         data={modData}
                         onSuccessfulUpdate={onSuccessfulUpdate}
                         onSuccessfulDelete={onSuccessfulDelete} />;
+        } else if (modality_type === "image") {
+            item = <ImageModality data={modData} onSuccessfulDelete={onSuccessfulDelete} />
         } else {
             item =  <div>Unknown modality</div>;
         }
@@ -153,6 +178,27 @@ function TextModality({ data, onSuccessfulUpdate, onSuccessfulDelete }) {
             data={data}
             editComponent={EditTextForm}
             deleteAction={deleteAction}
+            headerSection={<div></div>}
+            bodySection={bodySection} />
+    );
+}
+
+function ImageModality({ data, onSuccessfulDelete }) {
+    console.log("image mod data:", data)
+    const bodySection = (
+        <div className="p-2 border rounded-lg shadow-sm bg-white">
+            <img src={data.image.replace("django:8000", "localhost")} />
+        </div>
+    );
+
+
+    const EditTextForm = makeEditForm(TextForm, function() {});
+
+    return (
+        <PanelItem
+            data={data}
+            editComponent={EditTextForm}
+            deleteAction={function () {}}
             headerSection={<div></div>}
             bodySection={bodySection} />
     );

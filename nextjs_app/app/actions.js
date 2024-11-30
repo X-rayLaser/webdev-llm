@@ -282,9 +282,9 @@ async function createMixedModality() {
     }
 }
 
-const textModalityActionSet = new ActionSet({
+const modalityActionSet = new ActionSet({
     listUrl: `${baseApiUrl}/modalities/`,
-    itemName: "text modality",
+    itemName: "modality",
     updateMethod: "PATCH"
 });
 
@@ -292,12 +292,19 @@ const textModalityActionSet = new ActionSet({
 async function createTextModality(parentId, prevState, formData) {
     formData.append("parent", parentId);
     formData.append("modality_type", "text");
-    const result = await textModalityActionSet.create(prevState, formData);
+    const result = await modalityActionSet.create(prevState, formData);
 
     return result;
 }
 
-const [_ignored1, updateTextModality, deleteTextModality] = textModalityActionSet.getActionFunctions();
+
+async function createImageModality(parentId, prevState, formData) {
+    formData.append("parent", parentId);
+    formData.append("modality_type", "image");
+    return await modalityActionSet.create(prevState, formData);
+}
+
+const [_ignored1, updateTextModality, deleteTextModality] = modalityActionSet.getActionFunctions();
 
 
 export {
@@ -306,5 +313,6 @@ export {
     createConfigEntry, updateConfigEntry, deleteConfigEntry,
     startNewChat, deleteChat,
     createMixedModality,
-    createTextModality, updateTextModality, deleteTextModality
+    createTextModality, updateTextModality, deleteTextModality,
+    createImageModality
  };

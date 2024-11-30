@@ -66,7 +66,18 @@ export function formFactory(fields, renderFields) {
             const setValue = setters[name];
 
             function onChange(e) {
-                const newValue = spec.type === "checkbox" ? e.target.checked : e.target.value;
+                let newValue;
+                switch (spec.type) {
+                    case "checkbox":
+                        newValue = e.target.checked;
+                        break;
+                    case "file":
+                        //e is file
+                        newValue = e;
+                        break;
+                    default:
+                        newValue = e.target.value;
+                }
                 setValue(newValue);
             }
 

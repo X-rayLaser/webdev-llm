@@ -67,7 +67,7 @@ http {
     }
 
     location /media/ {
-        root /data;
+      root /;
     }
 
     location @proxy_to_app {

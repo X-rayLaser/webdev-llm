@@ -8,7 +8,7 @@ RUN apt-get update -y && apt-get install build-essential python3.11-venv -y
 
 COPY . /django
 
-RUN chown -R user: /django
+RUN chown -R user: /django && chown -R user: /media
 
 USER user
 
