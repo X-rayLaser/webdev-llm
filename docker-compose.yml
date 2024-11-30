@@ -7,7 +7,7 @@ services:
     volumes:
       - .:/workspace:cached
       - ./django:/django
-      - media:/media
+      - media:/data/media
     links:
       - redis
     depends_on:
@@ -23,7 +23,7 @@ services:
       - ENV=${ENV}
     volumes:
       - ./django:/django
-      - media:/media
+      - media:/data/media
     links:
       - redis
     depends_on:
@@ -76,7 +76,7 @@ services:
       - "80:80"
     volumes:
       - ./nginx:/etc/nginx/templates
-      - media:/media
+      - media:/data/media
     environment:
       NGINX_ENVSUBST_OUTPUT_DIR: /etc/nginx
       NGINX_HOST: localhost
