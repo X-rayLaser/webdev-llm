@@ -65,6 +65,27 @@ function createCodeActionFactory(actionWithParent) {
 }
 
 
+function actionFactory(parent, setParent, modalityAction) {
+    async function createAction() {
+        let parentId;
+        if (parent === null) {
+            const result = await createMixedModality();
+            const { success, responseData } = result;
+            if (!success) {
+                throw responseData.message;
+            }
+            parentId = responseData.id;
+            setParent(parentId);
+        } else {
+            parentId = parent;
+        }
+        const action = modalityAction.bind(null, parentId);
+        return await action(...arguments);
+    }
+    return createAction;
+}
+
+
 export default function AdvancedMessageConstructor() {
     const ADD_TEXT = "add_text";
     const ADD_IMAGE = "add_image";
@@ -74,26 +95,6 @@ export default function AdvancedMessageConstructor() {
     const [parent, setParent] = useState(null);
     
     const [modalities, setModalities] = useState([]);
-
-    function actionFactory(modalityAction) {
-        async function createAction() {
-            let parentId;
-            if (parent === null) {
-                const result = await createMixedModality();
-                const { success, responseData } = result;
-                if (!success) {
-                    throw responseData.message;
-                }
-                parentId = responseData.id;
-                setParent(parentId);
-            } else {
-                parentId = parent;
-            }
-            const action = modalityAction.bind(null, parentId);
-            return await action(...arguments);
-        }
-        return createAction;
-    }
 
     function handleSuccessfulModalityCreation(res) {
         setMode(null);
@@ -110,12 +111,14 @@ export default function AdvancedMessageConstructor() {
         setModalities(updatedModalities);
     }
 
-    const AddTextForm = makeCreateForm(TextForm, actionFactory(createTextModality));
-    const AddImageForm = makeCreateForm(ImageForm, actionFactory(createImageModality));
+    const createActionFactory = actionFactory.bind(null, parent, setParent);
+
+    const AddTextForm = makeCreateForm(TextForm, createActionFactory(createTextModality));
+    const AddImageForm = makeCreateForm(ImageForm, createActionFactory(createImageModality));
 
     const AddCodeForm = makeCreateForm(
         CodeForm,
-        createCodeActionFactory(actionFactory(createCodeModality))
+        createCodeActionFactory(createActionFactory(createCodeModality))
     );
 
     return (

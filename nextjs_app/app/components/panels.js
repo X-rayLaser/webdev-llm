@@ -119,6 +119,7 @@ export function DeleteControl({ data, deleteAction, deletionTitle, deletionText=
 
 export function Controls({ data, editComponent, componentArgs, deleteAction,
                      editTitle="Edit item", deletionTitle="", deletionText="" }) {
+  //todo: make use of DeleteControl component
   deletionTitle = deletionTitle || "Do you want to proceed?";
   deletionText = deletionText || "Are you sure that you want to permanently delete the entry?";
   const [deletion, setDeletion] = useState(false);
