@@ -2,13 +2,13 @@
 import React, { useState } from 'react';
 import { formFactory, makeCreateForm, makeEditForm } from "../components/form-factory";
 import { getTopDownRenderer } from '../components/fieldset-renderers';
-import { AutoExpandingTextArea, ImageField } from "../components/common-forms";
+import { AutoExpandingTextArea, ImageField, TextField } from "../components/common-forms";
 import { OutlineButton } from "../components/buttons";
-import { createTextModality, createMixedModality, updateTextModality, deleteTextModality,
-         createImageModality, updateImageModality, deleteImageModality } from '../actions';
+import { createTextModality, createMixedModality, createImageModality, createCodeModality,
+         updateModality, deleteModality } from '../actions';
 import Modal from '../components/modal';
 import { Alert } from '../components/alerts';
-import { PanelItem, Controls } from '../components/panels';
+import { PanelItem, DeleteControl, Controls } from '../components/panels';
 
 const textFormFields = [{
     name: "text",
@@ -25,8 +25,45 @@ const imageFormFields = [{
     label: "Image"
 }];
 
+const codeFormFields = [{
+    name: "file_path",
+    type: "text",
+    component: TextField,
+    id: "add_code_modality_file_path_id",
+    label: "File Path"
+}, {
+    name: "code",
+    component: AutoExpandingTextArea,
+    id: "add_text_modality_code_id",
+    label: "File Content"
+}];
+
 const TextForm = formFactory(textFormFields, getTopDownRenderer());
 const ImageForm = formFactory(imageFormFields, getTopDownRenderer());
+const CodeForm = formFactory(codeFormFields, getTopDownRenderer());
+
+
+function createCodeActionFactory(actionWithParent) {
+    async function codeAction(prevState, formData) {
+        const code = formData.get("code") || "";
+        if (code) {
+            formData.delete("code");
+        }
+
+        const result = await actionWithParent(prevState, formData);
+
+        return {
+            success: result.success,
+            responseData: {
+                ...result.responseData,
+                code
+            }
+        };
+    }
+
+    return codeAction;
+}
+
 
 export default function AdvancedMessageConstructor() {
     const ADD_TEXT = "add_text";
@@ -35,6 +72,7 @@ export default function AdvancedMessageConstructor() {
 
     const [mode, setMode] = useState(null);
     const [parent, setParent] = useState(null);
+    
     const [modalities, setModalities] = useState([]);
 
     function actionFactory(modalityAction) {
@@ -57,7 +95,7 @@ export default function AdvancedMessageConstructor() {
         return createAction;
     }
 
-    function handleSuccessfulTextSubmission(res) {
+    function handleSuccessfulModalityCreation(res) {
         setMode(null);
         setModalities([...modalities, res.responseData]);
     }
@@ -72,13 +110,13 @@ export default function AdvancedMessageConstructor() {
         setModalities(updatedModalities);
     }
 
-    function handleSuccessfulImageUpload(res) {
-        setMode(null);
-        setModalities([...modalities, res.responseData]);
-    }
-
     const AddTextForm = makeCreateForm(TextForm, actionFactory(createTextModality));
     const AddImageForm = makeCreateForm(ImageForm, actionFactory(createImageModality));
+
+    const AddCodeForm = makeCreateForm(
+        CodeForm,
+        createCodeActionFactory(actionFactory(createCodeModality))
+    );
 
     return (
         <div className="border rounded-lg shadow-md p-4 bg-slate-200">
@@ -105,18 +143,24 @@ export default function AdvancedMessageConstructor() {
                 </OutlineButton>
                 </div>
                 <OutlineButton onClick={() => setMode(ADD_IMAGE)}>Add image</OutlineButton>
-                <OutlineButton>Add code</OutlineButton>
+                <OutlineButton onClick={() => setMode(ADD_CODE)}>Add code</OutlineButton>
             </div>
 
             <Modal show={mode === ADD_TEXT} onClose={() => setMode(null)}>
                 <div className="p-6">
-                    <AddTextForm onSuccess={handleSuccessfulTextSubmission} />
+                    <AddTextForm onSuccess={handleSuccessfulModalityCreation} />
                 </div>
             </Modal>
 
             <Modal show={mode === ADD_IMAGE} onClose={() => setMode(null)}>
                 <div className="p-6">
-                    <AddImageForm onSuccess={handleSuccessfulImageUpload} />
+                    <AddImageForm onSuccess={handleSuccessfulModalityCreation} />
+                </div>
+            </Modal>
+
+            <Modal show={mode === ADD_CODE} onClose={() => setMode(null)}>
+                <div className="p-6">
+                    <AddCodeForm onSuccess={handleSuccessfulModalityCreation} />
                 </div>
             </Modal>
         </div>
@@ -135,7 +179,9 @@ function ModalityMixturePanel({ mixture, onSuccessfulUpdate, onSuccessfulDelete 
         if (modality_type === "text") {
             item = <TextModality {...props} />;
         } else if (modality_type === "image") {
-            item = <ImageModality {...props} />
+            item = <ImageModality {...props} />;
+        } else if (modality_type === "code") {
+            item = <CodeModality {...props} />;
         } else {
             item =  <div>Unknown modality</div>;
         }
@@ -150,24 +196,9 @@ function ModalityMixturePanel({ mixture, onSuccessfulUpdate, onSuccessfulDelete 
     );
 }
 
-function GenericModalityControls({
-    data, 
-    onSuccessfulUpdate, 
-    onSuccessfulDelete,
-    updateModalityAction,
-    deleteModalityAction 
-}) {
-    async function updateAction() {
-        const result = await updateModalityAction(...arguments);
-        if (!result.success) {
-            return result;
-        }
-        onSuccessfulUpdate(data.id, result);
-        return result;
-    }
-
-    async function deleteAction() {
-        const result = await deleteModalityAction(...arguments);
+function makeDeleteAction(data, onSuccessfulDelete) {
+    async function action() {
+        const result = await deleteModality(...arguments);
         if (!result.success) {
             return result;
         }
@@ -175,13 +206,31 @@ function GenericModalityControls({
         return result;
     }
 
-    const EditTextForm = makeEditForm(TextForm, updateAction);
+    return action;
+}
+
+function GenericModalityControls({
+    data, 
+    onSuccessfulUpdate, 
+    onSuccessfulDelete,
+    actionlessForm
+}) {
+    async function updateAction() {
+        const result = await updateModality(...arguments);
+        if (!result.success) {
+            return result;
+        }
+        onSuccessfulUpdate(data.id, result);
+        return result;
+    }
+
+    const EditTextForm = makeEditForm(actionlessForm, updateAction);
 
     return (
         <Controls
             data={data}
             editComponent={EditTextForm}
-            deleteAction={deleteAction} />
+            deleteAction={makeDeleteAction(data, onSuccessfulDelete)} />
     );
 }
 
@@ -193,8 +242,7 @@ function TextModality({ data, onSuccessfulUpdate, onSuccessfulDelete }) {
                 data={data}
                 onSuccessfulUpdate={onSuccessfulUpdate}
                 onSuccessfulDelete={onSuccessfulDelete}
-                updateModalityAction={updateTextModality}
-                deleteModalityAction={deleteTextModality}
+                actionlessForm={TextForm}
             />
         </div>
     );
@@ -211,10 +259,24 @@ function ImageModality({ data, onSuccessfulUpdate, onSuccessfulDelete }) {
                     data={data}
                     onSuccessfulUpdate={onSuccessfulUpdate}
                     onSuccessfulDelete={onSuccessfulDelete}
-                    updateModalityAction={updateImageModality}
-                    deleteModalityAction={deleteImageModality}
+                    actionlessForm={ImageForm}
                 />
             </div>
+        </div>
+    );
+}
+
+function CodeModality({ data, onSuccessfulUpdate, onSuccessfulDelete }) {
+    //todo: update API so as to allow updating code modality
+
+    return (
+        <div className="p-4 border rounded-lg shadow-sm bg-white">
+            <div>{data.file_path}</div>
+            <div className="mb-2">{data.code}</div>
+            <DeleteControl
+                data={data}
+                deleteAction={makeDeleteAction(data, onSuccessfulDelete)}
+            />
         </div>
     );
 }

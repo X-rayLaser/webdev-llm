@@ -304,10 +304,14 @@ async function createImageModality(parentId, prevState, formData) {
     return await modalityActionSet.create(prevState, formData);
 }
 
-const [_ignored1, updateTextModality, deleteTextModality] = modalityActionSet.getActionFunctions();
+async function createCodeModality(parentId, prevState, formData) {
+    formData.append("parent", parentId);
+    formData.append("modality_type", "code");
+    return await modalityActionSet.create(prevState, formData);
+}
 
-const updateImageModality = updateTextModality;
-const deleteImageModality = deleteTextModality;
+const [_ignored1, updateModality, deleteModality] = modalityActionSet.getActionFunctions();
+
 
 export {
     createServerEntry, updateServerEntry, deleteServerEntry,
@@ -315,6 +319,6 @@ export {
     createConfigEntry, updateConfigEntry, deleteConfigEntry,
     startNewChat, deleteChat,
     createMixedModality,
-    createTextModality, updateTextModality, deleteTextModality,
-    createImageModality, updateImageModality, deleteImageModality
+    createTextModality, createImageModality, createCodeModality,
+    updateModality, deleteModality
  };

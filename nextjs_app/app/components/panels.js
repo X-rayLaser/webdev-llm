@@ -56,6 +56,67 @@ export default function Panel({ title, icon, addButtonText, noElementsText="No i
 }
 
 
+export function DeleteControl({ data, deleteAction, deletionTitle, deletionText="" }) {
+  deletionTitle = deletionTitle || "Do you want to proceed?";
+  deletionText = deletionText || "Are you sure that you want to permanently delete the entry?";
+  const [deletion, setDeletion] = useState(false);
+  const [showDialog, setShowDialog] = useState(false);
+  const [error, setError] = useState("");
+
+  function handleTrashClick() {
+    setShowDialog(true);
+  }
+
+  function handleConfirm() {
+    setDeletion(true);
+    setShowDialog(false);
+    setError("");
+
+    deleteAction(data.id).then(res => {
+      if (!res.success) {
+        setError(res.responseData);
+      }
+      setDeletion(false);
+    });
+  }
+
+  function handleClose() {
+    setShowDialog(false);
+  }
+
+  return (
+    <div>
+      <div>
+        {!deletion && (
+          <div>
+            <button className="border rounded-e-md p-2 text-zinc-600 hover:text-zinc-900 hover:bg-gray-500"
+              onClick={handleTrashClick}>
+              <FontAwesomeIcon icon={faTrash} size="lg" />
+            </button>
+            {error && (
+              <div className="py-2">
+                <Alert text={error} level="danger" size="sm" />
+              </div>
+            )}
+          </div>
+        )}
+        {deletion && (
+          <div>
+            <span>Deletion...</span>
+            <span className="ml-2">
+              <FontAwesomeIcon icon={faCog} spin></FontAwesomeIcon>
+            </span>
+          </div>
+        )}
+      </div>
+      <ConfirmationModal title={deletionTitle} show={showDialog} onYes={handleConfirm} onClose={handleClose}>
+        <div>{deletionText}</div>
+      </ConfirmationModal>
+    </div>
+  );
+}
+
+
 export function Controls({ data, editComponent, componentArgs, deleteAction,
                      editTitle="Edit item", deletionTitle="", deletionText="" }) {
   deletionTitle = deletionTitle || "Do you want to proceed?";
