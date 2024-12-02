@@ -23,7 +23,7 @@ const imageFormFields = [{
     component: ImageField,
     id: "add_image_modality_id",
     label: "Image"
-}]
+}];
 
 const TextForm = formFactory(textFormFields, getTopDownRenderer());
 const ImageForm = formFactory(imageFormFields, getTopDownRenderer());
@@ -150,10 +150,15 @@ function ModalityMixturePanel({ mixture, onSuccessfulUpdate, onSuccessfulDelete 
     );
 }
 
-function TextModality({ data, onSuccessfulUpdate, onSuccessfulDelete }) {
-
+function GenericModalityControls({
+    data, 
+    onSuccessfulUpdate, 
+    onSuccessfulDelete,
+    updateModalityAction,
+    deleteModalityAction 
+}) {
     async function updateAction() {
-        const result = await updateTextModality(...arguments);
+        const result = await updateModalityAction(...arguments);
         if (!result.success) {
             return result;
         }
@@ -162,7 +167,7 @@ function TextModality({ data, onSuccessfulUpdate, onSuccessfulDelete }) {
     }
 
     async function deleteAction() {
-        const result = await deleteTextModality(...arguments);
+        const result = await deleteModalityAction(...arguments);
         if (!result.success) {
             return result;
         }
@@ -173,47 +178,42 @@ function TextModality({ data, onSuccessfulUpdate, onSuccessfulDelete }) {
     const EditTextForm = makeEditForm(TextForm, updateAction);
 
     return (
+        <Controls
+            data={data}
+            editComponent={EditTextForm}
+            deleteAction={deleteAction} />
+    );
+}
+
+function TextModality({ data, onSuccessfulUpdate, onSuccessfulDelete }) {
+    return (
         <div className="p-4 border rounded-lg shadow-sm bg-white">
             <div className="mb-2">{data.text}</div>
-            <Controls
+            <GenericModalityControls
                 data={data}
-                editComponent={EditTextForm}
-                deleteAction={deleteAction} />
+                onSuccessfulUpdate={onSuccessfulUpdate}
+                onSuccessfulDelete={onSuccessfulDelete}
+                updateModalityAction={updateTextModality}
+                deleteModalityAction={deleteTextModality}
+            />
         </div>
     );
 }
 
 function ImageModality({ data, onSuccessfulUpdate, onSuccessfulDelete }) {
-    async function updateAction() {
-        const result = await updateImageModality(...arguments);
-        if (!result.success) {
-            return result;
-        }
-        onSuccessfulUpdate(data.id, result);
-        return result;
-    }
-
-    async function deleteAction() {
-        const result = await deleteImageModality(...arguments);
-        if (!result.success) {
-            return result;
-        }
-        onSuccessfulDelete(data.id, result);
-        return result;
-    }
-
-    const EditTextForm = makeEditForm(ImageForm, updateAction);
-
     return (
         <div className="border rounded-lg shadow-sm">
             <div className="px-2 rounded-lg h-96 bg-blue-950">
                 <img className="h-full border-x-2 border-white mx-auto" src={data.image.replace("django:8000", "localhost")} />
             </div>
             <div className="px-2">
-                <Controls
+                <GenericModalityControls
                     data={data}
-                    editComponent={EditTextForm}
-                    deleteAction={deleteAction} />
+                    onSuccessfulUpdate={onSuccessfulUpdate}
+                    onSuccessfulDelete={onSuccessfulDelete}
+                    updateModalityAction={updateImageModality}
+                    deleteModalityAction={deleteImageModality}
+                />
             </div>
         </div>
     );
