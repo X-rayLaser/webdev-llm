@@ -3,9 +3,9 @@ import React, { useState } from 'react';
 import { formFactory, makeCreateForm, makeEditForm } from "../components/form-factory";
 import { getTopDownRenderer } from '../components/fieldset-renderers';
 import { AutoExpandingTextArea, ImageField, TextField } from "../components/common-forms";
-import { OutlineButton } from "../components/buttons";
+import { SubmitButton, CancelButton, OutlineButton } from "../components/buttons";
 import { createTextModality, createMixedModality, createImageModality, createCodeModality,
-         updateModality, deleteModality } from '../actions';
+         updateModality, deleteModality, createMultimediaMessage } from '../actions';
 import Modal from '../components/modal';
 import { Alert } from '../components/alerts';
 import { PanelItem, DeleteControl, Controls } from '../components/panels';
@@ -86,13 +86,13 @@ function actionFactory(parent, setParent, modalityAction) {
 }
 
 
-export default function AdvancedMessageConstructor() {
+export default function AdvancedMessageConstructor({ previousMessage }) {
     const ADD_TEXT = "add_text";
     const ADD_IMAGE = "add_image";
     const ADD_CODE = "add_code";
 
     const [mode, setMode] = useState(null);
-    const [parent, setParent] = useState(null);
+    const [parent, setParent] = useState(null); //mixed modality wrapping the modalities created
     
     const [modalities, setModalities] = useState([]);
 
@@ -121,83 +121,107 @@ export default function AdvancedMessageConstructor() {
         createCodeActionFactory(createActionFactory(createCodeModality))
     );
 
+    const sourceTree = modalities.filter(mod => mod.modality_type === "code").map(mod => ({
+        file_path: mod.file_path, content: mod.code
+    }));
+
+    const role = previousMessage.role === "assistant" ? "user" : "assistant";
+
+    const createMessage = createMultimediaMessage.bind(null, role, parent, previousMessage.id, sourceTree)
+
     return (
-        <div className="border rounded-lg shadow-md p-4 bg-slate-200">
-            <h2 className="font-bold text-lg mb-2">Advanced message constructor</h2>
-            {modalities.length > 0 && (
-                <ModalityMixturePanel 
-                    mixture={modalities}
-                    onSuccessfulUpdate={handleSuccessfulTextUpdate}
-                    onSuccessfulDelete={handleSuccessfulTextDelete} />
-            )}
-            {modalities.length === 0 && (
-                <h2 className="text-2xl text-center">
-                    No modalities added so far.
-                </h2>
-            )}
-            <div className="my-4 max-w-80">
-                <Alert text="You can add new modalities using these buttons below" size="md" />
+        <div className="border rounded-lg shadow-md bg-sky-700">
+            <div className="p-4">
+                {modalities.length > 0 && (
+                    <ModalityViewer
+                        modalityObject={{
+                            modality_type: "mixture",
+                            mixture: modalities
+                        }}
+                        onSuccessfulUpdate={handleSuccessfulTextUpdate}
+                        onSuccessfulDelete={handleSuccessfulTextDelete} />
+                )}
+                {modalities.length === 0 && (
+                    <h2 className="text-2xl text-center">
+                        No modalities added so far.
+                    </h2>
+                )}
+
+                <div className="mt-4 flex gap-4 w-96 flex-wrap">
+                    <div className="">
+                        <OutlineButton onClick={() => setMode(ADD_TEXT)}>
+                            Add text
+                        </OutlineButton>
+                    </div>
+                    <OutlineButton onClick={() => setMode(ADD_IMAGE)}>Add image</OutlineButton>
+                    <OutlineButton onClick={() => setMode(ADD_CODE)}>Add code</OutlineButton>
+                </div>
+
+                <Modal show={mode === ADD_TEXT} onClose={() => setMode(null)}>
+                    <div className="p-6">
+                        <AddTextForm onSuccess={handleSuccessfulModalityCreation} />
+                    </div>
+                </Modal>
+
+                <Modal show={mode === ADD_IMAGE} onClose={() => setMode(null)}>
+                    <div className="p-6">
+                        <AddImageForm onSuccess={handleSuccessfulModalityCreation} />
+                    </div>
+                </Modal>
+
+                <Modal show={mode === ADD_CODE} onClose={() => setMode(null)}>
+                    <div className="p-6">
+                        <AddCodeForm onSuccess={handleSuccessfulModalityCreation} />
+                    </div>
+                </Modal>
             </div>
-
-            <div className="flex gap-4 w-96 flex-wrap">
-                <div className="">
-                <OutlineButton onClick={() => setMode(ADD_TEXT)}>
-                    Add text
-                </OutlineButton>
+            <form action={createMessage} className="text-lg border-t border-t-sky-900 p-4">
+                <div>
+                    <SubmitButton text="Create message" />
                 </div>
-                <OutlineButton onClick={() => setMode(ADD_IMAGE)}>Add image</OutlineButton>
-                <OutlineButton onClick={() => setMode(ADD_CODE)}>Add code</OutlineButton>
-            </div>
-
-            <Modal show={mode === ADD_TEXT} onClose={() => setMode(null)}>
-                <div className="p-6">
-                    <AddTextForm onSuccess={handleSuccessfulModalityCreation} />
-                </div>
-            </Modal>
-
-            <Modal show={mode === ADD_IMAGE} onClose={() => setMode(null)}>
-                <div className="p-6">
-                    <AddImageForm onSuccess={handleSuccessfulModalityCreation} />
-                </div>
-            </Modal>
-
-            <Modal show={mode === ADD_CODE} onClose={() => setMode(null)}>
-                <div className="p-6">
-                    <AddCodeForm onSuccess={handleSuccessfulModalityCreation} />
-                </div>
-            </Modal>
+            </form>
         </div>
     );
 }
 
-function ModalityMixturePanel({ mixture, onSuccessfulUpdate, onSuccessfulDelete }) {
-    const items = mixture.map((data, idx) => {
-        const { modality_type, ...rest } = data;
-        let item;
-        const props = {
-            data,
-            onSuccessfulUpdate,
-            onSuccessfulDelete
-        }
-        if (modality_type === "text") {
-            item = <TextModality {...props} />;
-        } else if (modality_type === "image") {
-            item = <ImageModality {...props} />;
-        } else if (modality_type === "code") {
-            item = <CodeModality {...props} />;
-        } else {
-            item =  <div>Unknown modality</div>;
-        }
+export function ModalityViewer({ modalityObject, onSuccessfulUpdate, onSuccessfulDelete }) {
+    const { modality_type, ...rest } = modalityObject;
+    console.log("IN MODALITY VIEWER: ", modalityObject)
+    let item;
+    const props = {
+        data: modalityObject,
+        onSuccessfulUpdate,
+        onSuccessfulDelete
+    }
 
-        return <div key={idx}>{item}</div>;
-    });
+    if (modality_type === "text") {
+        item = <TextModality {...props} />;
+    } else if (modality_type === "image") {
+        item = <ImageModality {...props} />;
+    } else if (modality_type === "code") {
+        item = <CodeModality {...props} />;
+    } else if (modality_type === "mixture") {
+        let childrenItems = modalityObject.mixture.map((mod, idx) => 
+            <ModalityViewer 
+                key={idx}
+                modalityObject={mod}
+                onSuccessfulUpdate={onSuccessfulUpdate}
+                onSuccessfulDelete={onSuccessfulDelete} 
+            />
+        );
 
-    return (
-        <div className="flex flex-col justify-evenly gap-2 rounded-lg">
-            {items}
-        </div>
-    );
+        item = (
+            <div className="flex flex-col justify-evenly gap-4 rounded-lg">
+                {childrenItems}
+            </div>
+        );
+    } else {
+        item =  <div>Unknown modality</div>;
+    }
+
+    return item;
 }
+
 
 function makeDeleteAction(data, onSuccessfulDelete) {
     async function action() {
@@ -239,7 +263,7 @@ function GenericModalityControls({
 
 function TextModality({ data, onSuccessfulUpdate, onSuccessfulDelete }) {
     return (
-        <div className="p-4 border rounded-lg shadow-sm bg-white">
+        <div className="p-4 border rounded-lg shadow-sm bg-blue-100">
             <div className="mb-2">{data.text}</div>
             <GenericModalityControls
                 data={data}
@@ -254,8 +278,8 @@ function TextModality({ data, onSuccessfulUpdate, onSuccessfulDelete }) {
 function ImageModality({ data, onSuccessfulUpdate, onSuccessfulDelete }) {
     return (
         <div className="border rounded-lg shadow-sm">
-            <div className="px-2 rounded-lg h-96 bg-blue-950">
-                <img className="h-full border-x-2 border-white mx-auto" src={data.image.replace("django:8000", "localhost")} />
+            <div className="px-2 rounded-lg h-96 bg-blue-100">
+                <img className="h-full mx-auto" src={data.image.replace("django:8000", "localhost")} />
             </div>
             <div className="px-2">
                 <GenericModalityControls
@@ -273,7 +297,7 @@ function CodeModality({ data, onSuccessfulUpdate, onSuccessfulDelete }) {
     //todo: update API so as to allow updating code modality
 
     return (
-        <div className="p-4 border rounded-lg shadow-sm bg-white">
+        <div className="p-4 border rounded-lg shadow-sm bg-blue-100">
             <div>{data.file_path}</div>
             <div className="mb-2">{data.code}</div>
             <DeleteControl

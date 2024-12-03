@@ -1,10 +1,24 @@
-export function SubmitButton({ onClick, children, disabled=false }) {
+export function SubmitButton({ onClick, text="Submit", children, disabled=false, ...otherProps }) {
     return (
         <button className="bg-blue-700 px-10 py-2 rounded-md text-white hover:bg-blue-900 disabled:bg-gray-500"
             type="submit"
             disabled={disabled}
-            onClick={onClick}>
-            Submit
+            {...otherProps}
+        >
+            {text}
+            <span>{children}</span>
+        </button>
+    );
+}
+
+export function CancelButton({ children, text="Cancel", disabled=false, ...otherProps }) {
+    return (
+        <button className="bg-blue-200 px-10 py-2 rounded-md text-white hover:bg-blue-300 disabled:bg-gray-500"
+            type="submit"
+            disabled={disabled}
+            {...otherProps}
+        >
+            {text}
             <span>{children}</span>
         </button>
     );

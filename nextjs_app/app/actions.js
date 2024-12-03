@@ -213,6 +213,30 @@ async function fetchJson(url, method, data) {
     return response;
 }
 
+async function postJsonObject(url, data, defaultError="") {
+    defaultError = defaultError || "Failed to create an object";
+    try {
+        const response = await fetchJson(url, "POST", data);
+
+        const responseData = await response.json();
+    
+        if (!response.ok) {
+            return prepareResultMessage(false, {
+                message: defaultError,
+                errors: responseData
+            })
+        }
+    
+        return prepareResultMessage(true, responseData);
+    } catch (error) {
+        console.log("Error", error);
+        return prepareResultMessage(false, {
+            message: defaultError,
+            errors: []
+        })
+    }
+}
+
 
 async function startNewChat(prevState, formData) {
     const prompt = formData.get("prompt");
@@ -290,7 +314,7 @@ const modalityActionSet = new ActionSet({
 
 
 async function createTextModality(parentId, prevState, formData) {
-    formData.append("parent", parentId);
+    formData.append("mixed_modality", parentId);
     formData.append("modality_type", "text");
     const result = await modalityActionSet.create(prevState, formData);
 
@@ -299,19 +323,43 @@ async function createTextModality(parentId, prevState, formData) {
 
 
 async function createImageModality(parentId, prevState, formData) {
-    formData.append("parent", parentId);
+    formData.append("mixed_modality", parentId);
     formData.append("modality_type", "image");
     return await modalityActionSet.create(prevState, formData);
 }
 
 async function createCodeModality(parentId, prevState, formData) {
-    formData.append("parent", parentId);
+    formData.append("mixed_modality", parentId);
     formData.append("modality_type", "code");
     return await modalityActionSet.create(prevState, formData);
 }
 
 const [_ignored1, updateModality, deleteModality] = modalityActionSet.getActionFunctions();
 
+const messageActionSet = new ActionSet({
+    listUrl: `${baseApiUrl}/multimedia-messages/`,
+    itemName: "message",
+    updateMethod: "PATCH"
+});
+
+
+async function createMultimediaMessage(role, mixedModalityId, parentMessageId, sourceTree, formData) {
+    const url = `${baseApiUrl}/multimedia-messages/`;
+    const data = {
+        role,
+        content: mixedModalityId,
+        parent: parentMessageId,
+        src_tree: sourceTree
+    }
+    const result =  await postJsonObject(url, data, "Failed to create a new message");
+
+    if (result.success) {
+        const chatId = result.responseData.chat;
+        revalidatePath(`/chats/${chatId}`);
+    }
+
+    return result;
+}
 
 export {
     createServerEntry, updateServerEntry, deleteServerEntry,
@@ -320,5 +368,6 @@ export {
     startNewChat, deleteChat,
     createMixedModality,
     createTextModality, createImageModality, createCodeModality,
-    updateModality, deleteModality
+    updateModality, deleteModality,
+    createMultimediaMessage
  };
