@@ -118,7 +118,7 @@ export function DeleteControl({ data, deleteAction, deletionTitle, deletionText=
 
 
 export function Controls({ data, editComponent, componentArgs, deleteAction,
-                     editTitle="Edit item", deletionTitle="", deletionText="" }) {
+                     editTitle="Edit item", deletionTitle="", deletionText="", size="lg" }) {
   //todo: make use of DeleteControl component
   deletionTitle = deletionTitle || "Do you want to proceed?";
   deletionText = deletionText || "Are you sure that you want to permanently delete the entry?";
@@ -177,13 +177,13 @@ export function Controls({ data, editComponent, componentArgs, deleteAction,
       <div>
         {!deletion && (
           <div>
-            <button className="border rounded-s-md p-2 text-zinc-600 hover:text-zinc-900 hover:bg-gray-500"
+            <button className="border rounded-s-md p-1 text-zinc-600 hover:text-zinc-900 hover:bg-gray-500"
               onClick={handleEditClick}>
-              <FontAwesomeIcon icon={faPencil} size="lg" />
+              <FontAwesomeIcon icon={faPencil} size={size} />
             </button>
-            <button className="border rounded-e-md p-2 text-zinc-600 hover:text-zinc-900 hover:bg-gray-500"
+            <button className="border rounded-e-md p-1 text-zinc-600 hover:text-zinc-900 hover:bg-gray-500"
               onClick={handleTrashClick}>
-              <FontAwesomeIcon icon={faTrash} size="lg" />
+              <FontAwesomeIcon icon={faTrash} size={size} />
             </button>
             {error && (
               <div className="py-2">

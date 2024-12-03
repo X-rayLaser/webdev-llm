@@ -257,14 +257,15 @@ function GenericModalityControls({
         <Controls
             data={data}
             editComponent={EditTextForm}
-            deleteAction={makeDeleteAction(data, onSuccessfulDelete)} />
+            deleteAction={makeDeleteAction(data, onSuccessfulDelete)}
+            size="sm" />
     );
 }
 
 function TextModality({ data, onSuccessfulUpdate, onSuccessfulDelete }) {
     return (
-        <div className="p-4 border rounded-lg shadow-sm bg-blue-100">
-            <div className="mb-2">{data.text}</div>
+        <div className="px-4 py-2 border rounded-lg shadow-sm bg-blue-100">
+            <div className="">{data.text}</div>
             <GenericModalityControls
                 data={data}
                 onSuccessfulUpdate={onSuccessfulUpdate}
@@ -299,7 +300,7 @@ function CodeModality({ data, onSuccessfulUpdate, onSuccessfulDelete }) {
     //todo: update API so as to allow updating code modality
 
     return (
-        <div className="p-4 border rounded-lg shadow-sm bg-blue-100">
+        <div className="px-4 py-2 border rounded-lg shadow-sm bg-blue-100">
             <div>{data.file_path}</div>
             <div className="mb-2">{data.code}</div>
             <DeleteControl
