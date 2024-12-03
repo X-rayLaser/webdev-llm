@@ -27,7 +27,9 @@ function MessageCard({ messageObject }) {
 
     return (
         <div>
-            <ModalityViewer modalityObject={messageObject} />
+            <div className="p-4 border rounded-lg shadow-lg bg-sky-700">
+                <ModalityViewer modalityObject={messageObject} />
+            </div>
         </div>
     );
 }

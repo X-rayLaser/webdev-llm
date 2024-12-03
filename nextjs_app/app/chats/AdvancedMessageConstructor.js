@@ -277,17 +277,19 @@ function TextModality({ data, onSuccessfulUpdate, onSuccessfulDelete }) {
 
 function ImageModality({ data, onSuccessfulUpdate, onSuccessfulDelete }) {
     return (
-        <div className="border rounded-lg shadow-sm">
-            <div className="px-2 rounded-lg h-96 bg-blue-100">
-                <img className="h-full mx-auto" src={data.image.replace("django:8000", "localhost")} />
-            </div>
-            <div className="px-2">
-                <GenericModalityControls
-                    data={data}
-                    onSuccessfulUpdate={onSuccessfulUpdate}
-                    onSuccessfulDelete={onSuccessfulDelete}
-                    actionlessForm={ImageForm}
-                />
+        <div className="rounded-lg shadow-sm">
+            <div className="relative w-full">
+                <div className="px-2 rounded-lg h-96 bg-blue-100">
+                    <img className="h-full mx-auto" src={data.image.replace("django:8000", "localhost")} />
+                </div>
+                <div className="absolute px-2 right-0 top-0">
+                    <GenericModalityControls
+                        data={data}
+                        onSuccessfulUpdate={onSuccessfulUpdate}
+                        onSuccessfulDelete={onSuccessfulDelete}
+                        actionlessForm={ImageForm}
+                    />
+                </div>
             </div>
         </div>
     );
