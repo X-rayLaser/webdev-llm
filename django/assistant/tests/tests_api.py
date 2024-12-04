@@ -140,8 +140,24 @@ class CreateMessageTests(APITestCase):
         self.assertEqual(1, len(revisions))
         rev = revisions[0]
         self.assertEqual([{"file_path": "main.js", "content": "x = 2"}], rev["src_tree"])
-
         self.assertEqual(rev["id"], data["active_revision"])
+
+    def test_can_view_created_message_containing_code(self):
+
+        chat_id = utils.create_default_chat(self.client)
+        response = utils.create_text_modality(self.client, text="First msg")
+        mod_id = response.data["id"]
+        response = utils.create_message(self.client, mod_id, chat_id=chat_id)
+        first_msg_id = response.data["id"]
+
+        response = utils.create_code_modality(self.client, file_path="main.js")
+        main_id = response.data["id"]
+
+        response = utils.create_message(self.client, main_id, parent_id=first_msg_id,
+                                        src_tree=[{"file_path": "main.js", "content": "x = 2"}])
+        second_msg_id = response.data["id"]
+        resp = self.client.get(f"/api/multimedia-messages/{first_msg_id}/")
+        self.assertEqual(200, resp.status_code)
 
     def test_creating_message_with_nested_mixtures(self):
         response = utils.create_mixed_modality(self.client, layout_type="grid")

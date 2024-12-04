@@ -248,7 +248,8 @@ class MultimediaMessageSerializer(serializers.ModelSerializer):
                   'content_ro', 'content', 'revisions', 'replies', 'src_tree']
 
     def get_replies(self, obj):
-        return MultimediaMessageSerializer(obj.replies.all(), many=True).data
+        kwargs = dict(context=self.context) if hasattr(self, "context") else {}
+        return MultimediaMessageSerializer(obj.replies.all(), many=True, **kwargs).data
 
     def validate_src_tree(self, data):
         for entry in data:
