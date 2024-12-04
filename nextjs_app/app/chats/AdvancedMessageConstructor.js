@@ -300,13 +300,19 @@ function CodeModality({ data, onSuccessfulUpdate, onSuccessfulDelete }) {
     //todo: update API so as to allow updating code modality
 
     return (
-        <div className="px-4 py-2 border rounded-lg shadow-sm bg-blue-100">
-            <div>{data.file_path}</div>
-            <div className="mb-2 whitespace-pre-wrap">{data.code}</div>
-            <DeleteControl
-                data={data}
-                deleteAction={makeDeleteAction(data, onSuccessfulDelete)}
-            />
+        <div className="rounded-lg shadow-sm">
+            <div className="px-4 py-2 rounded-t-lg bg-gray-700 text-white">{data.file_path}</div>
+            <div className="px-4 py-2 bg-blue-100 rounded-b-lg">
+                <div className="ml-[-4px] float-right">
+                    <DeleteControl
+                        data={data}
+                        deleteAction={makeDeleteAction(data, onSuccessfulDelete)}
+                        size="lg"
+                    />
+                </div>
+
+                <div className="whitespace-pre-wrap min-h-12">{data.code}</div>
+            </div>
         </div>
     );
 }

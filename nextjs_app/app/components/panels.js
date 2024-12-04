@@ -56,7 +56,7 @@ export default function Panel({ title, icon, addButtonText, noElementsText="No i
 }
 
 
-export function DeleteControl({ data, deleteAction, deletionTitle, deletionText="" }) {
+export function DeleteControl({ data, deleteAction, deletionTitle, deletionText="", size="lg" }) {
   deletionTitle = deletionTitle || "Do you want to proceed?";
   deletionText = deletionText || "Are you sure that you want to permanently delete the entry?";
   const [deletion, setDeletion] = useState(false);
@@ -89,9 +89,9 @@ export function DeleteControl({ data, deleteAction, deletionTitle, deletionText=
       <div>
         {!deletion && (
           <div>
-            <button className="border rounded-e-md p-2 text-zinc-600 hover:text-zinc-900 hover:bg-gray-500"
+            <button className="border p-1 text-zinc-600 hover:text-zinc-900 hover:bg-gray-500"
               onClick={handleTrashClick}>
-              <FontAwesomeIcon icon={faTrash} size="lg" />
+              <FontAwesomeIcon icon={faTrash} size={size} />
             </button>
             {error && (
               <div className="py-2">
