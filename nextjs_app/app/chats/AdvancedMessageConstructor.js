@@ -9,6 +9,8 @@ import { createTextModality, createMixedModality, createImageModality, createCod
 import Modal from '../components/modal';
 import { Alert } from '../components/alerts';
 import { PanelItem, DeleteControl, Controls } from '../components/panels';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faCopy } from '@fortawesome/free-solid-svg-icons'
 
 const textFormFields = [{
     name: "text",
@@ -298,10 +300,36 @@ function ImageModality({ data, onSuccessfulUpdate, onSuccessfulDelete }) {
 
 function CodeModality({ data, onSuccessfulUpdate, onSuccessfulDelete }) {
     //todo: update API so as to allow updating code modality
+    const [copied, setCopied] = useState(false);
+    const [copying, setCopying] = useState(false);
+
+    function copyToClipboard() {
+        if (copying) {
+            return;
+        }
+        setCopying(true);
+        navigator.clipboard.writeText(data.code).then(() => {
+            setCopying(false);
+            setCopied(true);
+            setTimeout(function() {
+                setCopied(false);
+            }, 4000);
+        });
+    }
 
     return (
         <div className="rounded-lg shadow-sm">
-            <div className="px-4 py-2 rounded-t-lg bg-gray-700 text-white">{data.file_path}</div>
+            <div className="px-4 py-2 rounded-t-lg bg-gray-700 text-white">
+                <div className="float-right text-gray-300">
+                    {!copied && (
+                        <button className="float-right" onClick={copyToClipboard}>
+                            Copy <span className="ml-2"><FontAwesomeIcon icon={faCopy} /></span>
+                        </button>
+                    )}
+                    {copied && <span className="text-green-400">Copied!</span>}
+                </div>
+                <div>{data.file_path}</div>
+            </div>
             <div className="px-4 py-2 bg-blue-100 rounded-b-lg">
                 <div className="ml-[-4px] float-right">
                     <DeleteControl
