@@ -22,13 +22,35 @@ function removeEmptyMessages(thread) {
     return thread.filter(msg => !isEmpty(msg));
 }
 
+function decorateWithSources(modalityObject, sourceFiles) {
+    if (modalityObject.modality_type === "code") {
+        const matches = sourceFiles.filter(f => f.file_path === modalityObject.file_path);
+        if (matches.length > 0) {
+            modalityObject.code = matches[0].content;
+        }
+    } else if (modalityObject.modality_type === "mixture") {
+        modalityObject.mixture.forEach(mod => {
+            decorateWithSources(mod, sourceFiles);
+        });
+    }
+}
 
-function MessageCard({ messageObject }) {
 
+function MessageCard({ message }) {
+    const modality = message.content_ro;
+    const sources = (
+        message?.active_revision?.src_tree || 
+        (message.revisions.length === 1 && message.revisions[0]?.src_tree) ||
+        []
+    );
+
+
+    console.log("MessageCard",  message);
+    decorateWithSources(modality, sources);
     return (
         <div>
             <div className="p-4 border rounded-lg shadow-lg bg-sky-700">
-                <ModalityViewer modalityObject={messageObject} />
+                <ModalityViewer modalityObject={modality} />
             </div>
         </div>
     );
@@ -55,9 +77,9 @@ export default async function Page(props) {
     const thread = getThread(openningMessage);
 
     const previousMessage = thread[thread.length - 1];
-    console.log("THREAD:", removeEmptyMessages(thread))
+
     const messages = removeEmptyMessages(thread).map(
-        (msg, idx) => <MessageCard key={idx} messageObject={msg.content_ro} />
+        (msg, idx) => <MessageCard key={idx} message={msg} />
     );
 
     return (

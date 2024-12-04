@@ -186,7 +186,7 @@ export default function AdvancedMessageConstructor({ previousMessage }) {
 
 export function ModalityViewer({ modalityObject, onSuccessfulUpdate, onSuccessfulDelete }) {
     const { modality_type, ...rest } = modalityObject;
-    console.log("IN MODALITY VIEWER: ", modalityObject)
+
     let item;
     const props = {
         data: modalityObject,
@@ -265,7 +265,7 @@ function GenericModalityControls({
 function TextModality({ data, onSuccessfulUpdate, onSuccessfulDelete }) {
     return (
         <div className="px-4 py-2 border rounded-lg shadow-sm bg-blue-100">
-            <div className="">{data.text}</div>
+            <div className="whitespace-pre-wrap">{data.text}</div>
             <GenericModalityControls
                 data={data}
                 onSuccessfulUpdate={onSuccessfulUpdate}
@@ -302,7 +302,7 @@ function CodeModality({ data, onSuccessfulUpdate, onSuccessfulDelete }) {
     return (
         <div className="px-4 py-2 border rounded-lg shadow-sm bg-blue-100">
             <div>{data.file_path}</div>
-            <div className="mb-2">{data.code}</div>
+            <div className="mb-2 whitespace-pre-wrap">{data.code}</div>
             <DeleteControl
                 data={data}
                 deleteAction={makeDeleteAction(data, onSuccessfulDelete)}

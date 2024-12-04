@@ -356,7 +356,7 @@ class ChatAPITests(APITestCase):
     def test_list_chats(self):
         response = self.client.get(self.list_url)
         self.assertEqual(response.status_code, 200)
-        self.assertIsInstance(response.json(), list)
+        self.assertIsInstance(response.json()["results"], list)
 
     def test_retrieve_chat(self):
         response = self.client.get(self.url)

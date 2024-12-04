@@ -283,11 +283,10 @@ class MultimediaMessageSerializer(serializers.ModelSerializer):
 
         message = super().create(validated_data)
         if src_tree:
-            if message.content.modality_type == "code":
-                path = message.content.file_path
-                contents = [entry["content"] for entry in src_tree if entry["file_path"] == path]
-                if contents:
-                    Revision.objects.create(src_tree=src_tree, message=message)
+            revision = Revision.objects.create(src_tree=src_tree, message=message)
+            message.active_revision = revision
+            message.save()
+
         return message
 
 
