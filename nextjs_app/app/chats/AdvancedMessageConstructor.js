@@ -10,7 +10,7 @@ import Modal from '../components/modal';
 import { Alert } from '../components/alerts';
 import { PanelItem, DeleteControl, Controls } from '../components/panels';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faCopy } from '@fortawesome/free-solid-svg-icons'
+import { faCopy, faSpinner } from '@fortawesome/free-solid-svg-icons'
 
 const textFormFields = [{
     name: "text",
@@ -97,6 +97,8 @@ export default function AdvancedMessageConstructor({ previousMessage }) {
     const [parent, setParent] = useState(null); //mixed modality wrapping the modalities created
     
     const [modalities, setModalities] = useState([]);
+    const [submissionError, setSubmissionError] = useState("");
+    const [sendingForm, setSendingForm] = useState(false);
 
     function handleSuccessfulModalityCreation(res) {
         setMode(null);
@@ -129,7 +131,28 @@ export default function AdvancedMessageConstructor({ previousMessage }) {
 
     const role = previousMessage.role === "assistant" ? "user" : "assistant";
 
-    const createMessage = createMultimediaMessage.bind(null, role, parent, previousMessage.id, sourceTree)
+    async function createMessage() {
+        setSubmissionError("");
+        const { success, responseData } = await createMultimediaMessage(
+            role, parent, previousMessage.id, sourceTree
+        );
+        if (!success) {
+            setSubmissionError(responseData.message);
+        }
+
+        if (success) {
+            setModalities([]);
+            setMode(null);
+            setSubmissionError("");
+            setParent(null);
+        }
+
+        setSendingForm(false);
+    }
+
+    function handleSubmit(e) {
+        setSendingForm(true);
+    }
 
     return (
         <div className="border rounded-lg shadow-md bg-sky-700">
@@ -177,9 +200,16 @@ export default function AdvancedMessageConstructor({ previousMessage }) {
                     </div>
                 </Modal>
             </div>
-            <form action={createMessage} className="text-lg border-t border-t-sky-900 p-4">
+            <form action={createMessage} onSubmit={handleSubmit} className="text-lg border-t border-t-sky-900 p-4">
                 <div>
-                    <SubmitButton text="Create message" />
+                    <SubmitButton text="Create message" disabled={sendingForm || modalities.length === 0}>
+                        {sendingForm && <span className="ml-2"><FontAwesomeIcon icon={faSpinner} spin /></span>}
+                    </SubmitButton>
+                    {submissionError && (
+                        <div className="mt-4">
+                            <Alert level="danger" text={submissionError} />
+                        </div>
+                    )}
                 </div>
             </form>
         </div>
