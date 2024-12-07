@@ -1,7 +1,9 @@
+import os
 from django.db import models
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django.db.models import Max
+from django.core.files.base import ContentFile
 
 
 class Server(models.Model):
@@ -234,6 +236,22 @@ class MultimediaMessage(models.Model):
 
         return list(reversed(history))
 
+    def clone(self):
+        # todo: write unit tests
+        content = self.content.clone()
+        message = MultimediaMessage.objects.create(
+            role=self.role, chat=self.chat, parent=self.parent, content=content
+        )
+        if self.revisions.exists():
+            for old_revision in self.revisions.all():
+                cloned_revision = Revision.objects.create(
+                    src_tree=old_revision.src_tree, message=message
+                )
+                if self.active_revision and self.active_revision.id == old_revision.id:
+                    message.active_revision = cloned_revision
+                    message.save()
+        return message
+
     def __str__(self):
         return f"{self.role.capitalize()} message in chat '{self.chat.name}'"
 
@@ -267,6 +285,39 @@ class Modality(models.Model):
                 kwargs["update_fields"] = {"order"}.union(update_fields)
 
         super().save(**kwargs)
+
+    def clone(self):
+        # todo: write unit tests
+        modality_type = self.modality_type
+        if modality_type == "text":
+            return Modality(modality_type="text", text=self.text, order=self.order)
+        if modality_type == "image":
+            mod_copy = Modality(modality_type="image", order=self.order)
+            self.copy_image(self, mod_copy)
+            mod_copy.save()
+            return mod_copy
+        if modality_type == "code":
+            return Modality(modality_type="code", file_path=self.file_path, order=self.order)
+        if modality_type == "mixture":
+            mod_copy = Modality.objects.create(
+                modality_type="mixture", layout=self.layout, order=self.order
+            )
+            for child in self.mixture.all():
+                child_clone = child.clone()
+                child_clone.mixed_modality = mod_copy
+                child_clone.save()
+            return mod_copy
+
+        raise Exception(f"Cannot clone modality with unknown type '{self.modality_type}'")
+
+    def copy_image(self, original_object, cloned_object):
+        picture_copy = ContentFile(original_object.image.read())
+        parts = original_object.image.name.split("/")
+        old_name = parts[-1]
+        main_name, extension = os.path.splitext(old_name)
+        parts.append(main_name + "_copy" + extension)
+        new_path = os.path.join(*parts)
+        cloned_object.image.save(new_path, picture_copy)
 
     @property
     def source_paths(self):

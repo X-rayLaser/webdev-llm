@@ -343,7 +343,7 @@ const messageActionSet = new ActionSet({
 });
 
 
-async function createMultimediaMessage(role, mixedModalityId, parentMessageId, sourceTree, formData) {
+async function createMultimediaMessage(role, parentMessageId, mixedModalityId, sourceTree) {
     const url = `${baseApiUrl}/multimedia-messages/`;
     const data = {
         role,
@@ -361,6 +361,18 @@ async function createMultimediaMessage(role, mixedModalityId, parentMessageId, s
     return result;
 }
 
+async function cloneMultimediaMessage(messageId) {
+    const url = `${baseApiUrl}/multimedia-messages/${messageId}/clone/`;
+    const result =  await postJsonObject(url, {}, "Failed to clone a message");
+    return result;
+}
+
+async function cloneModality(modalityId) {
+    const url = `${baseApiUrl}/modalities/${modalityId}/clone/`;
+    const result =  await postJsonObject(url, {}, "Failed to clone a modality");
+    return result;
+}
+
 export {
     createServerEntry, updateServerEntry, deleteServerEntry,
     createPresetEntry, updatePresetEntry, deletePresetEntry,
@@ -369,5 +381,6 @@ export {
     createMixedModality,
     createTextModality, createImageModality, createCodeModality,
     updateModality, deleteModality,
-    createMultimediaMessage
+    createMultimediaMessage, cloneMultimediaMessage,
+    cloneModality
  };

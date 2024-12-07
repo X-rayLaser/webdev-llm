@@ -127,6 +127,15 @@ class MultimediaMessageViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
+    @decorators.action(methods=['post'], detail=True)
+    def clone(self, request, pk=None):
+        message = self.get_object()
+        cloned_message = message.clone()
+
+        serializer = MultimediaMessageSerializer(cloned_message)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
 class ModalityViewSet(viewsets.ModelViewSet):
     queryset = Modality.objects.all()
     serializer_class = ModalitySerializer
@@ -138,6 +147,14 @@ class ModalityViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response({}, status=status.HTTP_204_NO_CONTENT)
+
+    @decorators.action(methods=['post'], detail=True)
+    def clone(self, request, pk=None):
+        modality = self.get_object()
+        cloned_modality = modality.clone()
+
+        serializer = ModalitySerializer(cloned_modality)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class GenerationViewSet(mixins.CreateModelMixin,

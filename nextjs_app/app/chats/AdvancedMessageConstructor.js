@@ -1,5 +1,5 @@
 "use client"
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { formFactory, makeCreateForm, makeEditForm } from "../components/form-factory";
 import { getTopDownRenderer } from '../components/fieldset-renderers';
 import { AutoExpandingTextArea, ImageField, TextField } from "../components/common-forms";
@@ -88,17 +88,26 @@ function actionFactory(parent, setParent, modalityAction) {
 }
 
 
-export default function AdvancedMessageConstructor({ previousMessage }) {
+export default function AdvancedMessageConstructor({ formAction, rootModality=null }) {
     const ADD_TEXT = "add_text";
     const ADD_IMAGE = "add_image";
     const ADD_CODE = "add_code";
 
     const [mode, setMode] = useState(null);
-    const [parent, setParent] = useState(null); //mixed modality wrapping the modalities created
+    const initialParent = (rootModality && rootModality.id) || null;
+    const [parent, setParent] = useState(initialParent); //mixed modality wrapping the modalities created
     
-    const [modalities, setModalities] = useState([]);
+    const initialModalities = (rootModality && rootModality.mixture) || [];
+    const [modalities, setModalities] = useState(initialModalities);
     const [submissionError, setSubmissionError] = useState("");
     const [sendingForm, setSendingForm] = useState(false);
+
+    useEffect(() => {
+        if (rootModality) {
+            setParent(rootModality.id);
+            setModalities(rootModality.mixture);
+        }
+    }, [rootModality]);
 
     function handleSuccessfulModalityCreation(res) {
         setMode(null);
@@ -129,13 +138,10 @@ export default function AdvancedMessageConstructor({ previousMessage }) {
         file_path: mod.file_path, content: mod.code
     }));
 
-    const role = previousMessage.role === "assistant" ? "user" : "assistant";
 
     async function createMessage() {
         setSubmissionError("");
-        const { success, responseData } = await createMultimediaMessage(
-            role, parent, previousMessage.id, sourceTree
-        );
+        const { success, responseData } = await formAction(parent, sourceTree);
         if (!success) {
             setSubmissionError(responseData.message);
         }
@@ -216,15 +222,16 @@ export default function AdvancedMessageConstructor({ previousMessage }) {
     );
 }
 
-export function ModalityViewer({ modalityObject, onSuccessfulUpdate, onSuccessfulDelete }) {
+export function ModalityViewer({ modalityObject, onSuccessfulUpdate, onSuccessfulDelete, showControls=true }) {
     const { modality_type, ...rest } = modalityObject;
 
     let item;
     const props = {
         data: modalityObject,
         onSuccessfulUpdate,
-        onSuccessfulDelete
-    }
+        onSuccessfulDelete,
+        showControls
+    };
 
     if (modality_type === "text") {
         item = <TextModality {...props} />;
@@ -238,7 +245,8 @@ export function ModalityViewer({ modalityObject, onSuccessfulUpdate, onSuccessfu
                 key={idx}
                 modalityObject={mod}
                 onSuccessfulUpdate={onSuccessfulUpdate}
-                onSuccessfulDelete={onSuccessfulDelete} 
+                onSuccessfulDelete={onSuccessfulDelete}
+                showControls={showControls}
             />
         );
 
@@ -294,21 +302,23 @@ function GenericModalityControls({
     );
 }
 
-function TextModality({ data, onSuccessfulUpdate, onSuccessfulDelete }) {
+function TextModality({ data, onSuccessfulUpdate, onSuccessfulDelete, showControls=true }) {
     return (
         <div className="px-4 py-2 border rounded-lg shadow-sm bg-blue-100">
             <div className="whitespace-pre-wrap">{data.text}</div>
-            <GenericModalityControls
-                data={data}
-                onSuccessfulUpdate={onSuccessfulUpdate}
-                onSuccessfulDelete={onSuccessfulDelete}
-                actionlessForm={TextForm}
-            />
+            {showControls && (
+                <GenericModalityControls
+                    data={data}
+                    onSuccessfulUpdate={onSuccessfulUpdate}
+                    onSuccessfulDelete={onSuccessfulDelete}
+                    actionlessForm={TextForm}
+                />
+            )}
         </div>
     );
 }
 
-function ImageModality({ data, onSuccessfulUpdate, onSuccessfulDelete }) {
+function ImageModality({ data, onSuccessfulUpdate, onSuccessfulDelete, showControls=true }) {
     return (
         <div className="rounded-lg shadow-sm">
             <div className="relative w-full">
@@ -316,19 +326,21 @@ function ImageModality({ data, onSuccessfulUpdate, onSuccessfulDelete }) {
                     <img className="h-full mx-auto" src={data.image.replace("django:8000", "localhost")} />
                 </div>
                 <div className="absolute px-2 right-0 top-0">
-                    <GenericModalityControls
-                        data={data}
-                        onSuccessfulUpdate={onSuccessfulUpdate}
-                        onSuccessfulDelete={onSuccessfulDelete}
-                        actionlessForm={ImageForm}
-                    />
+                    {showControls && (
+                        <GenericModalityControls
+                            data={data}
+                            onSuccessfulUpdate={onSuccessfulUpdate}
+                            onSuccessfulDelete={onSuccessfulDelete}
+                            actionlessForm={ImageForm}
+                        />
+                    )}
                 </div>
             </div>
         </div>
     );
 }
 
-function CodeModality({ data, onSuccessfulUpdate, onSuccessfulDelete }) {
+function CodeModality({ data, onSuccessfulUpdate, onSuccessfulDelete, showControls=true }) {
     //todo: update API so as to allow updating code modality
     const [copied, setCopied] = useState(false);
     const [copying, setCopying] = useState(false);
@@ -361,13 +373,15 @@ function CodeModality({ data, onSuccessfulUpdate, onSuccessfulDelete }) {
                 <div>{data.file_path}</div>
             </div>
             <div className="px-4 py-2 bg-blue-100 rounded-b-lg">
-                <div className="ml-[-4px] float-right">
-                    <DeleteControl
-                        data={data}
-                        deleteAction={makeDeleteAction(data, onSuccessfulDelete)}
-                        size="lg"
-                    />
-                </div>
+                {showControls && (
+                    <div className="ml-[-4px] float-right">
+                        <DeleteControl
+                            data={data}
+                            deleteAction={makeDeleteAction(data, onSuccessfulDelete)}
+                            size="lg"
+                        />
+                    </div>
+                )}
 
                 <div className="whitespace-pre-wrap min-h-12">{data.code}</div>
             </div>

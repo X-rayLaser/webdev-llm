@@ -1,6 +1,7 @@
 import PageWithSidePanel from "../PageWithSidePanel";
 import AdvancedMessageConstructor, { ModalityViewer } from "../AdvancedMessageConstructor";
-
+import { createMultimediaMessage } from "@/app/actions";
+import MessageCard from "./MessageCard";
 
 function getThread(rootMsg) {
     const thread = [rootMsg];
@@ -20,40 +21,6 @@ function removeEmptyMessages(thread) {
         content_ro.modality_type === "mixture" && content_ro.mixture.length === 0
     );
     return thread.filter(msg => !isEmpty(msg));
-}
-
-function decorateWithSources(modalityObject, sourceFiles) {
-    if (modalityObject.modality_type === "code") {
-        const matches = sourceFiles.filter(f => f.file_path === modalityObject.file_path);
-        if (matches.length > 0) {
-            modalityObject.code = matches[0].content;
-        }
-    } else if (modalityObject.modality_type === "mixture") {
-        modalityObject.mixture.forEach(mod => {
-            decorateWithSources(mod, sourceFiles);
-        });
-    }
-}
-
-
-function MessageCard({ message }) {
-    const modality = message.content_ro;
-    const sources = (
-        message?.active_revision?.src_tree || 
-        (message.revisions.length === 1 && message.revisions[0]?.src_tree) ||
-        []
-    );
-
-
-    console.log("MessageCard",  message);
-    decorateWithSources(modality, sources);
-    return (
-        <div>
-            <div className="p-4 border rounded-lg shadow-lg bg-sky-700">
-                <ModalityViewer modalityObject={modality} />
-            </div>
-        </div>
-    );
 }
 
 
@@ -82,13 +49,19 @@ export default async function Page(props) {
         (msg, idx) => <MessageCard key={idx} message={msg} />
     );
 
+    const role = previousMessage.role === "assistant" ? "user" : "assistant";
+
+    const formAction = createMultimediaMessage.bind(null, role, previousMessage.id);
+
     return (
         <PageWithSidePanel searchParams={searchParams}>
             <div>{data.name.substring(0, 100)}...</div>
             <h2>Messages</h2>
             <div className="flex flex-col gap-4 justify-around">{messages}</div>
             <div className="mt-4">
-                <AdvancedMessageConstructor previousMessage={previousMessage} />
+                <AdvancedMessageConstructor
+                    formAction={formAction}
+                />
             </div>
         </PageWithSidePanel>
     );
