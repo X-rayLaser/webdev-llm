@@ -221,6 +221,8 @@ class MultimediaMessage(models.Model):
     content = models.OneToOneField("Modality", on_delete=models.CASCADE,
                                    related_name='content_message')
 
+    child_index = models.IntegerField(default=0)
+
     def get_root(self):
         if self.parent is None:
             return self
@@ -312,11 +314,9 @@ class Modality(models.Model):
 
     def copy_image(self, original_object, cloned_object):
         picture_copy = ContentFile(original_object.image.read())
-        parts = original_object.image.name.split("/")
-        old_name = parts[-1]
+        old_name = original_object.image.name.split("/")[-1]
         main_name, extension = os.path.splitext(old_name)
-        parts.append(main_name + "_copy" + extension)
-        new_path = os.path.join(*parts)
+        new_path = main_name + "_copy" + extension
         cloned_object.image.save(new_path, picture_copy)
 
     @property

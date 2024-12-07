@@ -65,8 +65,6 @@ export default async function Page(props) {
             console.error("Promise rejected. Reason: ", result.reason);
         }
     });
-
-    console.log("chatsWithMessages", chatsWithMessages)
     
     let items = chatsWithMessages.map((obj, idx) => (
         <div key={idx} className="mb-4">

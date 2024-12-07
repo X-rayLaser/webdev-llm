@@ -233,6 +233,7 @@ class ModalitiesOrderingSerializer(serializers.Serializer):
             modality.save(update_fields=["order"])
 
 
+# todo: validate child_index
 class MultimediaMessageSerializer(serializers.ModelSerializer):
     src_tree = serializers.ListField(
         child=serializers.DictField(),
@@ -245,7 +246,7 @@ class MultimediaMessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = MultimediaMessage
         fields = ['id', 'role', 'chat', 'parent', 'active_revision',
-                  'content_ro', 'content', 'revisions', 'replies', 'src_tree']
+                  'content_ro', 'content', 'revisions', 'replies', 'src_tree', 'child_index']
 
     def get_replies(self, obj):
         kwargs = dict(context=self.context) if hasattr(self, "context") else {}
@@ -288,6 +289,10 @@ class MultimediaMessageSerializer(serializers.ModelSerializer):
             message.active_revision = revision
             message.save()
 
+        if message.parent is not None:
+            parent = message.parent
+            parent.child_index = parent.replies.count() - 1
+            parent.save()
         return message
 
 

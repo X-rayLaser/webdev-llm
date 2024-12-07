@@ -41,7 +41,7 @@ export default function MessageCard({ message }) {
     );
 
     const decoratedModality = decorateWithSources(modality, sources);
-    console.log("message", message)
+
     const previousMessage = message.parent;
     let role;
     let formAction;
@@ -49,8 +49,7 @@ export default function MessageCard({ message }) {
         role = "user";
         formAction = function() {};
     } else {
-        role = previousMessage.role === "assistant" ? "user" : "assistant";
-        const action = createMultimediaMessage.bind(null, role, previousMessage.id);
+        const action = createMultimediaMessage.bind(null, message.role, previousMessage);
         formAction = function () {
             return action(...arguments).then(result => {
                 setEditMode(false);
@@ -81,7 +80,7 @@ export default function MessageCard({ message }) {
                     <ModalityViewer modalityObject={decoratedModality} showControls={false} />
                 )}
             </div>
-            {previousMessage && (
+            {!editMode && previousMessage && (
                 <button onClick={handleEditClick}>
                     Edit <FontAwesomeIcon icon={faPencil} />
                 </button>

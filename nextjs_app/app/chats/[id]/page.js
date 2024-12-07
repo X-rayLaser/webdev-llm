@@ -8,7 +8,8 @@ function getThread(rootMsg) {
     let current = rootMsg;
 
     while (current.replies.length > 0) {
-        let reply = current.replies[0];
+        let index = current.child_index;
+        let reply = current.replies[index];
         thread.push(reply);
         current = reply;
     }
@@ -31,7 +32,6 @@ export default async function Page(props) {
 
     const response = await fetch(`http://django:8000/api/chats/${id}/`);
     const data = await response.json();
-    console.log("chats data:", response.status, data)
 
     if (!data.messages || data.messages.length === 0) {
         return (
