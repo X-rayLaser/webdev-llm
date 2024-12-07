@@ -213,10 +213,10 @@ async function fetchJson(url, method, data) {
     return response;
 }
 
-async function postJsonObject(url, data, defaultError="") {
+async function sendJsonObject(url, data, defaultError="", method="POST") {
     defaultError = defaultError || "Failed to create an object";
     try {
-        const response = await fetchJson(url, "POST", data);
+        const response = await fetchJson(url, method, data);
 
         const responseData = await response.json();
     
@@ -351,7 +351,7 @@ async function createMultimediaMessage(role, parentMessageId, mixedModalityId, s
         parent: parentMessageId,
         src_tree: sourceTree
     }
-    const result =  await postJsonObject(url, data, "Failed to create a new message");
+    const result =  await sendJsonObject(url, data, "Failed to create a new message");
 
     if (result.success) {
         const chatId = result.responseData.chat;
@@ -363,15 +363,31 @@ async function createMultimediaMessage(role, parentMessageId, mixedModalityId, s
 
 async function cloneMultimediaMessage(messageId) {
     const url = `${baseApiUrl}/multimedia-messages/${messageId}/clone/`;
-    const result =  await postJsonObject(url, {}, "Failed to clone a message");
+    const result =  await sendJsonObject(url, {}, "Failed to clone a message");
     return result;
 }
 
 async function cloneModality(modalityId) {
     const url = `${baseApiUrl}/modalities/${modalityId}/clone/`;
-    const result =  await postJsonObject(url, {}, "Failed to clone a modality");
+    const result =  await sendJsonObject(url, {}, "Failed to clone a modality");
     return result;
 }
+
+
+async function switchBranch(message, childIndex) {
+    const parentId = message.parent;
+    const url = `${baseApiUrl}/multimedia-messages/${parentId}/`;
+    const data = {
+        "child_index": childIndex
+    };
+    const result = await sendJsonObject(url, data, "Failed to switch branch", "PATCH");
+    if (result.success) {
+        const chatId = result.responseData.chat;
+        revalidatePath(`/chats/${chatId}`)
+    }
+    return result;
+}
+
 
 export {
     createServerEntry, updateServerEntry, deleteServerEntry,
@@ -382,5 +398,6 @@ export {
     createTextModality, createImageModality, createCodeModality,
     updateModality, deleteModality,
     createMultimediaMessage, cloneMultimediaMessage,
-    cloneModality
+    cloneModality,
+    switchBranch
  };

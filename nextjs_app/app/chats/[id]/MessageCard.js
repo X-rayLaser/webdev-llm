@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from "react";
 import AdvancedMessageConstructor, { ModalityViewer } from "../AdvancedMessageConstructor";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPencil } from '@fortawesome/free-solid-svg-icons'
-import { cloneModality, createMultimediaMessage } from "@/app/actions";
+import { faPencil, faCircleChevronLeft, faCircleChevronRight, faSpinner } from '@fortawesome/free-solid-svg-icons'
+import { cloneModality, createMultimediaMessage, switchBranch } from "@/app/actions";
 
 function decorateWithSources(modalityObject, sourceFiles) {
     if (modalityObject.modality_type === "code") {
@@ -27,6 +27,7 @@ function decorateWithSources(modalityObject, sourceFiles) {
 export default function MessageCard({ message }) {
     const [editMode, setEditMode] = useState(false);
     const [modality, setModality] = useState(message.content_ro);
+    const [switching, setSwitching] = useState(false);
 
     useEffect(() => {
         if (message) {
@@ -68,6 +69,16 @@ export default function MessageCard({ message }) {
         }
     }
 
+    function handleLeftArrowClick() {
+        setSwitching(true);
+        switchBranch(message, message.branchIndex - 1).finally(() => setSwitching(false));
+    }
+
+    function handleRightArrowClick() {
+        setSwitching(true);
+        switchBranch(message, message.branchIndex + 1).finally(() => setSwitching(false));
+    }
+
     return (
         <div>
             <div className="p-4 border rounded-lg shadow-lg bg-sky-700">
@@ -81,9 +92,39 @@ export default function MessageCard({ message }) {
                 )}
             </div>
             {!editMode && previousMessage && (
-                <button onClick={handleEditClick}>
-                    Edit <FontAwesomeIcon icon={faPencil} />
-                </button>
+                <div>
+                    {switching && (
+                        <span>
+                            <FontAwesomeIcon icon={faSpinner} spin size="lg" />
+                        </span>
+                    )}
+                    {message.branches > 1 && !switching && (
+                        <div>
+                            <div className="flex gap-2 text-blue-500 text-lg">
+                                <button 
+                                    onClick={handleLeftArrowClick}
+                                    disabled={message.branchIndex === 0}
+                                >
+                                    <FontAwesomeIcon icon={faCircleChevronLeft} />
+                                </button>
+                                <span>
+                                    {message.branchIndex + 1} / {message.branches}
+                                </span>
+                                <button
+                                    onClick={handleRightArrowClick}
+                                    disabled={message.branchIndex === message.branches - 1}
+                                >
+                                    <FontAwesomeIcon icon={faCircleChevronRight} />
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                    {!switching && (
+                        <button onClick={handleEditClick}>
+                            Edit <FontAwesomeIcon icon={faPencil} />
+                        </button>
+                    )}
+                </div>
             )}
         </div>
     );

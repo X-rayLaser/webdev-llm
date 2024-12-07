@@ -9,7 +9,9 @@ function getThread(rootMsg) {
 
     while (current.replies.length > 0) {
         let index = current.child_index;
-        let reply = current.replies[index];
+        let reply = current.replies[index] || current.replies[0];
+        reply.branches = current.replies.length;
+        reply.branchIndex = index;
         thread.push(reply);
         current = reply;
     }
