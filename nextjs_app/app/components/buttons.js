@@ -1,3 +1,6 @@
+"use client"
+import React, { useState } from "react";
+
 export function SubmitButton({ onClick, text="Submit", children, disabled=false, ...otherProps }) {
     return (
         <button className="bg-blue-700 px-10 py-2 rounded-md text-white hover:bg-blue-900 disabled:bg-gray-500"
@@ -63,4 +66,44 @@ export function DialogButton({ className, children, ...rest }) {
             {children}
         </button>
     );
+}
+
+
+export function ButtonDropdown({ actions, defaultAction = null }) {
+  // Initialize selectedAction with defaultAction if provided
+  const [selectedAction, setSelectedAction] = useState(defaultAction);
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div className="relative inline-block">
+      {/* Main Button */}
+      <button
+        className={`flex justify-between items-center px-4 py-2 bg-blue-500 text-white w-48
+          ${isOpen ? "rounded-t" : "rounded"} transition-all`}
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        {selectedAction ? selectedAction.label : "Select Action"}
+        <span className="ml-2">&#9662;</span> {/* Down Arrow */}
+      </button>
+
+      {/* Dropdown Buttons */}
+      {isOpen && (
+        <div className="absolute mt-0 bg-white shadow-lg w-48 rounded-b border border-t-0">
+          {actions.map((action) => (
+            <button
+              key={action.name}
+              className="w-full text-left px-4 py-2 hover:bg-gray-200"
+              onClick={() => {
+                setSelectedAction(action); // Set the selected action
+                setIsOpen(false); // Close the dropdown
+                action.onSelect(); // Trigger the action
+              }}
+            >
+              {action.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }

@@ -1,7 +1,6 @@
 import PageWithSidePanel from "../PageWithSidePanel";
-import AdvancedMessageConstructor, { ModalityViewer } from "../AdvancedMessageConstructor";
-import { createMultimediaMessage } from "@/app/actions";
 import MessageCard from "./MessageCard";
+import NewMessageForm from "./NewMessageForm";
 
 function getThread(rootMsg) {
     const thread = [rootMsg];
@@ -51,19 +50,14 @@ export default async function Page(props) {
         (msg, idx) => <MessageCard key={idx} message={msg} />
     );
 
-    const role = previousMessage.role === "assistant" ? "user" : "assistant";
-
-    const formAction = createMultimediaMessage.bind(null, role, previousMessage.id);
-
     return (
         <PageWithSidePanel searchParams={searchParams}>
             <div>{data.name.substring(0, 100)}...</div>
             <h2>Messages</h2>
             <div className="flex flex-col gap-4 justify-around">{messages}</div>
+            
             <div className="mt-4">
-                <AdvancedMessageConstructor
-                    formAction={formAction}
-                />
+                <NewMessageForm previousMessage={previousMessage} />
             </div>
         </PageWithSidePanel>
     );
