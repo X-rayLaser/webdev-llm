@@ -90,7 +90,7 @@ def generate_completion(completion_config: dict, socket_session_id: int):
 
     emitter = RedisEventEmitter(socket_session_id)
 
-    emitter(event_type="generation_started", data=config.task_id)
+    emitter(event_type="generation_started", data=dict(task_id=config.task_id))
 
     for token in generator.generate(job):
         emitter(event_type="token_arrived", data=dict(token=token, task_id=config.task_id))

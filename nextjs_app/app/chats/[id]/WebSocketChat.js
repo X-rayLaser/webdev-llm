@@ -24,8 +24,7 @@ export default function WebSocketChat({ chat, messages, previousMessage, current
     function socketListener(event) {
         const payload = JSON.parse(event.data);
 
-        console.log("EVENT!", event, payload);
-        const task_id = payload.task_id;
+        const task_id = payload.data.task_id;
 
         if (payload.event_type === "generation_started") {
             setGenerationsTable(prevTable => {
@@ -55,7 +54,6 @@ export default function WebSocketChat({ chat, messages, previousMessage, current
     }
 
     useEffect(() => {
-        console.log(operations);
         socket.addEventListener("message", socketListener);
 
         return () => {
