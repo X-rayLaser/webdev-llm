@@ -1,6 +1,7 @@
 import PageWithSidePanel from "../PageWithSidePanel";
 import MessageCard from "./MessageCard";
 import NewMessageForm from "./NewMessageForm";
+import { RunningOperationsList } from "./running_ops";
 
 function getThread(rootMsg) {
     const thread = [rootMsg];
@@ -40,6 +41,13 @@ export default async function Page(props) {
         );
     }
 
+    const configurationResponse = await fetch(data.configuration);
+    const configuration = await configurationResponse.json();
+    const presetsResponse = await fetch(`http://django:8000/api/presets/`);
+    const presets = await presetsResponse.json();
+    const currentPreset = presets.filter(p => p.name === configuration.preset)[0];
+
+
     const openningMessageResponse = await fetch(data.messages[0]);
     const openningMessage = await openningMessageResponse.json();
     const thread = getThread(openningMessage);
@@ -50,6 +58,9 @@ export default async function Page(props) {
         (msg, idx) => <MessageCard key={idx} message={msg} />
     );
 
+    const opsResponse = await fetch(`http://django:8000/api/chats/${id}/generations/?status=in_progress`);
+    const operations = await opsResponse.json();
+
     return (
         <PageWithSidePanel searchParams={searchParams}>
             <div>{data.name.substring(0, 100)}...</div>
@@ -57,8 +68,9 @@ export default async function Page(props) {
             <div className="flex flex-col gap-4 justify-around">{messages}</div>
             
             <div className="mt-4">
-                <NewMessageForm previousMessage={previousMessage} />
+                <NewMessageForm chat={chat} previousMessage={previousMessage} preset={currentPreset} />
             </div>
+            <RunningOperationsList operations={operations}/>
         </PageWithSidePanel>
     );
 }

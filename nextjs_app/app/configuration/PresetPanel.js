@@ -10,7 +10,7 @@ import { TextField, TextArea, NumberField } from '@/app/components/common-forms'
 import { formFactory, makeCreateForm, makeEditForm } from '@/app/components/form-factory';
 import { getTopDownRenderer } from '@/app/components/fieldset-renderers';
 
-const fields = [{
+export const fields = [{
   name: "name",
   component: TextField,
   id: "p_name",

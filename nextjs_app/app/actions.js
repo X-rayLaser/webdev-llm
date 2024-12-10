@@ -383,11 +383,37 @@ async function switchBranch(message, childIndex) {
     const result = await sendJsonObject(url, data, "Failed to switch branch", "PATCH");
     if (result.success) {
         const chatId = result.responseData.chat;
-        revalidatePath(`/chats/${chatId}`)
+        revalidatePath(`/chats/${chatId}`);
     }
     return result;
 }
 
+
+const generationActionSet = new ActionSet({
+    listUrl: `${baseApiUrl}/generations/`,
+    itemName: "generation",
+    updateMethod: "PATCH"
+});
+
+
+async function startMessageGeneration(chatId, parentMessageId, prevState, formData) {
+    const params = {};
+    const toDelete = [];
+    for (const [name, value] of formData.entries()) {
+        params[name] = value;
+        toDelete.push(toDelete);
+    }
+    toDelete.forEach(name => formData.delete(name));
+
+    formData.append("params", params);
+    formData.append("message", parentMessageId);
+
+    const result = await generationActionSet.create(prevState, formData);
+    if (result.success) {
+        revalidatePath(`/chats/${chatId}`);
+    }
+    return result;
+}
 
 export {
     createServerEntry, updateServerEntry, deleteServerEntry,
@@ -399,5 +425,6 @@ export {
     updateModality, deleteModality,
     createMultimediaMessage, cloneMultimediaMessage,
     cloneModality,
-    switchBranch
- };
+    switchBranch,
+    startMessageGeneration
+};

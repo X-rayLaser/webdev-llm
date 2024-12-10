@@ -90,6 +90,7 @@ class StandardResultsSetPagination(PageNumberPagination):
             'results': data
         })
 
+
 class ChatViewSet(viewsets.ModelViewSet):
     queryset = Chat.objects.all()
     serializer_class = ChatSerializer
@@ -113,6 +114,33 @@ class ChatViewSet(viewsets.ModelViewSet):
         sortby = self.request.query_params.get("sortby", "newest")
         ordering = "-name" if sortby == "oldest" else "name"
         return self.queryset.filter(name__contains=term).order_by(ordering)
+
+    @decorators.action(methods=['get'], detail=True)
+    def generations(self, request, pk=None):
+        chat = self.get_object()
+
+        chat_messages = self.get_all_messages(chat)
+        ids = chat_messages.values_list('id', flat=True)
+
+        result_queryset = Generation.objects.filter(message__id__in=ids)
+
+        status_filter = self.request.query_params.get('status')
+        result_queryset = filter_generations(result_queryset, status_filter)
+
+        return Response(GenerationSerializer(result_queryset, many=True).data)
+
+    def get_all_messages(self, chat):
+        all_messages_queryset = MultimediaMessage.objects.none()
+        def collect(msg):
+            nonlocal all_messages_queryset
+            all_messages_queryset = all_messages_queryset | msg.replies.all()
+            for reply in msg.replies.all():
+                collect(reply)
+
+        for root in chat.messages.all():
+            collect(root)
+
+        return all_messages_queryset
 
 
 class MultimediaMessageViewSet(viewsets.ModelViewSet):
@@ -167,16 +195,7 @@ class GenerationViewSet(mixins.CreateModelMixin,
     def get_queryset(self):
         queryset = super().get_queryset()
         status_filter = self.request.query_params.get('status')
-        
-        if status_filter:
-            if status_filter == 'in_progress':
-                queryset = queryset.filter(finished=False)
-            elif status_filter == 'finished':
-                queryset = queryset.filter(finished=True)
-            elif status_filter == 'successful':
-                queryset = queryset.filter(finished=True, errors__isnull=True)
-        
-        return queryset
+        return filter_generations(queryset, status_filter)
 
     def create(self, request, *args, **kwargs):
         serializer = NewGenerationTaskSerializer(data=request.data)
@@ -185,3 +204,15 @@ class GenerationViewSet(mixins.CreateModelMixin,
         
         response_data = GenerationSerializer(generation).data
         return Response(response_data, status=status.HTTP_201_CREATED)
+
+
+def filter_generations(queryset, status_filter):
+    if status_filter:
+        if status_filter == 'in_progress':
+            queryset = queryset.filter(finished=False)
+        elif status_filter == 'finished':
+            queryset = queryset.filter(finished=True)
+        elif status_filter == 'successful':
+            queryset = queryset.filter(finished=True, errors__isnull=True)
+    
+    return queryset

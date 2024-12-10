@@ -137,13 +137,13 @@ export function formFactory(fields, renderFields) {
 };
 
 
-export function makeCreateForm(actionlessForm, actionCreate) {
+export function makeCreateForm(actionlessForm, actionCreate, defaults) {
     const FormComponent = actionlessForm;
 
     function CreateForm({ onSuccess }) {
         return (
             <div>
-                <FormComponent action={actionCreate} onSuccess={onSuccess}>
+                <FormComponent action={actionCreate} onSuccess={onSuccess} defaults={defaults || {}}>
                 </FormComponent>
             </div>
         );
