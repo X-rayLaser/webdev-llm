@@ -401,8 +401,9 @@ async function startMessageGeneration(chatId, parentMessageId, prevState, formDa
     const toDelete = [];
     for (const [name, value] of formData.entries()) {
         params[name] = value;
-        toDelete.push(toDelete);
+        toDelete.push(name);
     }
+
     toDelete.forEach(name => formData.delete(name));
 
     formData.append("params", params);

@@ -90,15 +90,15 @@ def generate_completion(completion_config: dict, socket_session_id: int):
 
     emitter = RedisEventEmitter(socket_session_id)
 
-    emitter(event_type="generation_started")
+    emitter(event_type="generation_started", data=config.task_id)
 
     for token in generator.generate(job):
-        emitter(event_type="token_arrived", data=token)
+        emitter(event_type="token_arrived", data=dict(token=token, task_id=config.task_id))
 
     role = "user" if len(history) % 2 == 0 else "assistant"
     new_message = create_response_message(generator.response, role, parent=message, chat=chat)
 
-    generation = Generation.objects.get(pk=config.task_id)
+    generation = Generation.objects.get(task_id=config.task_id)
     generation.finished = True
     generation.stop_time = timezone.now()
     # todo: set response_metadata field of generation_metadata field
@@ -106,6 +106,7 @@ def generate_completion(completion_config: dict, socket_session_id: int):
 
     event_data = {
         "message": serializers.MultimediaMessageSerializer(new_message).data,
-        "generation": serializers.GenerationSerializer(generation).data
+        "generation": serializers.GenerationSerializer(generation).data,
+        "task_id": config.task_id
     }
     emitter(event_type="generation_ended", data=event_data)

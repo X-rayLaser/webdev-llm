@@ -134,4 +134,6 @@ CELERY_TASK_TIME_LIMIT = 30 * 60
 
 CELERY_BROKER_URL = "redis://redis:6379"
 
-GENERATION_BACKEND = "openai_compatible"
+#GENERATION_BACKEND = "openai_compatible"
+GENERATION_BACKEND = "dummy"
+

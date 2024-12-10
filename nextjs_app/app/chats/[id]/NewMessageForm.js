@@ -36,6 +36,9 @@ export default function NewMessageForm({ chat, previousMessage, preset }) {
 
     const GenerateMessageForm = makeCreateForm(Form, generateNextjsAction, preset);
 
+    function handleSuccess({ success, responseData }) {
+        setCurrentAction(GENERATE);
+    }
 
     return (
         <div>
@@ -46,7 +49,7 @@ export default function NewMessageForm({ chat, previousMessage, preset }) {
 
             <div className="p-4 rounded-md shadow-md border">
                 {currentAction === CREATE && <AdvancedMessageConstructor formAction={formAction} />}
-                {currentAction === GENERATE && <GenerateMessageForm />}
+                {currentAction === GENERATE && <GenerateMessageForm onSuccess={handleSuccess} />}
             </div>
         </div>
     );

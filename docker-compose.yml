@@ -29,7 +29,7 @@ services:
     depends_on:
       - redis
       - websocketserver
-    command: celery -A mysite worker -l INFO
+    entrypoint: /home/user/venv/bin/celery -A mysite worker -l INFO
 
   websocketserver:
     build:
@@ -43,7 +43,7 @@ services:
       - redis
     ports:
       - "9000:9000"
-    command: python3 -u websocket_server.py --redis-host redis
+    entrypoint: /home/user/venv/bin/python -u websocket_server.py --redis-host redis
 
   redis:
     image: redis
