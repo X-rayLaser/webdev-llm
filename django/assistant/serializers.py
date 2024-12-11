@@ -310,7 +310,7 @@ class ChatSerializer(serializers.HyperlinkedModelSerializer):
 
     class Meta:
         model = Chat
-        fields = ['id', 'name', 'description', 'configuration', 'messages', 'created']
+        fields = ['id', 'name', 'description', 'configuration', 'image', 'messages', 'created']
 
 
 class GenerationMetadataSerializer(serializers.ModelSerializer):

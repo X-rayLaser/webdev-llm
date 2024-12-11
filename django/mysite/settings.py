@@ -137,3 +137,8 @@ CELERY_BROKER_URL = "redis://redis:6379"
 #GENERATION_BACKEND = "openai_compatible"
 GENERATION_BACKEND = "dummy"
 
+#SUMMARIZATION_BACKEND = "neural"
+SUMMARIZATION_BACKEND = "dummy"
+
+#TEXT_TO_IMAGE_BACKEND = "default"
+TEXT_TO_IMAGE_BACKEND = "dummy"

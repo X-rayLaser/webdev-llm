@@ -20,6 +20,8 @@ from .serializers import (
     GenerationSerializer, GenerationMetadataSerializer, NewGenerationTaskSerializer
 )
 
+from .tasks import summarize_text, generate_chat_picture
+
 class ServerViewSet(viewsets.ModelViewSet):
     queryset = Server.objects.all()
     serializer_class = ServerSerializer
@@ -107,6 +109,13 @@ class ChatViewSet(viewsets.ModelViewSet):
         chat = serializer.save()
         modality = Modality.objects.create(modality_type="text", text=prompt)
         message = MultimediaMessage.objects.create(role="user", content=modality, chat=chat)
+
+        backend_name = settings.SUMMARIZATION_BACKEND
+        summarize_text.delay_on_commit(prompt, chat_id=chat.id, backend_name=backend_name)
+
+        text2im_backend_name = settings.TEXT_TO_IMAGE_BACKEND
+        generate_chat_picture.delay_on_commit(prompt, chat_id=chat.id, backend_name=text2im_backend_name)
+
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def get_queryset(self):

@@ -31,10 +31,17 @@ async function ChatList({ queryParams }) {
 
   const [ chats, totalPages ] = await fetchChats("http://django:8000/api/chats/", queryString);
 
+  const fallbackImage = "/app/test-image.jpeg";
+  const fixedChats = chats.map(( { image, ...rest } ) => ({
+    image: image ? image.replace("django:8000", "localhost") : fallbackImage,
+    ...rest
+  }));
+
   let items = [];
-  if (chats && chats.length > 0) {
-    items = chats.map((chat, idx) => <DeletableChatItem key={idx} chat={chat} />);
+  if (fixedChats && fixedChats.length > 0) {
+    items = fixedChats.map((chat, idx) => <DeletableChatItem key={idx} chat={chat} />);
   }
+
   return (
     <div>
       {items.length > 0 ? <div className="space-y-2">{items}</div> : <p className="text-center">No chats found.</p>}

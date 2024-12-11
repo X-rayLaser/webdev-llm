@@ -20,7 +20,7 @@ export function DeletableChatItem({ chat, maxLen = 25 }) {
     <div className="relative">
       <div key={chat.id} className="flex items-center gap-2 bg-white rounded-md">
         <img
-          src="/app/test-image.jpeg"
+          src={chat.image}
           alt={chat.name}
           className="w-12 h-12 rounded-l-md" />
         {!deleting && (

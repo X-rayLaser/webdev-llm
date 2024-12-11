@@ -195,6 +195,7 @@ class Chat(models.Model):
     name = models.CharField(max_length=255, unique=True)
     description = models.TextField(blank=True, null=True)
     configuration = models.ForeignKey('Configuration', on_delete=models.CASCADE)
+    image = models.ImageField(upload_to="chat_images/", blank=True, null=True)
     created = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

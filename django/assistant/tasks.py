@@ -1,10 +1,14 @@
 from dataclasses import dataclass
 import json
+import uuid
 from django.utils import timezone
 from celery import shared_task
 import redis
 from django.conf import settings
+from django.core.files.base import ContentFile
 from assistant.generation_backends import backends, ChatCompletionJob
+from assistant import summary_backends
+from assistant import text2image_backends
 from assistant.models import Chat, MultimediaMessage, Modality, Revision, Generation
 from assistant.utils import process_raw_message, prepare_messages, MessageSegment
 from assistant import serializers
@@ -110,3 +114,40 @@ def generate_completion(completion_config: dict, socket_session_id: int):
         "task_id": config.task_id
     }
     emitter(event_type="generation_ended", data=event_data)
+
+
+@shared_task
+def summarize_text(text, chat_id, backend_name):
+    chat = get_chat(chat_id)
+    if chat is None:
+        print("Chat not found:", chat_id)
+        return
+
+    backend_class = summary_backends.backends[backend_name]
+    summarizer = backend_class()
+    
+    summary = summarizer.summarize(text)
+    chat.name = summary
+    chat.save() # catch unique constraint violation and retry (or add uuid)
+
+
+@shared_task
+def generate_chat_picture(text, chat_id, backend_name):
+    chat = get_chat(chat_id)
+    if chat is None:
+        print("Chat not found:", chat_id)
+        return
+
+    backend_class = text2image_backends.backends[backend_name]
+    backend = backend_class()
+    image_data = backend.generate_image(text)
+
+    file_name = f'{uuid.uuid4().hex}.png'
+    content_file = ContentFile(image_data, name=file_name)
+    chat.image = content_file
+    chat.save()
+
+
+def get_chat(id):
+    chats = Chat.objects.filter(pk=id)
+    return chats.first() if chats.exists() else None
