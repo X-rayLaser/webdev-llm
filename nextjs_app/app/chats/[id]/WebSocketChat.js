@@ -76,13 +76,15 @@ export default function WebSocketChat({ chat, messages, previousMessage, current
 
     const titleGeneration = Object.keys(titleGenerationsTable).length > 0;
     const imageGeneration = Object.keys(imageGenerationsTable).length > 0;
-    
+ 
+    const chatTitle = chat.name.length < 200 ? chat.name : chat.name.substring(0, 200) + "...";
+
     return (
         <div>
             {titleGeneration && <LoadingMessage text="Generating a title for a chat..." />}
             {imageGeneration && <LoadingMessage text="Generating an image for a chat..." />}
             
-            <div>{chat.name.substring(0, 100)}...</div>
+            <div>{chatTitle}</div>
             <h2>Messages</h2>
             <div className="flex flex-col gap-4 justify-around">{messages}</div>
             
@@ -109,9 +111,12 @@ function LoadingMessage({ text }) {
 
 function GeneratingMessage({ task_id, text }) {
     return (
-        <div>
-            <h4>Generating message for {task_id}...</h4>
-            <div>{text}</div>
+        <div className="rounded-lg shadow-lg">
+            <h4 className="border-2 border-indigo-900 p-4 font-semibold text-lg bg-indigo-600 text-white rounded-t-lg">
+                <FontAwesomeIcon icon={faSpinner} spin />
+                <span className="ml-2">Generating a message...</span>
+            </h4>
+            <div className="border-x-2 border-b-2 border-indigo-900 p-4 leading-loose bg-blue-100 rounded-b-lg">{text}</div>
         </div>
     );
 }
