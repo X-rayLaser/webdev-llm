@@ -28,7 +28,7 @@ class DummyBackend(Backend):
     def generate(self, job: ChatCompletionJob):
         words = ["The", "quick", "brown", "fox", "jumps", "over", "the", "lazy", "dog", "."]
         for word in words:
-            sleep_secs = 0.1
+            sleep_secs = 0.5
             time.sleep(sleep_secs)
             chunk = word + " "
             self.response += chunk

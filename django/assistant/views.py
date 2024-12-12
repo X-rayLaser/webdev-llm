@@ -111,10 +111,14 @@ class ChatViewSet(viewsets.ModelViewSet):
         message = MultimediaMessage.objects.create(role="user", content=modality, chat=chat)
 
         backend_name = settings.SUMMARIZATION_BACKEND
-        summarize_text.delay_on_commit(prompt, chat_id=chat.id, backend_name=backend_name)
+        summarize_text.delay_on_commit(
+            prompt, chat_id=chat.id, backend_name=backend_name, socket_session_id=0
+        )
 
         text2im_backend_name = settings.TEXT_TO_IMAGE_BACKEND
-        generate_chat_picture.delay_on_commit(prompt, chat_id=chat.id, backend_name=text2im_backend_name)
+        generate_chat_picture.delay_on_commit(
+            prompt, chat_id=chat.id, backend_name=text2im_backend_name, socket_session_id=0
+        )
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -131,7 +135,7 @@ class ChatViewSet(viewsets.ModelViewSet):
         chat_messages = self.get_all_messages(chat)
         ids = chat_messages.values_list('id', flat=True)
 
-        result_queryset = Generation.objects.filter(message__id__in=ids)
+        result_queryset = Generation.objects.filter(message__id__in=ids) | Generation.objects.filter(chat=chat)
 
         status_filter = self.request.query_params.get('status')
         result_queryset = filter_generations(result_queryset, status_filter)

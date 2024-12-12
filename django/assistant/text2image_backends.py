@@ -1,5 +1,6 @@
 import hashlib
 import random
+import time
 from PIL import Image, ImageDraw
 from io import BytesIO
 from abc import ABC, abstractmethod
@@ -13,6 +14,7 @@ class Backend(ABC):
 
 class DummyImageGenerator(Backend):
     def generate_image(self, text):
+        time.sleep(15)
         identicon = generate_identicon(text, image_size=256, grid_size=8)
         return identicon
 

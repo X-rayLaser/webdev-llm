@@ -1,5 +1,6 @@
 import random
 import string
+import time
 from abc import ABC, abstractmethod
 
 
@@ -11,6 +12,8 @@ class Backend(ABC):
 
 class DummySummarizationBackend(Backend):
     def summarize(self, text):
+        # artificial delay to simulate long running operation
+        time.sleep(5)
         translator = str.maketrans('', '', string.punctuation)
         stripped_text = text.translate(translator)
         

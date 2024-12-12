@@ -354,6 +354,14 @@ class GenerationMetadata(models.Model):
 
 
 class Generation(models.Model):
+    class GenerationType(models.TextChoices):
+        MESSAGE = 'message', _('Message')
+        CHAT_TITLE = 'chat_title', _('Chat title')
+        CHAT_PICTURE = 'chat_picture', _('Chat picture')
+
+    generation_type = models.CharField(
+        max_length=20, choices=GenerationType.choices, default="message"
+    )
     task_id = models.CharField(max_length=255)
     finished = models.BooleanField(default=False)
     errors = models.JSONField(blank=True, null=True)

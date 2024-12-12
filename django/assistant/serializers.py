@@ -326,7 +326,7 @@ class GenerationSerializer(serializers.ModelSerializer):
         model = Generation
         fields = [
             'id', 'task_id', 'finished', 'errors', 'start_time', 'stop_time',
-            'chat', 'message', 'generation_metadata'
+            'chat', 'message', 'generation_metadata', 'generation_type'
         ]
 
 

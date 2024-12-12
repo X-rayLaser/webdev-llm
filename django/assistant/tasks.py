@@ -117,26 +117,37 @@ def generate_completion(completion_config: dict, socket_session_id: int):
 
 
 @shared_task
-def summarize_text(text, chat_id, backend_name):
+def summarize_text(text, chat_id, backend_name, socket_session_id):
     chat = get_chat(chat_id)
     if chat is None:
         print("Chat not found:", chat_id)
         return
+
+    gen_obj = create_generation(chat, "chat_title")
+    emitter = RedisEventEmitter(socket_session_id)
+    emitter(event_type="chat_title_generation_started", data=dict(task_id=gen_obj.task_id))
 
     backend_class = summary_backends.backends[backend_name]
     summarizer = backend_class()
-    
     summary = summarizer.summarize(text)
+
+    chat.refresh_from_db()
     chat.name = summary
-    chat.save() # catch unique constraint violation and retry (or add uuid)
+    chat.save() # todo: catch unique constraint violation and retry (or add uuid)
+    finish_generation(gen_obj)
+    emitter(event_type="chat_title_generation_ended", data=dict(task_id=gen_obj.task_id))
 
 
 @shared_task
-def generate_chat_picture(text, chat_id, backend_name):
+def generate_chat_picture(text, chat_id, backend_name, socket_session_id):
     chat = get_chat(chat_id)
     if chat is None:
         print("Chat not found:", chat_id)
         return
+
+    gen_obj = create_generation(chat, "chat_picture")
+    emitter = RedisEventEmitter(socket_session_id)
+    emitter(event_type="chat_image_generation_started", data=dict(task_id=gen_obj.task_id))
 
     backend_class = text2image_backends.backends[backend_name]
     backend = backend_class()
@@ -144,10 +155,26 @@ def generate_chat_picture(text, chat_id, backend_name):
 
     file_name = f'{uuid.uuid4().hex}.png'
     content_file = ContentFile(image_data, name=file_name)
+
+    chat.refresh_from_db()
     chat.image = content_file
     chat.save()
+    finish_generation(gen_obj)
+    emitter(event_type="chat_image_generation_ended", data=dict(task_id=gen_obj.task_id))
 
 
 def get_chat(id):
     chats = Chat.objects.filter(pk=id)
     return chats.first() if chats.exists() else None
+
+def create_generation(chat, generation_type):
+    task_id = uuid.uuid4().hex
+    return Generation.objects.create(
+        task_id=task_id, chat=chat, generation_type=generation_type
+    )
+
+
+def finish_generation(generation):
+    generation.finished = True
+    generation.stop_time = timezone.now()
+    generation.save()

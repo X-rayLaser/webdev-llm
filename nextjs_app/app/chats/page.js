@@ -65,12 +65,14 @@ export default async function Page(props) {
             console.error("Promise rejected. Reason: ", result.reason);
         }
     });
+
+    const fallBackImage = "/app/test-image.jpeg";
     
     let items = chatsWithMessages.map((obj, idx) => (
         <div key={idx} className="mb-4">
             <Card
                 header={obj.chat.name}
-                imageUrl="/app/test-image.jpeg"
+                imageUrl={(obj.chat.image && obj.chat.image.replace("django:8000", "localhost")) || fallBackImage}
                 prompt={obj.prompt.content_ro.text}
                 lastMessage={obj.lastMessage.content_ro.text}
                 buttonLabel={exampleData.buttonLabel}
