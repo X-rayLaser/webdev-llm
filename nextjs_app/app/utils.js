@@ -1,3 +1,8 @@
+import markdownit from 'markdown-it';
+import hljs from 'highlight.js' // https://highlightjs.org
+import 'highlight.js/styles/github.css';
+
+
 async function fetchChats(baseUrl, query) {
     let chats = [];
     let totalPages = 1;
@@ -18,6 +23,25 @@ async function fetchChats(baseUrl, query) {
     return [ chats, totalPages ];
 }
 
+
+function renderMarkdown(text) {
+    const md = markdownit({
+        highlight: function (str, lang) {
+            if (lang && hljs.getLanguage(lang)) {
+                try {
+                    let value = hljs.highlight(str, { language: lang }).value;
+
+                    return `<code class="hljs">${value}</code>`;
+                } catch (__) { }
+            }
+
+            return '';
+        }
+    });
+    return md.render(text);
+}
+
 export {
-    fetchChats
+    fetchChats,
+    renderMarkdown
 }

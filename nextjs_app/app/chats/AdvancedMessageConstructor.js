@@ -11,6 +11,7 @@ import { Alert } from '../components/alerts';
 import { PanelItem, DeleteControl, Controls } from '../components/panels';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCopy, faSpinner } from '@fortawesome/free-solid-svg-icons'
+import { renderMarkdown } from '../utils';
 
 const textFormFields = [{
     name: "text",
@@ -303,9 +304,16 @@ function GenericModalityControls({
 }
 
 function TextModality({ data, onSuccessfulUpdate, onSuccessfulDelete, showControls=true }) {
+    const renderedText = renderMarkdown(data.text);
+
+    let innerHtml = {
+        __html: renderedText
+    };
+
     return (
         <div className="px-4 py-2 border rounded-lg shadow-sm bg-blue-100">
-            <div className="whitespace-pre-wrap">{data.text}</div>
+
+            <pre dangerouslySetInnerHTML={innerHtml} />
             {showControls && (
                 <GenericModalityControls
                     data={data}
@@ -359,6 +367,15 @@ function CodeModality({ data, onSuccessfulUpdate, onSuccessfulDelete, showContro
         });
     }
 
+    const fencedCode = `\`\`\`javascript
+${data.code}
+\`\`\``;
+    const renderedCode = renderMarkdown(fencedCode);
+
+    let innerHtml = {
+        __html: renderedCode
+    };
+
     return (
         <div className="rounded-lg shadow-sm">
             <div className="px-4 py-2 rounded-t-lg bg-gray-700 text-white">
@@ -372,7 +389,7 @@ function CodeModality({ data, onSuccessfulUpdate, onSuccessfulDelete, showContro
                 </div>
                 <div>{data.file_path}</div>
             </div>
-            <div className="px-4 py-2 bg-blue-100 rounded-b-lg">
+            <div className="bg-blue-100 rounded-b-lg">
                 {showControls && (
                     <div className="ml-[-4px] float-right">
                         <DeleteControl
@@ -383,7 +400,7 @@ function CodeModality({ data, onSuccessfulUpdate, onSuccessfulDelete, showContro
                     </div>
                 )}
 
-                <div className="whitespace-pre-wrap min-h-12">{data.code}</div>
+                <pre className="whitespace-pre-wrap" dangerouslySetInnerHTML={innerHtml} style={{whiteSpace: 'break-spaces'}} />
             </div>
         </div>
     );

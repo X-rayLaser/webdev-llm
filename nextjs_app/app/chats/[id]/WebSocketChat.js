@@ -5,6 +5,7 @@ import { RunningOperationsList } from "./running_ops";
 import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faSpinner } from '@fortawesome/free-solid-svg-icons'
+import { renderMarkdown } from "@/app/utils";
 
 const socket = new WebSocket(`ws://localhost:9000`);
 
@@ -110,13 +111,18 @@ function LoadingMessage({ text }) {
 }
 
 function GeneratingMessage({ task_id, text }) {
+    let innerHtml = {
+        __html: renderMarkdown(text)
+    };
     return (
         <div className="rounded-lg shadow-lg">
             <h4 className="border-2 border-indigo-900 p-4 font-semibold text-lg bg-indigo-600 text-white rounded-t-lg">
                 <FontAwesomeIcon icon={faSpinner} spin />
                 <span className="ml-2">Generating a message...</span>
             </h4>
-            <div className="border-x-2 border-b-2 border-indigo-900 p-4 leading-loose bg-blue-100 rounded-b-lg">{text}</div>
+            <div className="border-x-2 border-b-2 border-indigo-900 p-4 leading-loose bg-blue-100 rounded-b-lg">
+                <pre dangerouslySetInnerHTML={innerHtml} />
+            </div>
         </div>
     );
 }
