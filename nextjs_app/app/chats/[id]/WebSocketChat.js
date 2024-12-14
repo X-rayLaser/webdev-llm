@@ -3,8 +3,8 @@ import React, { useState, useEffect } from "react";
 import NewMessageForm from "./NewMessageForm";
 import { RunningOperationsList } from "./running_ops";
 import { useRouter } from "next/navigation";
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faSpinner } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faSpinner } from '@fortawesome/free-solid-svg-icons';
 import { renderMarkdown } from "@/app/utils";
 
 const socket = new WebSocket(`ws://localhost:9000`);

@@ -121,6 +121,10 @@ STATIC_URL = 'static/'
 MEDIA_ROOT = '/data/media'
 MEDIA_URL = '/media/'
 
+ARTIFACTS_ROOT = '/data/artifacts'
+
+ARTIFACTS_URL = '/artifacts'
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 

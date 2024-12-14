@@ -69,6 +69,10 @@ http {
     location /media/ {
       root /data;
     }
+    
+    location /artifacts/ {
+      root /data;
+    }
 
     location @proxy_to_app {
       proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;

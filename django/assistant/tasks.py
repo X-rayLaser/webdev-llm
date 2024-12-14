@@ -1,6 +1,9 @@
 from dataclasses import dataclass
 import json
 import uuid
+import os
+from typing import Dict
+import requests
 from django.utils import timezone
 from celery import shared_task
 import redis
@@ -9,7 +12,10 @@ from django.core.files.base import ContentFile
 from assistant.generation_backends import backends, ChatCompletionJob
 from assistant import summary_backends
 from assistant import text2image_backends
-from assistant.models import Chat, MultimediaMessage, Modality, Revision, Generation
+from assistant.models import (
+    Chat, MultimediaMessage, Modality, Revision, Generation,
+    OperationSuite, Build
+)
 from assistant.utils import process_raw_message, prepare_messages, MessageSegment
 from assistant import serializers
 
@@ -161,6 +167,86 @@ def generate_chat_picture(text, chat_id, backend_name, socket_session_id):
     chat.save()
     finish_generation(gen_obj)
     emitter(event_type="chat_image_generation_ended", data=dict(task_id=gen_obj.task_id))
+
+
+@shared_task
+def launch_operation_suite(message_id, revision_id):
+    message = MultimediaMessage.objects.get(pk=message_id)
+    revision = message.revisions.get(pk=revision_id)
+    suite = OperationSuite.objects.create(revision=revision)
+
+    data = {
+        "source_tree": revision.src_tree
+    }
+    build_servers = message.get_root().chat.configuration.build_servers.all()
+    emitter = RedisEventEmitter(socket_session_id)
+    artifacts_root = settings.ARTIFACTS_ROOT
+
+    for server in build_servers:
+        build = Build.objects.create(operation_suite=suite)
+        event_data = dict(build=serializers.BuildSerializer(build).data, revision_id=revision_id)
+        emitter(event_type="build_started", data=event_data)
+
+        url = f'{server.url}/build-component/'
+
+        try:
+            response_json = post_json(url)
+            build.success = response_json["success"]
+            logs = {}
+            logs["stdout"] = response_json["stdout"]
+            logs["stderr"] = response_json["stderr"]
+            build.logs = logs
+
+            folder_name = save_artifacts(artifacts_root, response_json["artifacts"])
+            build.url = f'{settings.ARTIFACTS_URL}/{folder_name}/index.html'
+            break
+        except Exception:
+            build.success = False
+        finally:
+            build.finished = False
+            build.end_time = timezone.now()
+            build.save()
+            event_data = dict(build=serializers.BuildSerializer(build).data, revision_id=revision_id)
+            emitter(event_type="build_finished", data=event_data)
+
+
+def save_artifacts(root_folder: str, artifacts: Dict[str, str]) -> str:
+    """
+    Saves each artifact as a file in a subfolder with a random UUID4 name.
+
+    Args:
+        root_folder (str): The root folder where the subfolder will be created.
+        artifacts (Dict[str, str]): A mapping of file names to file content.
+
+    Returns:
+        str: The name of the created subfolder.
+    """
+
+    while True:
+        subfolder_name = str(uuid.uuid4())
+        subfolder_path = os.path.join(root_folder, subfolder_name)
+        if not os.path.exists(subfolder_path):
+            break
+
+    os.makedirs(subfolder_path, exist_ok=True)
+
+    for file_name, file_content in artifacts.items():
+        file_path = os.path.join(subfolder_path, file_name)
+        with open(file_path, "w", encoding="utf-8") as file:
+            file.write(file_content)
+
+    return subfolder_name
+
+
+def post_json(url, data):
+    headers = {
+        'Content-type': 'application/json'
+    }
+    response = requests.post(url, data=json.dumps(data), headers=headers)
+    if response:
+        return response.json()
+    raise Exception(f'Bad status code: {response.status_code}')
+
 
 
 def get_chat(id):

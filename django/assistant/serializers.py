@@ -135,7 +135,7 @@ class RevisionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Revision
-        fields = ['id', 'src_tree', 'message', 'threads', 'operation_suites']
+        fields = ['id', 'src_tree', 'created', 'message', 'threads', 'operation_suites']
 
 
 class NewRevisionSerializer(serializers.ModelSerializer):

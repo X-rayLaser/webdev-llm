@@ -94,6 +94,7 @@ class Revision(models.Model):
     src_tree = models.JSONField()
     message = models.ForeignKey("MultimediaMessage", related_name="revisions",
                                 on_delete=models.CASCADE)
+    created = models.DateTimeField(auto_now_add=True)
 
 
 class OperationSuite(models.Model):
