@@ -5,3 +5,4 @@ httpx[socks]
 openai
 celery[redis]
 websockets
+requests
