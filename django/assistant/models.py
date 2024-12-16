@@ -257,7 +257,7 @@ class MultimediaMessage(models.Model):
         return message
 
     def __str__(self):
-        return f"{self.role.capitalize()} message in chat '{self.chat.name}'"
+        return f"{self.role.capitalize()} message"
 
 
 class Modality(models.Model):

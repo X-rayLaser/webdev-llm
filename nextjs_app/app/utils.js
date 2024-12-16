@@ -41,7 +41,12 @@ function renderMarkdown(text) {
     return md.render(text);
 }
 
+function getRandomInt(max) {
+    return Math.floor(Math.random() * max);
+}
+
 export {
     fetchChats,
-    renderMarkdown
+    renderMarkdown,
+    getRandomInt
 }

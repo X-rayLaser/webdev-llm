@@ -416,6 +416,15 @@ async function startMessageGeneration(chatId, parentMessageId, prevState, formDa
     return result;
 }
 
+async function launchBuild(messageId, revisionId) {
+    const url = `${baseApiUrl}/multimedia-messages/${messageId}/launch-build/`;
+    const data = {
+        "revision": revisionId
+    };
+    const result = await sendJsonObject(url, data, "Failed to launch code build");
+    return result
+}
+
 export {
     createServerEntry, updateServerEntry, deleteServerEntry,
     createPresetEntry, updatePresetEntry, deletePresetEntry,
@@ -427,5 +436,6 @@ export {
     createMultimediaMessage, cloneMultimediaMessage,
     cloneModality,
     switchBranch,
-    startMessageGeneration
+    startMessageGeneration,
+    launchBuild
 };

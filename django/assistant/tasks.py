@@ -170,15 +170,23 @@ def generate_chat_picture(text, chat_id, backend_name, socket_session_id):
 
 
 @shared_task
-def launch_operation_suite(message_id, revision_id):
-    message = MultimediaMessage.objects.get(pk=message_id)
-    revision = message.revisions.get(pk=revision_id)
+def launch_operation_suite(revision_id, socket_session_id):
+    revision = Revision.objects.get(pk=revision_id)
+    message = revision.message
     suite = OperationSuite.objects.create(revision=revision)
 
     data = {
         "source_tree": revision.src_tree
     }
     build_servers = message.get_root().chat.configuration.build_servers.all()
+    
+    class BuiltInServer:
+        url = "http://builder"
+
+    if not build_servers.exists():
+        build_servers = [BuiltInServer]
+
+    print("BUILD SERVERS", build_servers)
     emitter = RedisEventEmitter(socket_session_id)
     artifacts_root = settings.ARTIFACTS_ROOT
 
@@ -190,7 +198,7 @@ def launch_operation_suite(message_id, revision_id):
         url = f'{server.url}/build-component/'
 
         try:
-            response_json = post_json(url)
+            response_json = post_json(url, data)
             build.success = response_json["success"]
             logs = {}
             logs["stdout"] = response_json["stdout"]
@@ -199,15 +207,19 @@ def launch_operation_suite(message_id, revision_id):
 
             folder_name = save_artifacts(artifacts_root, response_json["artifacts"])
             build.url = f'{settings.ARTIFACTS_URL}/{folder_name}/index.html'
+            print("about to break", build.url)
             break
-        except Exception:
+        except Exception as e:
             build.success = False
+            build.errors = ["Operation was not completed correctly"]
+            print("got error", str(e))
         finally:
-            build.finished = False
+            build.finished = True
             build.end_time = timezone.now()
             build.save()
             event_data = dict(build=serializers.BuildSerializer(build).data, revision_id=revision_id)
             emitter(event_type="build_finished", data=event_data)
+            print("Finally block finished")
 
 
 def save_artifacts(root_folder: str, artifacts: Dict[str, str]) -> str:

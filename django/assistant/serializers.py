@@ -7,7 +7,7 @@ from .models import (
     TestRun, OperationSuite, Thread, Comment, Modality,
     MultimediaMessage, Revision, Chat, Generation, GenerationMetadata
 )
-from assistant.tasks import generate_completion, CompletionConfig
+from assistant.tasks import generate_completion, launch_operation_suite, CompletionConfig
 
 
 class ServerSerializer(serializers.ModelSerializer):
@@ -49,9 +49,23 @@ class ConfigurationSerializer(serializers.ModelSerializer):
 
 
 class BuildSerializer(serializers.ModelSerializer):
+    state = serializers.SerializerMethodField()
+
     class Meta:
         model = Build
-        fields = ['id', 'logs', 'screenshot', 'url', 'finished', 'success', 'errors', 'start_time', 'end_time']
+        fields = ['id', 'logs', 'screenshot', 'url', 'finished', 'success', 'errors', 'start_time', 'end_time', 'state']
+
+    def get_state(self, obj):
+        if not obj.finished:
+            return "running"
+        
+        if obj.errors:
+            return "crashed"
+        
+        if not obj.success:
+            return "failed"
+        
+        return "successful"
 
 
 class LinterCheckSerializer(serializers.ModelSerializer):
@@ -83,7 +97,7 @@ class OperationSuiteSerializer(serializers.ModelSerializer):
             "successful": monitor.successful_operations
         }
 
-        def get_url(op): return op.get_absolute_url()
+        def get_url(op): return self.context['request'].build_absolute_uri(op.get_absolute_url())
 
         return {state: list(map(get_url, ops)) for state, ops in states.items()}
 
@@ -383,3 +397,11 @@ class NewGenerationTaskSerializer(serializers.ModelSerializer):
 
         return Generation.objects.create(task_id=job_id, chat=chat, message=message,
                                          generation_metadata=metadata)
+
+
+class BuildLaunchSerializer(serializers.Serializer):
+    revision = serializers.PrimaryKeyRelatedField(queryset=Revision.objects.all())
+
+    def save(self):
+        revision = self.validated_data["revision"]
+        launch_operation_suite.delay_on_commit(revision.id, socket_session_id=0)

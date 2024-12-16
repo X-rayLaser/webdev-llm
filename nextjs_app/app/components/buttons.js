@@ -1,6 +1,17 @@
 "use client"
 import React, { useState } from "react";
 
+
+export function Button({ className="", children, ...otherProps }) {
+  return (
+    <button className="bg-blue-700 px-10 py-2 rounded-md text-white hover:bg-blue-900 disabled:bg-gray-500"
+        {...otherProps}
+    >
+      {children}
+    </button>
+  );
+}
+
 export function SubmitButton({ onClick, text="Submit", children, disabled=false, ...otherProps }) {
     return (
         <button className="bg-blue-700 px-10 py-2 rounded-md text-white hover:bg-blue-900 disabled:bg-gray-500"

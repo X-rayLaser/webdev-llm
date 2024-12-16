@@ -17,7 +17,8 @@ from .serializers import (
     BuildSerializer, LinterCheckSerializer, TestRunSerializer, OperationSuiteSerializer,
     ThreadSerializer, ChatSerializer, MultimediaMessageSerializer, ModalitySerializer,
     NewRevisionSerializer, CommentSerializer, ModalitiesOrderingSerializer,
-    GenerationSerializer, GenerationMetadataSerializer, NewGenerationTaskSerializer
+    GenerationSerializer, GenerationMetadataSerializer, NewGenerationTaskSerializer,
+    BuildLaunchSerializer
 )
 
 from .tasks import summarize_text, generate_chat_picture
@@ -167,6 +168,12 @@ class MultimediaMessageViewSet(viewsets.ModelViewSet):
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+    @decorators.action(methods=['post'], detail=True, url_path="launch-build")
+    def launch_build(self, request, pk=None):
+        ser = BuildLaunchSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        ser.save()
+        return Response({})
 
     @decorators.action(methods=['post'], detail=True)
     def clone(self, request, pk=None):
