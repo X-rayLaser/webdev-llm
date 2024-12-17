@@ -4,7 +4,7 @@ import { Button } from '@/app/components/buttons';
 import { fetchDataFromUrl, fetchStatesData } from '@/app/data';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { 
-    faSpinner, faHammer, faExclamation, faFaceFrownOpen, faFaceSmile
+    faSpinner, faHammer, faExclamation, faFaceFrownOpen, faFaceSmile, faEye
 } from '@fortawesome/free-solid-svg-icons';
 import Link from "next/link";
 
@@ -84,7 +84,7 @@ const DurationHeader = ({ titlePrefix, duration, icon }) => {
     return (
         <div className="font-semibold mb-2">
             <span className="mr-2">{titlePrefix} {duration}</span>
-            <FontAwesomeIcon icon={icon} />
+            <FontAwesomeIcon icon={icon} className="fa-regular" />
         </div>
     );
 }
@@ -94,7 +94,7 @@ const CrashedOperationItem = ({ item }) => {
     const duration = calculateDuration(item.start_time, item.end_time);
 
     return (
-        <div className="p-2 bg-red-50 rounded-lg">
+        <div className="py-2">
             <DurationHeader titlePrefix="Crashed after" duration={duration} icon={faFaceFrownOpen} />
 
             {item.errors && item.errors.length > 0 && (
@@ -145,7 +145,7 @@ const OperationItemWithLogs = ({ item, prefixTitle, titleIcon, beforeLogs, after
 
 const FailedOperationItem = ({ item }) => {
     return (
-        <div className="p-2 bg-gray-100 rounded-md">
+        <div>
             <OperationItemWithLogs
                 item={item}
                 prefixTitle="Failed after running for"
@@ -158,13 +158,13 @@ const FailedOperationItem = ({ item }) => {
 const SuccessfulOperationItem = ({ item }) => {
     const beforeLogs = item.url ? (
         <div>
-            App URL: <Link className="font-bold" href={`http://localhost${item.url}`} target='blank'>
+            App URL: <Link className="font-bold text-blue-400" href={`http://localhost${item.url}`} target='blank'>
                 Click to open it in a new tab
             </Link>
         </div>
     ) : null;
     return (
-        <div className="p-2 bg-green-200 rounded-md">
+        <div>
             <OperationItemWithLogs 
                 item={item}
                 prefixTitle="Succeeded after running for"
@@ -190,29 +190,30 @@ const OperationItem = ({ item, status }) => {
 
 
 const OperationStateSection = ({ status, items }) => {
+    const borderColors = {
+        running: "border-blue-400",
+        crashed: "border-red-400",
+        failed: "border-gray-400",
+        successful: "border-green-400"
+    };
+
+    const extraClasses = borderColors[status] || "";
+
     const children = (
-        <div>
-            <h4 className="mb-2 font-bold">{status.charAt(0).toUpperCase() + status.slice(1)} builds</h4>
-            <div className="flex flex-col gap-2">
+        <div className={`border ${extraClasses} rounded-md`}>
+            <h4 className="font-bold rounded-t-md border-b p-4">{status.charAt(0).toUpperCase() + status.slice(1)} builds</h4>
+            <div className="flex flex-col gap-0">
                 {items.map((item, index) => (
-                    <OperationItem key={index} item={item} status={status} />
+                    <div key={index} className="border-b first:border-b last:border-none p-4">
+                        <OperationItem item={item} status={status} />
+                    </div>
                 ))}
             </div>
         </div>
     );
 
-    const borderColors = {
-        running: "border-blue-400",
-        crashed: "border-red-400",
-        failed: "border-gray-400",
-        successful: "border-green-400",
-        
-    };
-
-    let extraClasses = borderColors[status] || "";
-
     return (
-        <div className={`p-4 border ${extraClasses} rounded-md`}>
+        <div>
             {children}
         </div>
     );
@@ -222,7 +223,9 @@ const OperationStateSection = ({ status, items }) => {
 const SitePreviewBox = ({ url }) => {
     return (
         <div className="border rounded-sm shadow-lg">
-            <h4 className="p-2 bg-gray-700 text-gray-100 rounded-t-sm">React Component Preview</h4>
+            <h4 className="p-2 bg-gray-700 text-gray-100 rounded-t-sm">
+                React Component Preview <span className="ml-2"><FontAwesomeIcon icon={faEye} /></span>
+            </h4>
             <iframe src={url} title="React component preview" className="w-full h-[700px]" />
         </div>
     );
