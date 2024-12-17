@@ -2,6 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { launchBuild } from '@/app/actions';
 import { Button } from '@/app/components/buttons';
 import { fetchDataFromUrl, fetchStatesData } from '@/app/data';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { 
+    faSpinner, faHammer, faExclamation, faFaceFrownOpen, faFaceSmile
+} from '@fortawesome/free-solid-svg-icons';
+import Link from "next/link";
 
 const calculateDuration = (startTime, endTime = new Date()) => {
     const start = new Date(startTime);
@@ -59,23 +64,47 @@ const RunningOperationItem = ({ item }) => {
         return () => clearInterval(intervalId);
     }, [item.start_time]);
 
+    const clock = elapsedTime || "";
     return (
-        <div>
-            {elapsedTime ? `Elapsed Time: ${elapsedTime}` : "Calculating..."}
+        <div className="flex justify-between">
+            <div>
+                <span className="mr-2">
+                    <FontAwesomeIcon icon={faHammer} />
+                </span>
+                <span className="mr-2">Building...</span>
+                <FontAwesomeIcon icon={faSpinner} spin />
+            </div>
+            <div className="grow-0">{clock}</div>
         </div>
     );
 };
+
+
+const DurationHeader = ({ titlePrefix, duration, icon }) => {
+    return (
+        <div className="font-semibold mb-2">
+            <span className="mr-2">{titlePrefix} {duration}</span>
+            <FontAwesomeIcon icon={icon} />
+        </div>
+    );
+}
+
 
 const CrashedOperationItem = ({ item }) => {
     const duration = calculateDuration(item.start_time, item.end_time);
 
     return (
-        <div>
-            <p>Duration: {duration}</p>
+        <div className="p-2 bg-red-50 rounded-lg">
+            <DurationHeader titlePrefix="Crashed after" duration={duration} icon={faFaceFrownOpen} />
+
             {item.errors && item.errors.length > 0 && (
-                <ul>
+                
+                <ul className="text-red-800 flex flex-col gap-2">
                     {item.errors.map((error, index) => (
-                        <li key={index}>{error}</li>
+                        <li key={index}>
+                            <FontAwesomeIcon icon={faExclamation} />
+                            <span className="ml-2">{error}</span>
+                        </li>
                     ))}
                 </ul>
             )}
@@ -83,33 +112,64 @@ const CrashedOperationItem = ({ item }) => {
     );
 };
 
-const FailedOperationItem = ({ item }) => {
+const LogView = ({ title, log }) => {
+    return (
+        <div>
+            <h5>
+                <strong>{title}</strong>
+            </h5>
+            <div className="whitespace-pre-wrap">
+                {log}
+            </div>
+        </div>
+    );
+}
+
+const OperationItemWithLogs = ({ item, prefixTitle, titleIcon, beforeLogs, afterLogs }) => {
     const duration = calculateDuration(item.start_time, item.end_time);
 
     return (
         <div>
-            <p>Duration: {duration}</p>
-            <div>
-                <h5>Logs:</h5>
-                <p><strong>STDOUT:</strong> {item.logs?.stdout || "No stdout available"}</p>
-                <p><strong>STDERR:</strong> {item.logs?.stderr || "No stderr available"}</p>
+            <DurationHeader titlePrefix={prefixTitle} duration={duration} icon={titleIcon} />
+            {beforeLogs && <div className="mb-2">{beforeLogs}</div>}
+
+            <div className="flex flex-col gap-2">
+                {item.logs?.stdout && <LogView title="STDOUT" log={item.logs.stdout} />}
+                {item.logs?.stderr && <LogView title="STDERR" log={item.logs.stderr} />}
             </div>
+
+            {afterLogs && <div className="mt-2">{afterLogs}</div>}
+        </div>
+    );
+}
+
+const FailedOperationItem = ({ item }) => {
+    return (
+        <div className="p-2 bg-gray-100 rounded-md">
+            <OperationItemWithLogs
+                item={item}
+                prefixTitle="Failed after running for"
+                titleIcon={faFaceFrownOpen}
+            />
         </div>
     );
 };
 
 const SuccessfulOperationItem = ({ item }) => {
-    const duration = calculateDuration(item.start_time, item.end_time);
-
+    const beforeLogs = item.url ? (
+        <div>
+            App URL: <Link className="font-bold" href={item.url}>{item.url}</Link>
+        </div>
+    ) : null;
     return (
-        <li>
-            <p>Duration: {duration}</p>
-            <div>
-                <h5>Logs:</h5>
-                <p><strong>STDOUT:</strong> {item.logs?.stdout || "No stdout available"}</p>
-                <p><strong>STDERR:</strong> {item.logs?.stderr || "No stderr available"}</p>
-            </div>
-        </li>
+        <div className="p-2 bg-green-200 rounded-md">
+            <OperationItemWithLogs 
+                item={item}
+                prefixTitle="Succeeded after running for"
+                titleIcon={faFaceSmile}
+                beforeLogs={beforeLogs}
+            />
+        </div>
     );
 };
 
@@ -127,16 +187,44 @@ const OperationItem = ({ item, status }) => {
 };
 
 
-const OperationStateSection = ({ status, items }) => (
-    <div className="p-4 border rounded-md">
-        <h4>{status.charAt(0).toUpperCase() + status.slice(1)}</h4>
+const OperationStateSection = ({ status, items }) => {
+    const children = (
         <div>
-            {items.map((item, index) => (
-                <OperationItem key={index} item={item} status={status} />
-            ))}
+            <h4 className="mb-2 font-bold">{status.charAt(0).toUpperCase() + status.slice(1)} builds</h4>
+            <div className="flex flex-col gap-2">
+                {items.map((item, index) => (
+                    <OperationItem key={index} item={item} status={status} />
+                ))}
+            </div>
         </div>
-    </div>
-);
+    );
+
+    const borderColors = {
+        running: "border-blue-400",
+        crashed: "border-red-400",
+        failed: "border-gray-400",
+        successful: "border-green-400",
+        
+    };
+
+    let extraClasses = borderColors[status] || "";
+
+    return (
+        <div className={`p-4 border ${extraClasses} rounded-md`}>
+            {children}
+        </div>
+    );
+};
+
+
+const SitePreviewBox = ({ url }) => {
+    return (
+        <div>
+            <h4>Preview</h4>
+            <iframe src={url} title="React component preview" />
+        </div>
+    );
+}
 
 const PreviewComponent = ({ message }) => {
     const [lastOperationSuite, setLastOperationSuite] = useState(null);
@@ -200,29 +288,43 @@ const PreviewComponent = ({ message }) => {
         await launchBuild(message.id, activeRevisionId);
     }
 
+    const successful = stateData?.successful || [];
+    const successfulBuild = successful.length > 0 ? successful[successful.length - 1] : null;
+    const hasRunningOperations = stateData ? stateData.running?.length > 0 : false;
+
+    const sections = (stateData && Object.entries(stateData)) || [];
+    const nonEmptySections = sections.filter(([status, items]) => items && items.length > 0);
+    
     return (
-        <div className="preview-component">
-            <label htmlFor="revisions-select">Revisions</label>
-            <select
-                id="revisions-select"
-                value={activeRevisionId || ""}
-                onChange={(e) => setActiveRevisionId(e.target.value)}
-            >
-                {message.revisions.map((revision) => (
-                    <option key={revision.id} value={revision.id}>
-                        {revision.created}
-                    </option>
-                ))}
-            </select>
-            <Button
-                disabled={isBuildDisabled}
-                onClick={handleBuildClick}
-            >
-                Build
-            </Button>
+        <div className="flex flex-col gap-4">
+            <div className="flex gap-2 items-center">
+                <label htmlFor="revisions-select">Revisions</label>
+                <select
+                    id="revisions-select"
+                    value={activeRevisionId || ""}
+                    onChange={(e) => setActiveRevisionId(e.target.value)}
+                >
+                    {message.revisions.map((revision) => (
+                        <option key={revision.id} value={revision.id}>
+                            {revision.created}
+                        </option>
+                    ))}
+                </select>
+                <Button
+                    disabled={isBuildDisabled}
+                    onClick={handleBuildClick}
+                >
+                    Build
+                </Button>
+            </div>
+            {!hasRunningOperations && successfulBuild && successfulBuild.url && (
+                <div>
+                    <SitePreviewBox url={successfulBuild.url} />
+                </div>
+            )}
             <div className="operation-suite">
                 {stateData ? (
-                    Object.entries(stateData).map(([status, items]) => (
+                    nonEmptySections.map(([status, items]) => (
                         <OperationStateSection key={status} status={status} items={items} />
                     ))
                 ) : lastOperationSuite ? (

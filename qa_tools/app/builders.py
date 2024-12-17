@@ -28,14 +28,14 @@ def react_root_renderer(js_code, js_path, props):
         return js_code
 
     component_name = parse_name(js_code)
+    index_js = clear_imports(js_code, to_remove="ReactDOM")
+    index_js = clear_imports(js_code, to_remove="React")
     props_str = props_to_string(props)
     index_js = render_indexjs(component_name=component_name, 
                               component_definition=js_code,
                               props_str=props_str)
     
     # todo: insert all hooks into index.js template; remove all hooks from user sent component file
-    index_js = clear_imports(index_js, to_remove="ReactDOM")
-    index_js = clear_imports(index_js, to_remove="React")
     
     return index_js
 
@@ -154,6 +154,7 @@ def build(src_tree, props=None):
     builder = SimpleReactBuilder(build_directory)
     
     source = preprocess(src_tree, js_renderer=react_root_renderer)
+    print('SOURCE OF THE CODE AFTER PREPROCESSING:\n', source)
 
     stdout, stderr = builder.build(source)
 

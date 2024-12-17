@@ -181,7 +181,7 @@ def launch_operation_suite(revision_id, socket_session_id):
     build_servers = message.get_root().chat.configuration.build_servers.all()
     
     class BuiltInServer:
-        url = "http://builder"
+        url = "http://builder:8888"
 
     if not build_servers.exists():
         build_servers = [BuiltInServer]

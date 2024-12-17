@@ -273,7 +273,7 @@ class OperationSuiteAPITests(APITestCase):
 
                 operation_objects = getattr(self, group)
                 for state, obj in zip(statuses, operation_objects):
-                    self.assertIn(obj.get_absolute_url(), group_data[state])
+                    self.assertIn("http://testserver" + obj.get_absolute_url(), group_data[state])
 
 
 class ThreadAPITests(APITestCase):
