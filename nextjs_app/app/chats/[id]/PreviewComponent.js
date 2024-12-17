@@ -158,7 +158,9 @@ const FailedOperationItem = ({ item }) => {
 const SuccessfulOperationItem = ({ item }) => {
     const beforeLogs = item.url ? (
         <div>
-            App URL: <Link className="font-bold" href={item.url}>{item.url}</Link>
+            App URL: <Link className="font-bold" href={`http://localhost${item.url}`} target='blank'>
+                Click to open it in a new tab
+            </Link>
         </div>
     ) : null;
     return (
@@ -221,7 +223,7 @@ const SitePreviewBox = ({ url }) => {
     return (
         <div className="border rounded-sm shadow-lg">
             <h4 className="p-2 bg-gray-700 text-gray-100 rounded-t-sm">React Component Preview</h4>
-            <iframe src={url} title="React component preview" />
+            <iframe src={url} title="React component preview" className="w-full h-[700px]" />
         </div>
     );
 }
@@ -350,7 +352,14 @@ function getWebsocketListener(activeRevisionId, setStateData, setIsBuildDisabled
             if (data.revision_id !== activeRevisionId) return;
 
             setStateData((prevState) => {
-                if (!prevState) return prevState;
+                if (!prevState) {
+                    prevState = {
+                        running: [],
+                        crashed: [],
+                        failed: [],
+                        successful: []
+                    };
+                };
 
                 const [addOperation, removeOperation] = getStateMutators(prevState);
             
