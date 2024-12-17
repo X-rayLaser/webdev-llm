@@ -154,7 +154,6 @@ def build(src_tree, props=None):
     builder = SimpleReactBuilder(build_directory)
     
     source = preprocess(src_tree, js_renderer=react_root_renderer)
-    print('SOURCE OF THE CODE AFTER PREPROCESSING:\n', source)
 
     stdout, stderr = builder.build(source)
 

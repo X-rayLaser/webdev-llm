@@ -186,7 +186,6 @@ def launch_operation_suite(revision_id, socket_session_id):
     if not build_servers.exists():
         build_servers = [BuiltInServer]
 
-    print("BUILD SERVERS", build_servers)
     emitter = RedisEventEmitter(socket_session_id)
     artifacts_root = settings.ARTIFACTS_ROOT
 
@@ -207,19 +206,16 @@ def launch_operation_suite(revision_id, socket_session_id):
 
             folder_name = save_artifacts(artifacts_root, response_json["artifacts"])
             build.url = f'{settings.ARTIFACTS_URL}/{folder_name}/index.html'
-            print("about to break", build.url)
             break
         except Exception as e:
             build.success = False
             build.errors = ["Operation was not completed correctly"]
-            print("got error", str(e))
         finally:
             build.finished = True
             build.end_time = timezone.now()
             build.save()
             event_data = dict(build=serializers.BuildSerializer(build).data, revision_id=revision_id)
             emitter(event_type="build_finished", data=event_data)
-            print("Finally block finished")
 
 
 def save_artifacts(root_folder: str, artifacts: Dict[str, str]) -> str:

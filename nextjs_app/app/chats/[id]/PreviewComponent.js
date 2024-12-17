@@ -219,8 +219,8 @@ const OperationStateSection = ({ status, items }) => {
 
 const SitePreviewBox = ({ url }) => {
     return (
-        <div>
-            <h4>Preview</h4>
+        <div className="border rounded-sm shadow-lg">
+            <h4 className="p-2 bg-gray-700 text-gray-100 rounded-t-sm">React Component Preview</h4>
             <iframe src={url} title="React component preview" />
         </div>
     );
@@ -295,6 +295,13 @@ const PreviewComponent = ({ message }) => {
     const sections = (stateData && Object.entries(stateData)) || [];
     const nonEmptySections = sections.filter(([status, items]) => items && items.length > 0);
     
+    const renderedSections = (
+        <div className="flex flex-col gap-4">
+            {nonEmptySections.map(([status, items]) => (
+                <OperationStateSection key={status} status={status} items={items} />
+            ))}
+        </div>
+    );
     return (
         <div className="flex flex-col gap-4">
             <div className="flex gap-2 items-center">
@@ -324,9 +331,7 @@ const PreviewComponent = ({ message }) => {
             )}
             <div className="operation-suite">
                 {stateData ? (
-                    nonEmptySections.map(([status, items]) => (
-                        <OperationStateSection key={status} status={status} items={items} />
-                    ))
+                    <div>{renderedSections}</div>
                 ) : lastOperationSuite ? (
                     <p>Loading operation states...</p>
                 ) : (
