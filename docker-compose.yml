@@ -4,6 +4,10 @@ services:
     build:
       context: django
       dockerfile: Dockerfile
+    env_file: "django.env"
+    environment:
+      - ENV=${ENV}
+      - http_proxy_url=${http_proxy_url}
     volumes:
       - .:/workspace:cached
       - ./django:/django
@@ -19,8 +23,10 @@ services:
     build:
       context: django
       dockerfile: Dockerfile
+    env_file: "django.env"
     environment:
       - ENV=${ENV}
+      - http_proxy_url=${http_proxy_url}
     volumes:
       - ./django:/django
       - media:/data/media

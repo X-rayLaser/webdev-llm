@@ -82,9 +82,7 @@ class RedisEventEmitter:
         self.redis_object.publish(self.channel, json.dumps(event))
 
 
-@shared_task
-def generate_completion(completion_config: dict, socket_session_id: int):
-    config = CompletionConfig.from_dict(completion_config)
+def _generate(config, emitter):
     message = config.get_message()
     chat = config.get_chat()
 
@@ -98,28 +96,39 @@ def generate_completion(completion_config: dict, socket_session_id: int):
     job = ChatCompletionJob(model=config.model_name, base_url=config.server_url,
                             messages=messages, params=config.params)
 
-    emitter = RedisEventEmitter(socket_session_id)
-
-    emitter(event_type="generation_started", data=dict(task_id=config.task_id))
-
     for token in generator.generate(job):
         emitter(event_type="token_arrived", data=dict(token=token, task_id=config.task_id))
 
     role = "user" if len(history) % 2 == 0 else "assistant"
-    new_message = create_response_message(generator.response, role, parent=message, chat=chat)
+    return create_response_message(generator.response, role, parent=message, chat=chat)
 
-    generation = Generation.objects.get(task_id=config.task_id)
-    generation.finished = True
-    generation.stop_time = timezone.now()
-    # todo: set response_metadata field of generation_metadata field
-    generation.save()
 
-    event_data = {
-        "message": serializers.MultimediaMessageSerializer(new_message).data,
-        "generation": serializers.GenerationSerializer(generation).data,
-        "task_id": config.task_id
-    }
-    emitter(event_type="generation_ended", data=event_data)
+@shared_task
+def generate_completion(completion_config: dict, socket_session_id: int):
+    config = CompletionConfig.from_dict(completion_config)
+    emitter = RedisEventEmitter(socket_session_id)
+    new_message = None
+
+    try:
+        emitter(event_type="generation_started", data=dict(task_id=config.task_id))
+        new_message = _generate(config, emitter)
+    finally:
+        generation = Generation.objects.get(task_id=config.task_id)
+        generation.finished = True
+        generation.stop_time = timezone.now()
+        # todo: set response_metadata field of generation_metadata field
+        generation.save()
+
+        serialized_message = None
+        if new_message:
+            serialized_message = serializers.MultimediaMessageSerializer(new_message).data
+
+        event_data = {
+            "message": serialized_message,
+            "generation": serializers.GenerationSerializer(generation).data,
+            "task_id": config.task_id
+        }
+        emitter(event_type="generation_ended", data=event_data)
 
 
 @shared_task
