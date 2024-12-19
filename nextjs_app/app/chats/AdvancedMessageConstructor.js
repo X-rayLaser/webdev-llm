@@ -12,6 +12,7 @@ import { PanelItem, DeleteControl, Controls } from '../components/panels';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCopy, faSpinner } from '@fortawesome/free-solid-svg-icons'
 import { renderMarkdown } from '../utils';
+import { DynamicServerError } from 'next/dist/client/components/hooks-server-context';
 
 const textFormFields = [{
     name: "text",
@@ -313,7 +314,7 @@ function TextModality({ data, onSuccessfulUpdate, onSuccessfulDelete, showContro
     return (
         <div className="px-4 py-2 border rounded-lg shadow-sm bg-blue-100">
 
-            <pre dangerouslySetInnerHTML={innerHtml} />
+            <div dangerouslySetInnerHTML={innerHtml} className="whitespace-pre-wrap" />
             {showControls && (
                 <GenericModalityControls
                     data={data}
@@ -400,7 +401,7 @@ ${data.code}
                     </div>
                 )}
 
-                <pre className="whitespace-pre-wrap" dangerouslySetInnerHTML={innerHtml} style={{whiteSpace: 'break-spaces'}} />
+                <div className="whitespace-pre-wrap" dangerouslySetInnerHTML={innerHtml} />
             </div>
         </div>
     );
