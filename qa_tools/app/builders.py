@@ -5,7 +5,7 @@ import uuid
 from typing import Union, List, Dict, Tuple
 from collections import namedtuple
 from app.utils import (
-    save_to_file, load_file, parse_name, props_to_string, clear_imports, fix_css_imports
+    save_to_file, load_file, parse_name, props_to_string, clear_imports, fix_css_imports, clear_inline_comments
 )
 from app.exceptions import (
     NoSourceFilesError, NoJsCodeError, EmptyJavascriptFileError, MalformedFileEntryError
@@ -28,8 +28,9 @@ def react_root_renderer(js_code, js_path, props):
         return js_code
 
     component_name = parse_name(js_code)
-    index_js = clear_imports(js_code, to_remove="ReactDOM")
-    index_js = clear_imports(js_code, to_remove="React")
+    js_code = clear_inline_comments(js_code)
+    js_code = clear_imports(js_code, to_remove="ReactDOM")
+    js_code = clear_imports(js_code, to_remove="React")
     props_str = props_to_string(props)
     index_js = render_indexjs(component_name=component_name, 
                               component_definition=js_code,

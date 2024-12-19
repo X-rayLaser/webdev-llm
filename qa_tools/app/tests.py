@@ -211,12 +211,171 @@ class TestClearImports(unittest.TestCase):
             ("import { Entity as entity } from 'lib';", "import { Entity as entity } from 'lib';"),
             ("import { Foo as foo,   Bar as bar } from 'lib';", "import { Foo as foo, Bar as bar } from 'lib';"),
             ("import * as name from 'lib';", "import * as name from 'lib';"),
-            ("import Stuff, * as name from 'lib';", "import * as name from 'lib';")
+            ("import Stuff, * as name from 'lib';", "import * as name from 'lib';"),
+            ("import Stuff, { SomeStuff } from 'lib'\n", "import { SomeStuff } from 'lib'\n"),
         ]
 
         for code, expected in code_samples:
             with self.subTest(code=code):
                 self.assertEqual(clear_imports(code, "Stuff"), expected)
+
+    def test_multiline_named_imports(self):
+        code_samples = [(
+            """
+            import { Stuff,
+                OtherEntity } from "lib"
+            """, 'import { OtherEntity } from "lib"\n'
+        ), (
+            """
+            import { 
+                OtherStuff, OtherEntity } from "lib"
+            """, 'import { OtherStuff, OtherEntity } from "lib"\n'
+        ), (
+            """
+            import { 
+                OtherStuff, 
+                OtherEntity  } from "lib"
+            """, 'import { OtherStuff, OtherEntity } from "lib"\n'
+        ), (
+            """
+            import { 
+                OtherStuff, 
+                OtherEntity 
+            } from "lib"
+            """, 'import { OtherStuff, OtherEntity } from "lib"\n'
+        ), (
+            """
+            import { 
+                Stuff
+            } from "lib"
+            """, ''
+        ), (
+            """
+            import Stuff, { OtherStuff,
+                OtherEntity } from "lib"
+            """, 'import { OtherStuff, OtherEntity } from "lib"\n'
+        ), (
+            """
+            import 
+              Stuff, { OtherStuff,
+                OtherEntity } from "lib"
+            """, 'import { OtherStuff, OtherEntity } from "lib"\n'
+        ),]
+
+        self._run_test_samples(code_samples, remove="Stuff")
+
+    def test_multiline_default_imports(self):
+        code_samples = [(
+            """
+            import 
+            Stuff from "lib"
+            """, ''
+        ), (
+            """
+            import 
+            Stuff 
+            from "lib"
+            """, ''
+        ), (
+            """
+            import 
+            Stuff 
+             from  
+               "lib"
+               """, ''
+        )]
+        self._run_test_samples(code_samples, remove="Stuff")
+
+    def test_multiline_named_imports_with_default(self):
+        code_samples = [(
+            """
+            import Stuff, { OtherStuff,
+                OtherEntity } from "lib"
+            """, 'import { OtherStuff, OtherEntity } from "lib"\n'
+        ), (
+            """
+            import 
+              Stuff, { OtherStuff,
+                OtherEntity } from "lib"
+            """, 'import { OtherStuff, OtherEntity } from "lib"\n'
+        )]
+
+        self._run_test_samples(code_samples, remove="Stuff")
+
+    def test_multiline_default_and_namespace_imports(self):
+        code_samples = [(
+            """
+            import Stuff, * as 
+            something from "lib" """, 'import * as something from "lib"'
+        ), (
+            """
+            import Stuff,
+             * as 
+            something 
+            from 
+            "lib" """, 'import * as something from "lib"'
+        ), (
+            """
+            import Stuff, * 
+            as 
+            something 
+            from 
+            "lib" """, 'import * as something from "lib"'
+        )]
+        self._run_test_samples(code_samples, remove="Stuff")
+
+    def test_interleaving_single_line_and_multiline_imports(self):
+        code = """
+        import 'styles.css'
+        import Stuff, { OtherStuff  }
+        from 'lib'
+        """
+
+        expected = "import 'styles.css'\nimport { OtherStuff } from 'lib'\n"
+        self.assertEqual(clear_imports(code, "Stuff"), expected)
+
+        code = """
+        import Stuff, { 
+            OtherStuff  
+        } from 'lib'
+        import 'styles.css'
+        import { Stuff, OtherStuff  }
+        from 'lib'
+        """
+
+        expected = "import { OtherStuff } from 'lib'\nimport 'styles.css'\nimport { OtherStuff } from 'lib'\n"
+        self.assertEqual(clear_imports(code, "Stuff"), expected)
+
+        code = """
+        import Stuff, { 
+            OtherStuff
+            ,
+            AnotherStuff
+        } from 'lib'
+        import Stuff, * as module
+        from 'lib'
+        """
+
+        expected = "import { OtherStuff, AnotherStuff } from 'lib'\nimport * as module from 'lib'\n"
+        self.assertEqual(clear_imports(code, "Stuff"), expected)
+
+        code = """
+        import Stuff, { OtherStuff, 
+        AnotherStuff } from 'lib'
+        import Stuff, * as module from 'lib'
+        import { Stuff } from 'lib'
+        import Stuff from 'lib'
+        import { 
+            Something } from 'lib'
+        """
+
+        expected = "import { OtherStuff, AnotherStuff } from 'lib'\nimport * as module from 'lib'\nimport { Something } from 'lib'\n"
+        self.assertEqual(clear_imports(code, "Stuff"), expected)
+
+    def _run_test_samples(self, samples, remove="Stuff"):
+        for code, expected in samples:
+            with self.subTest(code=code):
+                self.assertEqual(clear_imports(code, remove), expected)
 
 
 class TestComponentNameExtraction(unittest.TestCase):

@@ -9,7 +9,7 @@ def clear_bracket_imports(imports_str, to_remove):
 
 
 def clear_default_and_named_import(regex, text, to_remove):
-    matches = re.findall(regex, text)
+    matches = re.findall(regex, text, flags=re.DOTALL)
     default_import, imports_str, lib_str = matches[0]
     new_import_str = clear_bracket_imports(imports_str, to_remove)
     default_import = "" if default_import == to_remove else default_import
@@ -27,7 +27,7 @@ def clear_default_and_named_import(regex, text, to_remove):
 
 
 def clear_default_with_namespace_import(regex, text, to_remove):
-    matches = re.findall(regex, text)
+    matches = re.findall(regex, text, flags=re.DOTALL)
     default_import, name_space, lib_str = matches[0]
     if default_import == to_remove:
         return f'import * as {name_space} from {lib_str}'
@@ -35,7 +35,7 @@ def clear_default_with_namespace_import(regex, text, to_remove):
 
 
 def clear_named_import(regex, text, to_remove):
-    matches = re.findall(regex, text)
+    matches = re.findall(regex, text, flags=re.DOTALL)
     imports_str, lib_str = matches[0]
     new_import_str = clear_bracket_imports(imports_str, to_remove)
 
@@ -55,21 +55,22 @@ def clear_default_import(regex, text, to_remove):
 def clear_imports(code, to_remove="React"):
 
     def fix_import_line(match):
-        text = match.group(0).strip()
+        text = match.group(0).lstrip()
+        text = text.rstrip(' ')
 
         default_and_named_import = 'import\s+([a-zA-Z]+)\s*,\s*{(.*)}\s+from\s+(.*)'
 
-        if re.search(default_and_named_import, text):
+        if re.search(default_and_named_import, text, flags=re.DOTALL):
             return clear_default_and_named_import(default_and_named_import, text, to_remove)
 
-        default_and_namespace_import = 'import\s+([a-zA-Z]+)\s*,\s*\* as ([a-zA-Z]+)\s+from\s+(.*)'
+        default_and_namespace_import = 'import\s+([a-zA-Z]+)\s*,\s*\*[\s\n]+as[\s\n]+([a-zA-Z]+)\s+from\s+(.*)'
 
-        if re.search(default_and_namespace_import, text):
+        if re.search(default_and_namespace_import, text, flags=re.DOTALL):
             return clear_default_with_namespace_import(default_and_namespace_import, text, to_remove)
 
         named_import = 'import\s+{(.*)}\s+from\s+(.*)'
         
-        if re.search(named_import, text):
+        if re.search(named_import, text, flags=re.DOTALL):
             return clear_named_import(named_import, text, to_remove)
 
         default_import = 'import\s+([a-zA-Z]+)\s+from'
@@ -78,8 +79,18 @@ def clear_imports(code, to_remove="React"):
 
         return text
 
-    pattern = re.compile('\s*import .* from .*')
+    # side effect import pattern
+    p1 = '(\s*import\s+[\'\"][a-zA-Z\.]+[\'\"];?\n?\s*)'
+    # all other import types
+    p2 = '(\s*import[{},\s\n.a-zA-Z\*]+from\s+[\'\"][a-zA-Z\.]+[\'\"];?\n?\s*)'
+    p = '(' + p1 + '|' + p2 + ')'
+    pattern = re.compile(p, flags=re.DOTALL)
     return pattern.sub(fix_import_line, code)
+
+
+def clear_inline_comments(code):
+    pattern = re.compile('//.*\n')
+    return pattern.sub("", code)
 
 
 def fix_css_imports(js_code, css_entries):
