@@ -4,6 +4,7 @@ import AdvancedMessageConstructor, { ModalityViewer } from "../AdvancedMessageCo
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPencil, faCircleChevronLeft, faCircleChevronRight, faSpinner } from '@fortawesome/free-solid-svg-icons'
 import { cloneModality, createMultimediaMessage, switchBranch } from "@/app/actions";
+import { fetchMessage } from "@/app/data";
 import TabContainer from "@/app/components/TabContainer";
 import PreviewComponent from "./PreviewComponent";
 
@@ -27,10 +28,19 @@ function decorateWithSources(modalityObject, sourceFiles) {
 }
 
 export default function MessageCard({ message }) {
+    const [currentMessage, setCurrentMessage] = useState(message);
+
+    async function handleBuildFinished() {
+        const data = await fetchMessage(currentMessage.id);
+        setCurrentMessage(data);
+    }
+
     const tabs = [
-        { key: 'Raw', label: 'Raw', content: <RawMessage message={message} /> },
+        { key: 'Raw', label: 'Raw', content: <RawMessage message={currentMessage} /> },
         { key: 'Code', label: 'Code', content: <div>Content for Tab 2</div> },
-        { key: 'Preview', label: 'Preview', content: <PreviewComponent message={message} /> },
+        { key: 'Preview', label: 'Preview', content: (
+            <PreviewComponent message={currentMessage} onBuildFinished={handleBuildFinished} />
+        )},
     ];
     return (
         <TabContainer tabs={tabs} />

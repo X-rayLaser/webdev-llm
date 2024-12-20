@@ -29,3 +29,15 @@ export const fetchStatesData = async (states) => {
     return result;
 };
 
+
+export const fetchMessage = async (id) => {
+    let data;
+    try {
+        const response = await fetch(`http://django:8000/api/multimedia-messages/${id}/`);
+        data = await response.json();
+    } catch (e) {
+        console.error("Failed to fetch message:", e);
+        data = null;
+    }
+    return data;
+}

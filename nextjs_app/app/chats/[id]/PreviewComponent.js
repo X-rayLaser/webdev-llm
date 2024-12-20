@@ -1,3 +1,4 @@
+"use client"
 import React, { useEffect, useState } from 'react';
 import { launchBuild } from '@/app/actions';
 import { Button } from '@/app/components/buttons';
@@ -231,7 +232,7 @@ const SitePreviewBox = ({ url }) => {
     );
 }
 
-const PreviewComponent = ({ message }) => {
+const PreviewComponent = ({ message, onBuildFinished }) => {
     const [lastOperationSuite, setLastOperationSuite] = useState(null);
     const [activeRevisionId, setActiveRevisionId] = useState(
         message.active_revision ? message.active_revision : getLastRevisionId(message.revisions)
@@ -239,42 +240,50 @@ const PreviewComponent = ({ message }) => {
     const [stateData, setStateData] = useState(null);
     const [isBuildDisabled, setIsBuildDisabled] = useState(true);
 
+    const fetchLastSuiteForActiveRevision = async () => {
+        let activeRevision = message.revisions.find(
+            (revision) => revision.id === activeRevisionId
+        );
+
+        if (activeRevision && activeRevision.operation_suites.length > 0) {
+            const lastSuiteUrl = activeRevision.operation_suites[activeRevision.operation_suites.length - 1];
+
+            if (lastSuiteUrl) {
+                const result = await fetchDataFromUrl(lastSuiteUrl);
+                setLastOperationSuite(result);
+                
+                if (result?.builds) {
+                    const fetchedStates = await fetchStatesData(result.builds);
+                    setStateData(fetchedStates);
+
+                    const hasRunningOperations = fetchedStates.running?.length > 0;
+                    setIsBuildDisabled(hasRunningOperations);
+                }
+            }
+        } else {
+            setLastOperationSuite(null);
+            setStateData(null);
+            setIsBuildDisabled(!Boolean(activeRevision));
+        }
+    };
+
     useEffect(() => {
         setIsBuildDisabled(true);
-
-        const fetchLastSuiteForActiveRevision = async () => {
-            let activeRevision = message.revisions.find(
-                (revision) => revision.id === activeRevisionId
-            );
-
-            if (activeRevision && activeRevision.operation_suites.length > 0) {
-                const lastSuiteUrl = activeRevision.operation_suites[activeRevision.operation_suites.length - 1];
-                if (lastSuiteUrl) {
-                    const result = await fetchDataFromUrl(lastSuiteUrl);
-                    setLastOperationSuite(result);
-                    
-                    if (result?.builds) {
-                        const fetchedStates = await fetchStatesData(result.builds);
-                        console.log("fetchedStates:", fetchedStates, "result", result)
-                        setStateData(fetchedStates);
-
-                        const hasRunningOperations = fetchedStates.running?.length > 0;
-                        setIsBuildDisabled(hasRunningOperations);
-                    }
-                }
-            } else {
-                setLastOperationSuite(null);
-                setStateData(null);
-                console.log("setIsBuildDisabled", activeRevisionId, activeRevision, !Boolean(activeRevision))
-                setIsBuildDisabled(!Boolean(activeRevision));
-            }
-        };
-
         fetchLastSuiteForActiveRevision();
-    }, [activeRevisionId, message.revisions]);
+    }, [activeRevisionId, message]);
 
     useEffect(() => {
-        const handleWebSocketMessage = getWebsocketListener(activeRevisionId, setStateData, setIsBuildDisabled);
+        const activeId = (message.active_revision ? message.active_revision 
+            : getLastRevisionId(message.revisions)
+        );
+        setActiveRevisionId(activeId)
+        fetchLastSuiteForActiveRevision();
+    }, [message]);
+
+    useEffect(() => {
+        const handleWebSocketMessage = getWebsocketListener(
+            activeRevisionId, setStateData, onBuildFinished
+        );
         const socket = new WebSocket("ws://localhost:9000");
         socket.addEventListener("open", (event) => {
             socket.send(0);
@@ -340,19 +349,24 @@ const PreviewComponent = ({ message }) => {
                 ) : lastOperationSuite ? (
                     <p>Loading operation states...</p>
                 ) : (
-                    <p>No operation suite available for the selected revision.</p>
+                    <p>No builds yet</p>
                 )}
             </div>
         </div>
     );
 };
 
-function getWebsocketListener(activeRevisionId, setStateData, setIsBuildDisabled) {
+function getWebsocketListener(activeRevisionId, setStateData, onBuildFinished) {
     return (event) => {
         try {
             const { event_type, data } = JSON.parse(event.data);
 
             if (data.revision_id !== activeRevisionId) return;
+
+            if (event_type === "build_finished") {
+                onBuildFinished();
+                return;
+            }
 
             setStateData((prevState) => {
                 if (!prevState) {
@@ -372,10 +386,6 @@ function getWebsocketListener(activeRevisionId, setStateData, setIsBuildDisabled
                 } else if (event_type === "build_finished") {
                     removeOperation("running", data.build);
                     updatedStateData = addOperation(data.build.state, data.build);
-
-                    if (updatedStateData.running.length === 0) {
-                        setIsBuildDisabled(false);
-                    }
                 }
 
                 return updatedStateData;
