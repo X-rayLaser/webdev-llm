@@ -35,7 +35,7 @@ function renderMarkdown(text) {
                 } catch (__) { }
             }
 
-            return '';
+            return '<code class="hljs">' + md.utils.escapeHtml(str) + '</code>';
         }
     });
     return md.render(text);

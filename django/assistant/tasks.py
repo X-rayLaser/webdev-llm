@@ -107,11 +107,10 @@ def _generate(config, emitter):
 def generate_completion(completion_config: dict, socket_session_id: int):
     config = CompletionConfig.from_dict(completion_config)
     emitter = RedisEventEmitter(socket_session_id)
-    new_message = None
 
     try:
         emitter(event_type="generation_started", data=dict(task_id=config.task_id))
-        new_message = _generate(config, emitter)
+        _generate(config, emitter)
     finally:
         generation = Generation.objects.get(task_id=config.task_id)
         generation.finished = True
@@ -119,12 +118,7 @@ def generate_completion(completion_config: dict, socket_session_id: int):
         # todo: set response_metadata field of generation_metadata field
         generation.save()
 
-        serialized_message = None
-        if new_message:
-            serialized_message = serializers.MultimediaMessageSerializer(new_message).data
-
         event_data = {
-            "message": serialized_message,
             "generation": serializers.GenerationSerializer(generation).data,
             "task_id": config.task_id
         }

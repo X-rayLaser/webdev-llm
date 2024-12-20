@@ -25,14 +25,22 @@ class Backend(ABC):
 
 
 class DummyBackend(Backend):
+    tokens = ["The", "quick", "brown", "fox", "jumps", "over", "the", "lazy", "dog", "."]
+    separator = " "
     def generate(self, job: ChatCompletionJob):
-        words = ["The", "quick", "brown", "fox", "jumps", "over", "the", "lazy", "dog", "."]
-        for word in words:
+        for token in self.tokens:
             sleep_secs = 0.5
             time.sleep(sleep_secs)
-            chunk = word + " "
+            chunk = token + self.separator
             self.response += chunk
             yield chunk
+
+
+class DummyCoderBackend(DummyBackend):
+    tokens = ["```", "javascript", "\n",
+              "console", ".", "log", "(", "'", "hello, ", "world", "'", ")",
+              "```"]
+    separator = ""
 
 
 class OpenAICompatibleBackend(Backend):
@@ -82,5 +90,6 @@ class OpenAICompatibleBackend(Backend):
 
 backends = {
     "dummy": DummyBackend,
+    "dummy_coder": DummyCoderBackend,
     "openai_compatible": OpenAICompatibleBackend
 }
