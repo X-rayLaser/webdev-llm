@@ -12,7 +12,7 @@ import { PanelItem, DeleteControl, Controls } from '../components/panels';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCopy, faSpinner } from '@fortawesome/free-solid-svg-icons'
 import { renderMarkdown } from '../utils';
-import { DynamicServerError } from 'next/dist/client/components/hooks-server-context';
+import DrawingCanvas from './DrawingCanvas';
 
 const textFormFields = [{
     name: "text",
@@ -94,6 +94,7 @@ export default function AdvancedMessageConstructor({ formAction, rootModality=nu
     const ADD_TEXT = "add_text";
     const ADD_IMAGE = "add_image";
     const ADD_CODE = "add_code";
+    const DRAW_ON_CANVAS = "draw_on_canvas";
 
     const [mode, setMode] = useState(null);
     const initialParent = (rootModality && rootModality.id) || null;
@@ -130,6 +131,8 @@ export default function AdvancedMessageConstructor({ formAction, rootModality=nu
 
     const AddTextForm = makeCreateForm(TextForm, createActionFactory(createTextModality));
     const AddImageForm = makeCreateForm(ImageForm, createActionFactory(createImageModality));
+
+
 
     const AddCodeForm = makeCreateForm(
         CodeForm,
@@ -187,6 +190,7 @@ export default function AdvancedMessageConstructor({ formAction, rootModality=nu
                         </OutlineButton>
                     </div>
                     <OutlineButton onClick={() => setMode(ADD_IMAGE)}>Add image</OutlineButton>
+                    <OutlineButton onClick={() => setMode(DRAW_ON_CANVAS)}>Draw sketch</OutlineButton>
                     <OutlineButton onClick={() => setMode(ADD_CODE)}>Add code</OutlineButton>
                 </div>
 
@@ -199,6 +203,15 @@ export default function AdvancedMessageConstructor({ formAction, rootModality=nu
                 <Modal show={mode === ADD_IMAGE} onClose={() => setMode(null)}>
                     <div className="p-6">
                         <AddImageForm onSuccess={handleSuccessfulModalityCreation} />
+                    </div>
+                </Modal>
+
+                <Modal show={mode === DRAW_ON_CANVAS} onClose={() => setMode(null)}>
+                    <div className="p-6">
+                        <DrawingCanvas
+                            action={createActionFactory(createImageModality)}
+                            onSuccess={handleSuccessfulModalityCreation}
+                        />
                     </div>
                 </Modal>
 

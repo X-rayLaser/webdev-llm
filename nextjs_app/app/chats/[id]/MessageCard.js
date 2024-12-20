@@ -34,6 +34,11 @@ export default function MessageCard({ message }) {
         const data = await fetchMessage(currentMessage.id);
         setCurrentMessage(data);
     }
+    
+    useEffect(() => {
+        //todo: check if this is necessary
+        setCurrentMessage(message)
+    }, [message]);
 
     const tabs = [
         { key: 'Raw', label: 'Raw', content: <RawMessage message={currentMessage} /> },
