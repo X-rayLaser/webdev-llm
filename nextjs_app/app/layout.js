@@ -2,6 +2,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 
 import { config } from '@fortawesome/fontawesome-svg-core'
+import Navbar from "./components/Navbar";
 import '@fortawesome/fontawesome-svg-core/styles.css'
 config.autoAddCss = false
 
@@ -27,6 +28,7 @@ export default function RootLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <Navbar />
         {children}
       </body>
     </html>

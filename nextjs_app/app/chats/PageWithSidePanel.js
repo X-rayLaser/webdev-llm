@@ -1,14 +1,16 @@
 import ChatSidePanel from "./ChatSidePanel";
-
+import ChatSidePanelToggle from "./ChatSidePanelToggle";
 
 export default async function PageWithSidePanel({ searchParams, children }) {
-    let chatsPanel = <ChatSidePanel queryParams={searchParams} />;
+    let sidePanel = <ChatSidePanel queryParams={searchParams} />;
+    let togglePanel = <ChatSidePanelToggle chatSidePanel={sidePanel} />;
+
     return (
         <div>
             <div className="md:hidden">
                 <div className="w-80">
-                    <div className="fixed w-[inherit] max-w-[inherit] h-dvh">
-                        {chatsPanel}
+                    <div className="fixed max-w-[inherit] h-dvh">
+                        {togglePanel}
                     </div>
                             
                 </div>
@@ -21,7 +23,7 @@ export default async function PageWithSidePanel({ searchParams, children }) {
                 <div className="flex items-start">
                     <div className="shrink-0 grow-0 w-10/12 sm:w-80 max-w-[800px]">
                         <div className="fixed w-[inherit] max-w-[inherit]">
-                            {chatsPanel}
+                            {togglePanel}
                         </div>
                     </div>
 
