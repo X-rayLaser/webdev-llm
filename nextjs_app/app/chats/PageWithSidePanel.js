@@ -27,7 +27,7 @@ export default async function PageWithSidePanel({ searchParams, children }) {
                         </div>
                     </div>
 
-                    <div className="grow p-4">
+                    <div className="grow px-4">
                         {children}
                     </div>
                 </div>

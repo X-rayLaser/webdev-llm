@@ -19,7 +19,7 @@ export default function ChatSidePanelToggle({ chatSidePanel }) {
                         <div></div>
                         <button
                             onClick={togglePanelVisibility}
-                            className="py-1 w-12 bg-blue-400 text-white hover:bg-gray-500 rounded-l-lg"
+                            className="p-2 bg-blue-400 text-white hover:bg-gray-500 rounded-l-lg"
                         >
                             <FontAwesomeIcon icon={faAnglesLeft} size="lg" />
                         </button>
@@ -31,7 +31,7 @@ export default function ChatSidePanelToggle({ chatSidePanel }) {
                     <div className="h-full"></div>
                     <button
                         onClick={togglePanelVisibility}
-                        className="absolute top-0 z-100 w-12 py-1 bg-blue-400 text-white rounded-r-lg hover:bg-gray-500"
+                        className="absolute top-0 z-100 p-2 bg-blue-400 text-white rounded-r-lg hover:bg-gray-500"
                         title="Expand Panel"
                     >
                         <FontAwesomeIcon icon={faAnglesRight} size="lg" />
