@@ -2,6 +2,18 @@
 import React, { useState } from "react";
 
 
+export function OutlineButtonSmall({ className, children, ...rest }) {
+  return (
+      <button className="py-1 px-4 hover:bg-sky-800 hover:text-white hover:border-violet-400 border-2
+                       border-sky-800 rounded-md text-sm font-semibold disabled:bg-gray-500 bg-inherit text-inherit"
+              {...rest}>
+          {children}
+      </button>
+  );
+}
+
+
+
 export function Button({ className="", children, ...otherProps }) {
   return (
     <button className="bg-blue-700 px-10 py-2 rounded-md text-white hover:bg-blue-900 disabled:bg-gray-500"
@@ -25,11 +37,9 @@ export function SubmitButton({ onClick, text="Submit", children, disabled=false,
     );
 }
 
-export function CancelButton({ children, text="Cancel", disabled=false, ...otherProps }) {
+export function CancelButton({ children, text="Cancel", ...otherProps }) {
     return (
-        <button className="bg-blue-200 px-10 py-2 rounded-md text-white hover:bg-blue-300 disabled:bg-gray-500"
-            type="submit"
-            disabled={disabled}
+        <button className="bg-blue-200 px-10 py-2 rounded-md text-gray-700 hover:bg-blue-300 disabled:bg-gray-500"
             {...otherProps}
         >
             {text}

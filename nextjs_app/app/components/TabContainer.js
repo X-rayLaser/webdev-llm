@@ -15,7 +15,7 @@ const TabContainer = ({ tabs }) => {
                     <Tab key={tab.key} tab={tab} activeTab={activeTab} setActiveTab={setActiveTab} />
                 ))}
             </div>
-            <div className="tab-content p-4">
+            <div className="tab-content">
                 {renderActiveContent()}
             </div>
         </div>

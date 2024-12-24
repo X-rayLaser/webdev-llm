@@ -7,6 +7,7 @@ import { cloneModality, createMultimediaMessage, switchBranch } from "@/app/acti
 import { fetchMessage } from "@/app/data";
 import TabContainer from "@/app/components/TabContainer";
 import PreviewComponent from "./PreviewComponent";
+import { OutlineButton, OutlineButtonSmall } from "@/app/components/buttons";
 
 function decorateWithSources(modalityObject, sourceFiles) {
     if (modalityObject.modality_type === "code") {
@@ -44,7 +45,9 @@ export default function MessageCard({ message }) {
         { key: 'Raw', label: 'Raw', content: <RawMessage message={currentMessage} /> },
         { key: 'Code', label: 'Code', content: <div>Content for Tab 2</div> },
         { key: 'Preview', label: 'Preview', content: (
-            <PreviewComponent message={currentMessage} onBuildFinished={handleBuildFinished} />
+            <div className="p-4">
+                <PreviewComponent message={currentMessage} onBuildFinished={handleBuildFinished} />
+            </div>
         )},
     ];
     return (
@@ -108,19 +111,22 @@ export function RawMessage({ message }) {
     }
 
     return (
-        <div>
-            <div className="p-4 border rounded-lg shadow-lg bg-sky-700">
+        <div className="rounded-t">
+            <div className="bg-sky-700">
                 {editMode ? (
                     <AdvancedMessageConstructor
                         formAction={formAction}
                         rootModality={decoratedModality}
+                        onCancel={() => setEditMode(false)}
                     />
                 ) : (
-                    <ModalityViewer modalityObject={decoratedModality} showControls={false} />
+                    <div className="p-4">
+                        <ModalityViewer modalityObject={decoratedModality} showControls={false} />
+                    </div>
                 )}
             </div>
             {!editMode && previousMessage && (
-                <div>
+                <div className="bg-sky-900 px-4 py-2 flex justify-between items-center text-gray-200">
                     {switching && (
                         <span>
                             <FontAwesomeIcon icon={faSpinner} spin size="lg" />
@@ -128,7 +134,7 @@ export function RawMessage({ message }) {
                     )}
                     {message.branches > 1 && !switching && (
                         <div>
-                            <div className="flex gap-2 text-blue-500 text-lg">
+                            <div className="flex gap-2 text-blue-300 text-lg">
                                 <button 
                                     onClick={handleLeftArrowClick}
                                     disabled={message.branchIndex === 0}
@@ -148,9 +154,11 @@ export function RawMessage({ message }) {
                         </div>
                     )}
                     {!switching && (
-                        <button onClick={handleEditClick}>
-                            Edit <FontAwesomeIcon icon={faPencil} />
-                        </button>
+                        <div>
+                            <OutlineButtonSmall onClick={handleEditClick}>
+                                Edit <FontAwesomeIcon icon={faPencil} />
+                            </OutlineButtonSmall>
+                        </div>
                     )}
                 </div>
             )}

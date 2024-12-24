@@ -90,7 +90,7 @@ function actionFactory(parent, setParent, modalityAction) {
 }
 
 
-export default function AdvancedMessageConstructor({ formAction, rootModality=null }) {
+export default function AdvancedMessageConstructor({ formAction, rootModality=null, onCancel=null }) {
     const ADD_TEXT = "add_text";
     const ADD_IMAGE = "add_image";
     const ADD_CODE = "add_code";
@@ -166,8 +166,8 @@ export default function AdvancedMessageConstructor({ formAction, rootModality=nu
     }
 
     return (
-        <div className="border rounded-lg shadow-md bg-sky-700">
-            <div className="p-4">
+        <div className="p-4">
+            <div className="">
                 {modalities.length > 0 && (
                     <ModalityViewer
                         modalityObject={{
@@ -221,11 +221,25 @@ export default function AdvancedMessageConstructor({ formAction, rootModality=nu
                     </div>
                 </Modal>
             </div>
-            <form action={createMessage} onSubmit={handleSubmit} className="text-lg border-t border-t-sky-900 p-4">
+            <form action={createMessage} onSubmit={handleSubmit} className="text-lg mt-4">
                 <div>
-                    <SubmitButton text="Create message" disabled={sendingForm || modalities.length === 0}>
-                        {sendingForm && <span className="ml-2"><FontAwesomeIcon icon={faSpinner} spin /></span>}
-                    </SubmitButton>
+                    <div className="flex gap-2">
+                        <div>
+                            <SubmitButton text="Create message" disabled={sendingForm || modalities.length === 0}>
+                                {sendingForm && <span className="ml-2"><FontAwesomeIcon icon={faSpinner} spin /></span>}
+                            </SubmitButton>
+                        </div>
+                        {onCancel && (
+                            <div>
+                                <CancelButton
+                                    type="button"
+                                    text="Cancel"
+                                    disabled={sendingForm}
+                                    onClick={() => onCancel()}>
+                                </CancelButton>
+                            </div>
+                        )}
+                    </div>
                     {submissionError && (
                         <div className="mt-4">
                             <Alert level="danger" text={submissionError} />
@@ -266,7 +280,7 @@ export function ModalityViewer({ modalityObject, onSuccessfulUpdate, onSuccessfu
         );
 
         item = (
-            <div className="flex flex-col justify-evenly gap-4 rounded-lg">
+            <div className="flex flex-col justify-evenly gap-4">
                 {childrenItems}
             </div>
         );
@@ -341,10 +355,11 @@ function TextModality({ data, onSuccessfulUpdate, onSuccessfulDelete, showContro
 }
 
 function ImageModality({ data, onSuccessfulUpdate, onSuccessfulDelete, showControls=true }) {
+    const bgColor = showControls ? "bg-blue-100" : "bg-sky-800"
     return (
         <div className="rounded-lg shadow-sm">
             <div className="relative w-full">
-                <div className="px-2 rounded-lg h-96 bg-blue-100">
+                <div className={`px-2 rounded-lg h-96 ${bgColor}`}>
                     <img className="h-full mx-auto" src={data.image.replace("django:8000", "localhost")} />
                 </div>
                 <div className="absolute px-2 right-0 top-0">

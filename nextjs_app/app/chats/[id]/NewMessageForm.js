@@ -83,9 +83,17 @@ export default function NewMessageForm({ chat, previousMessage, preset }) {
                 </Tooltip>
             </div>
 
-            <div className="p-4 rounded-md shadow-md border">
-                {currentAction === CREATE && <AdvancedMessageConstructor formAction={formAction} />}
-                {currentAction === GENERATE && <GenerateMessageForm onSuccess={handleSuccess} />}
+            <div>
+                {currentAction === CREATE && (
+                    <div className="rounded-md shadow-md border">
+                        <AdvancedMessageConstructor formAction={formAction} />
+                    </div>
+                )}
+                {currentAction === GENERATE && (
+                    <div className="rounded-md shadow-md border p-4">
+                        <GenerateMessageForm onSuccess={handleSuccess} />
+                    </div>
+                )}
             </div>
         </div>
     );
