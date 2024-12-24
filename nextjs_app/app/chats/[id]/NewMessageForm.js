@@ -8,7 +8,8 @@ import { Tooltip } from "@/app/components/tooltips";
 import { fields } from "@/app/configuration/PresetPanel";
 import { TextArea, jsonPlaceholder } from "@/app/components/common-forms";
 import { formFactory, makeCreateForm } from "@/app/components/form-factory";
-import { getTopDownRenderer } from "@/app/components/fieldset-renderers";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faCircleQuestion } from '@fortawesome/free-solid-svg-icons'
 
 const formFields = [...fields, {
     name: "params",
@@ -17,6 +18,38 @@ const formFields = [...fields, {
     label: "More params (optional)",
     placeholder: jsonPlaceholder
 }];
+
+function renderForm(formFields, names, errorMessage, submitButton) {
+    const presetElements = fields.filter(
+        field => field.name !== "extra_params"
+    ).map((field, idx) => (
+        <div key={idx} className="mb-4">
+            {formFields[field.name]}
+        </div>
+    ));
+
+    return (
+        <div>
+            <details>
+                <summary className="mb-4 cursor-pointer">Sampling settings</summary>
+                <div className="mb-4">{presetElements}</div>
+            </details>
+
+            <details>
+                <summary className="mb-4 cursor-pointer">Custom sampling params</summary>
+                <div className="mb-4">{formFields.extra_params}</div>
+            </details>
+
+            <details>
+                <summary className="mb-4 cursor-pointer">Custom options</summary>
+                <div className="mb-4">{formFields.params}</div>
+            </details>
+
+            {errorMessage}
+            {submitButton}
+        </div>
+    );
+}
 
 export default function NewMessageForm({ chat, previousMessage, preset }) {
     const CREATE = "create";
@@ -31,7 +64,7 @@ export default function NewMessageForm({ chat, previousMessage, preset }) {
         { name: "action2", label: "Create message", onSelect: () => setCurrentAction(CREATE) },
     ];
 
-    const Form = formFactory(formFields, getTopDownRenderer());
+    const Form = formFactory(formFields, renderForm);
     const generateNextjsAction = startMessageGeneration.bind(null, chat.id, previousMessage.id);
 
     const GenerateMessageForm = makeCreateForm(Form, generateNextjsAction, preset);
@@ -42,10 +75,13 @@ export default function NewMessageForm({ chat, previousMessage, preset }) {
 
     return (
         <div>
-            <ButtonDropdown actions={actions} defaultAction={actions[0]} />
-            <Tooltip content="Choose whether to use LLM to generate a message or to write it by yourself">
-                <div className="text-2xl ml-2 bg-yellow-400 w-12 h-12 rounded-full flex justify-items-center text-center">?</div>
-            </Tooltip>
+            <div className="flex gap-4 items-center mb-4">
+                <div>Choose action: </div>
+                <ButtonDropdown actions={actions} defaultAction={actions[0]} />
+                <Tooltip content="Choose whether to use LLM to generate a message or to write it by yourself">
+                    <FontAwesomeIcon icon={faCircleQuestion} size="lg" />
+                </Tooltip>
+            </div>
 
             <div className="p-4 rounded-md shadow-md border">
                 {currentAction === CREATE && <AdvancedMessageConstructor formAction={formAction} />}

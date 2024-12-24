@@ -2,6 +2,9 @@ import re
 from typing import Tuple, List, Dict
 from dataclasses import dataclass
 from collections import namedtuple
+import base64
+from django.core.files.storage import default_storage
+
 from assistant.models import Modality
 
 
@@ -236,12 +239,37 @@ def find_all(regex_pattern, text, parse_match):
     return res
 
 
+def image_field_to_data_uri(image_field, mime_type='image/*'):
+    """
+    Converts an ImageField file into a data URI.
+
+    :param image_field: The ImageField instance from a Django model.
+    :param mime_type: The MIME type of the image (default is 'image/*').
+    :return: A data URI string or None if no file is available.
+    """
+    if not image_field or not image_field.name:
+        return None
+
+    try:
+        with default_storage.open(image_field.name, 'rb') as f:
+            image_data = f.read()
+
+        base64_data = base64.b64encode(image_data).decode('utf-8')
+
+        return f"data:{mime_type};base64,{base64_data}"
+
+    except Exception as e:
+        print(f"Error converting image to data URI: {e}")
+        return None
+
+
+
 def convert_modality(message, modality):
     if modality.modality_type == "text":
         content = [{ "type": "text", "text": modality.text}]
     elif modality.modality_type == "image":
         # todo: image to data uri
-        data_uri = modality.image.url
+        data_uri = image_field_to_data_uri(modality.image)
         content = [{ "type": "image_url", "image_url": data_uri }]
     elif modality.modality_type == "code":
         path = modality.file_path
