@@ -71,6 +71,27 @@ export function OutlineButton({ className, children, ...rest }) {
 }
 
 
+export function OutlineButtonFluid({ className, children, ...rest }) {
+  return (
+      <button className="py-2 w-full hover:bg-sky-800 hover:text-white hover:border-violet-800 text-gray-800 border-2
+                       border-sky-800 rounded-md text-lg font-semibold disabled:bg-gray-500"
+              {...rest}>
+          {children}
+      </button>
+  );
+}
+
+
+export function FixedSizeOutlineButton({ className, children, width, ...rest }) {
+  
+  return (
+    <div className="text-center" style={{ width: `${width}px`}}>
+      <OutlineButtonFluid {...rest}>{children}</OutlineButtonFluid>
+    </div>
+  );
+}
+
+
 export function ButtonGroup({ children }) {
     return (
         <div className="[&>*:first-child]:rounded-l-md [&>*:last-child]:rounded-r-md *:border-cyan-950 *:border-2

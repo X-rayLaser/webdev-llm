@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { formFactory, makeCreateForm, makeEditForm } from "../components/form-factory";
 import { getTopDownRenderer } from '../components/fieldset-renderers';
 import { AutoExpandingTextArea, ImageField, TextField } from "../components/common-forms";
-import { SubmitButton, CancelButton, OutlineButton } from "../components/buttons";
+import { SubmitButton, CancelButton, OutlineButton, FixedSizeOutlineButton } from "../components/buttons";
 import { createTextModality, createMixedModality, createImageModality, createCodeModality,
          updateModality, deleteModality, createMultimediaMessage } from '../actions';
 import Modal from '../components/modal';
@@ -166,8 +166,8 @@ export default function AdvancedMessageConstructor({ formAction, rootModality=nu
     }
 
     return (
-        <div className="p-4">
-            <div className="">
+        <div className="">
+            <div className="p-4">
                 {modalities.length > 0 && (
                     <ModalityViewer
                         modalityObject={{
@@ -178,20 +178,23 @@ export default function AdvancedMessageConstructor({ formAction, rootModality=nu
                         onSuccessfulDelete={handleSuccessfulTextDelete} />
                 )}
                 {modalities.length === 0 && (
-                    <h2 className="text-2xl text-center">
-                        No modalities added so far.
-                    </h2>
+                    <div className="flex justify-center">
+                        <div className="text-3xl leading-loose text-center w-full lg:w-3/4 2xl:w-1/2 bg-indigo-100 p-8 border-2 border-indigo-500">
+                            <p>No modalities added so far.</p>
+                            <p>Use these buttons below to add modalities one at a time.</p>
+                        </div>
+                    </div>
                 )}
 
-                <div className="mt-4 flex gap-4 w-96 flex-wrap">
-                    <div className="">
-                        <OutlineButton onClick={() => setMode(ADD_TEXT)}>
-                            Add text
-                        </OutlineButton>
+                <div className="flex justify-center">
+                    <div className="mt-4 flex gap-2 w-full flex-wrap justify-center">
+                        <FixedSizeOutlineButton onClick={() => setMode(ADD_TEXT)} width={80}>
+                            Text
+                        </FixedSizeOutlineButton>
+                        <FixedSizeOutlineButton onClick={() => setMode(ADD_IMAGE)} width={80}>Image</FixedSizeOutlineButton>
+                        <FixedSizeOutlineButton onClick={() => setMode(DRAW_ON_CANVAS)} width={80}>Sketch</FixedSizeOutlineButton>
+                        <FixedSizeOutlineButton onClick={() => setMode(ADD_CODE)} width={80}>Code</FixedSizeOutlineButton>
                     </div>
-                    <OutlineButton onClick={() => setMode(ADD_IMAGE)}>Add image</OutlineButton>
-                    <OutlineButton onClick={() => setMode(DRAW_ON_CANVAS)}>Draw sketch</OutlineButton>
-                    <OutlineButton onClick={() => setMode(ADD_CODE)}>Add code</OutlineButton>
                 </div>
 
                 <Modal show={mode === ADD_TEXT} onClose={() => setMode(null)}>
@@ -221,11 +224,11 @@ export default function AdvancedMessageConstructor({ formAction, rootModality=nu
                     </div>
                 </Modal>
             </div>
-            <form action={createMessage} onSubmit={handleSubmit} className="text-lg mt-4">
+            <form action={createMessage} onSubmit={handleSubmit} className="text-lg p-2">
                 <div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 justify-center">
                         <div>
-                            <SubmitButton text="Create message" disabled={sendingForm || modalities.length === 0}>
+                            <SubmitButton text="Finalize message" disabled={sendingForm || modalities.length === 0}>
                                 {sendingForm && <span className="ml-2"><FontAwesomeIcon icon={faSpinner} spin /></span>}
                             </SubmitButton>
                         </div>
