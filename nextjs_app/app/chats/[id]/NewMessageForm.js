@@ -6,12 +6,17 @@ import { createMultimediaMessage, startMessageGeneration } from "@/app/actions";
 import { ButtonDropdown } from "@/app/components/buttons";
 import { Tooltip } from "@/app/components/tooltips";
 import { fields } from "@/app/configuration/PresetPanel";
-import { TextArea, jsonPlaceholder } from "@/app/components/common-forms";
+import { TextField, TextArea, jsonPlaceholder } from "@/app/components/common-forms";
 import { formFactory, makeCreateForm } from "@/app/components/form-factory";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCircleQuestion } from '@fortawesome/free-solid-svg-icons'
 
 const formFields = [...fields, {
+    name: "model_name",
+    component: TextField,
+    id: "generate_message_form_model_name",
+    label: "Model name",
+}, {
     name: "params",
     component: TextArea,
     id: "generate_message_form_params",
@@ -30,6 +35,7 @@ function renderForm(formFields, names, errorMessage, submitButton) {
 
     return (
         <div>
+            <div className="mb-4">{formFields.model_name}</div>
             <details>
                 <summary className="mb-4 cursor-pointer">Sampling settings</summary>
                 <div className="mb-4">{presetElements}</div>

@@ -1,4 +1,5 @@
 import re
+import os
 from typing import Tuple, List, Dict
 from dataclasses import dataclass
 from collections import namedtuple
@@ -256,7 +257,7 @@ def find_all(regex_pattern, text, parse_match):
     return res
 
 
-def image_field_to_data_uri(image_field, mime_type='image/*'):
+def image_field_to_data_uri(image_field, mime_type=None):
     """
     Converts an ImageField file into a data URI.
 
@@ -267,7 +268,14 @@ def image_field_to_data_uri(image_field, mime_type='image/*'):
     if not image_field or not image_field.name:
         return None
 
+    if not mime_type:
+        _, extension = os.path.splitext(image_field.name)
+        subtype = extension[1:].lower()
+        if subtype == "jpg":
+            subtype = "jpeg"
+        mime_type = f'image/{subtype}'
     try:
+        print("mime type :", mime_type)
         with default_storage.open(image_field.name, 'rb') as f:
             image_data = f.read()
 

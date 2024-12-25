@@ -400,8 +400,10 @@ async function startMessageGeneration(chatId, parentMessageId, prevState, formDa
     const params = {};
     const toDelete = [];
     for (const [name, value] of formData.entries()) {
-        params[name] = value;
-        toDelete.push(name);
+        if (name !== 'model_name') {
+            params[name] = value;
+            toDelete.push(name);
+        }
     }
 
     toDelete.forEach(name => formData.delete(name));
