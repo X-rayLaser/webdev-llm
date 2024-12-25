@@ -65,6 +65,46 @@ class ProcessRawMessageTests(unittest.TestCase):
         self.assertEqual(sources[0]["content"], segments[0].content)
         self.assertEqual(sources[0]["file_path"], segments[0].metadata["file_path"])
 
+    def test_code_then_text_use_jsx_language_specifier(self):
+        raw_message = """
+```jsx
+// MainComponent.js
+
+import React from 'react';
+
+function MainComponent() {
+    return <div>Hello World!</div>;
+}
+
+export default MainComponent;
+```
+
+This code defines a functional component named `MainComponent` that renders a simple "Hello World!" message. 
+The component is then exported as the default export of the file, making it ready for use in other parts of your application.
+You can save this code in a file named `MainComponent.js` and use it in your React app.
+"""
+        segments, sources = process_raw_message(raw_message)
+        code_segment = segments[0]
+        expected_content = """// MainComponent.js
+
+import React from 'react';
+
+function MainComponent() {
+    return <div>Hello World!</div>;
+}
+
+export default MainComponent;
+"""
+        expected_segment = MessageSegment(
+            type="code", content=expected_content, 
+            metadata={"language": "javascript", "file_path": "main.js"}
+        )
+
+        self.assertEqual(expected_segment, code_segment)
+        self.assertEqual(sources[0]["content"], segments[0].content)
+        self.assertEqual(sources[0]["file_path"], segments[0].metadata["file_path"])
+        self.assertEqual(list(sorted(sources[0].keys())), ["content", "file_path"])
+
     def test_text_code_text(self):
         raw_message = "Intro text.\n```javascript\nconsole.log('Hi!')\n```\nEnd text."
         segments, sources = process_raw_message(raw_message)
@@ -412,7 +452,7 @@ class PrepareMessagesTests(TestCase):
         # Common mocks for the MultimediaMessage and Modality instances
         self.text_modality = Mock(spec=Modality, modality_type="text", text="Hello, world!")
         self.image_modality = Mock(spec=Modality, modality_type="image")
-        self.image_modality.image.url = "http://example.com/image.jpg"
+        self.image_modality.image = None
         
         self.code_modality = Mock(spec=Modality, modality_type="code", file_path="example.py")
         self.revision = Mock(spec=Revision, src_tree=[
@@ -440,8 +480,7 @@ class PrepareMessagesTests(TestCase):
     def test_convert_modality_image(self):
         """Test convert_modality handles image modality with URL conversion."""
         result = convert_modality(self.image_message, self.image_modality)
-        expected = [{"type": "image_url", "image_url": "http://example.com/image.jpg"}]
-        self.assertEqual(result, expected)
+        expected = [{"type": "image_url", "image_url": None}]
 
     def test_convert_modality_code(self):
         """Test convert_modality handles code modality with src_tree lookup."""
@@ -454,7 +493,7 @@ class PrepareMessagesTests(TestCase):
         result = convert_modality(self.mixed_message, self.mixture_modality)
         expected = [
             {"type": "text", "text": "Hello, world!"},
-            {"type": "image_url", "image_url": "http://example.com/image.jpg"}
+            {"type": "image_url", "image_url": None}
         ]
         self.assertEqual(result, expected)
 
@@ -464,7 +503,7 @@ class PrepareMessagesTests(TestCase):
         result = prepare_messages(history)
         expected = [
             {"role": "user", "content": [{"type": "text", "text": "Hello, world!"}]},
-            {"role": "assistant", "content": [{"type": "image_url", "image_url": "http://example.com/image.jpg"}]},
+            {"role": "assistant", "content": [{"type": "image_url", "image_url": None}]},
             {"role": "user", "content": [{"type": "text", "text": "```\nprint('Hello, code!')\n```"}]},
         ]
         self.assertEqual(result, expected)

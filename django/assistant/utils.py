@@ -38,19 +38,21 @@ def process_raw_message(text: str) -> Tuple[List[MessageSegment], List[Dict[str,
         idx = src["index"]
         segments[idx].metadata["file_path"] = src["file_path"]
 
+    sources = [dict(content=src["content"], file_path=src["file_path"]) for src in sources]
     return segments, sources
 
 
 def parse_raw_message(text) -> List[MessageSegment]:
     pattern = re.compile("```(?P<lang>[a-zA-Z]+\n)?\s*(?P<code_block>.*?)```", flags=re.DOTALL)
     match = pattern.search(text)
-    
+
     if not match:
         return [MessageSegment(type="text", content=text)]
 
     code = match.group("code_block")
     language = match.group("lang").strip().lower() if match.groupdict()["lang"] else None
     language = language or detect_language(code)
+    language = normalize_language(language)
 
     start, end = match.span()
 
@@ -86,7 +88,6 @@ def detect_python(code):
     return re.search(regex, code, flags=re.DOTALL)
 
 
-
 def detect_js(code):
     name_regex = "[a-zA-Z0-9]+"
     func_name_regex = f"(?P<func_name>{name_regex})"
@@ -105,6 +106,22 @@ def detect_js(code):
     regex = f"({func_regex}|{arrow_regex}|{const_var}|{let_var}|console.log)"
 
     return re.search(regex, code, flags=re.DOTALL)
+
+
+def normalize_language(language):
+    language = language.lower()
+    JAVASCRIPT = 'javascript'
+    PYTHON = 'python'
+    CSS = 'css'
+
+    mapping = {
+        'js': JAVASCRIPT,
+        'jsx': JAVASCRIPT,
+        'javascript': JAVASCRIPT,
+        'python': PYTHON
+    }
+
+    return mapping.get(language, language)
 
 
 def get_sources(segments) -> List[Dict[str, str]]:
