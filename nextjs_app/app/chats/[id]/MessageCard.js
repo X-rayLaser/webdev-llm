@@ -58,7 +58,7 @@ export default function MessageCard({ message }) {
 export function RawMessage({ message }) {
     const [editMode, setEditMode] = useState(false);
     const [modality, setModality] = useState(message.content_ro);
-    const [switching, setSwitching] = useState(false);
+    const [inProgress, setInProgress] = useState(false);
 
     useEffect(() => {
         if (message) {
@@ -91,6 +91,7 @@ export function RawMessage({ message }) {
     }
     
     async function handleEditClick() {
+        setInProgress(true);
         const result = await cloneModality(modality.id);
         if (result.success) {
             setEditMode(true);
@@ -98,16 +99,17 @@ export function RawMessage({ message }) {
         } else {
             console.error("Error:", result);
         }
+        setInProgress(false);
     }
 
     function handleLeftArrowClick() {
-        setSwitching(true);
-        switchBranch(message, message.branchIndex - 1).finally(() => setSwitching(false));
+        setInProgress(true);
+        switchBranch(message, message.branchIndex - 1).finally(() => setInProgress(false));
     }
 
     function handleRightArrowClick() {
-        setSwitching(true);
-        switchBranch(message, message.branchIndex + 1).finally(() => setSwitching(false));
+        setInProgress(true);
+        switchBranch(message, message.branchIndex + 1).finally(() => setInProgress(false));
     }
 
     return (
@@ -127,12 +129,12 @@ export function RawMessage({ message }) {
             </div>
             {!editMode && previousMessage && (
                 <div className="bg-sky-900 px-4 py-2 flex justify-between items-center text-gray-200">
-                    {switching && (
+                    {inProgress && (
                         <span>
                             <FontAwesomeIcon icon={faSpinner} spin size="lg" />
                         </span>
                     )}
-                    {message.branches > 1 && !switching && (
+                    {message.branches > 1 && !inProgress && (
                         <div>
                             <div className="flex gap-2 text-blue-300 text-lg">
                                 <button 
@@ -153,7 +155,7 @@ export function RawMessage({ message }) {
                             </div>
                         </div>
                     )}
-                    {!switching && (
+                    {!inProgress && (
                         <div>
                             <OutlineButtonSmall onClick={handleEditClick}>
                                 Edit <FontAwesomeIcon icon={faPencil} />

@@ -74,7 +74,7 @@ export default function NewMessageForm({ chat, previousMessage, preset }) {
     }
 
     return (
-        <div>
+        <div className="mb-4">
             <div className="flex gap-4 items-center mb-4">
                 <div>Choose action: </div>
                 <ButtonDropdown actions={actions} defaultAction={actions[0]} />

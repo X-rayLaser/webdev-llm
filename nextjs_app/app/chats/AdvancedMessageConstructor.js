@@ -166,8 +166,8 @@ export default function AdvancedMessageConstructor({ formAction, rootModality=nu
     }
 
     return (
-        <div className="">
-            <div className="p-4">
+        <div className="bg-white p-4">
+            <div>
                 {modalities.length > 0 && (
                     <ModalityViewer
                         modalityObject={{
@@ -224,7 +224,7 @@ export default function AdvancedMessageConstructor({ formAction, rootModality=nu
                     </div>
                 </Modal>
             </div>
-            <form action={createMessage} onSubmit={handleSubmit} className="text-lg p-2">
+            <form action={createMessage} onSubmit={handleSubmit} className="text-lg mt-4">
                 <div>
                     <div className="flex gap-2 justify-center">
                         <div>
