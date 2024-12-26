@@ -342,7 +342,7 @@ function TextModality({ data, onSuccessfulUpdate, onSuccessfulDelete, showContro
     };
 
     return (
-        <div className="px-4 py-2 border rounded-lg shadow-sm bg-blue-100">
+        <div className="px-4 py-2 border rounded-lg shadow-sm bg-blue-100 leading-relaxed">
 
             <div dangerouslySetInnerHTML={innerHtml} className="whitespace-pre-wrap" />
             {showControls && (

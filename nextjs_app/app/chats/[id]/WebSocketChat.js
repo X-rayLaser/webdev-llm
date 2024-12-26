@@ -92,7 +92,7 @@ export default function WebSocketChat({ chat, messages, previousMessage, current
                 </div>
             )}
             {inProgress && (
-                <div className="mt-4 flex flex-col gap-4">{messagesInProgress}</div>
+                <div className="mt-4 mb-4 flex flex-col gap-4">{messagesInProgress}</div>
             )}
         </div>
     );
@@ -111,15 +111,19 @@ function GeneratingMessage({ task_id, text }) {
     let innerHtml = {
         __html: renderMarkdown(text)
     };
+
+    const roundingClass = text ? "rounded-t-lg" : "rounded-lg";
     return (
         <div className="rounded-lg shadow-lg">
-            <h4 className="border-2 border-indigo-900 p-4 font-semibold text-lg bg-indigo-600 text-white rounded-t-lg">
+            <h4 className={`border-2 border-indigo-900 p-4 font-semibold text-lg bg-indigo-600 text-white ${roundingClass}`}>
                 <FontAwesomeIcon icon={faSpinner} spin />
                 <span className="ml-2">Generating a message...</span>
             </h4>
-            <div className="border-x-2 border-b-2 border-indigo-900 p-4 leading-loose bg-blue-100 rounded-b-lg">
-                <pre dangerouslySetInnerHTML={innerHtml} className="whitespace-pre-wrap" />
-            </div>
+            {text && (
+                <div className="border-x-2 border-b-2 border-indigo-900 p-4 leading-loose bg-blue-100 rounded-b-lg">
+                    <pre dangerouslySetInnerHTML={innerHtml} className="whitespace-pre-wrap" />
+                </div>
+            )}
         </div>
     );
 }
