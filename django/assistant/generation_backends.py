@@ -1,10 +1,12 @@
 from typing import List, Dict, Any
 import time
+import os
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
+import httpx
 import openai
 from openai import DefaultHttpxClient
-import os
+
 
 
 @dataclass
@@ -72,18 +74,15 @@ class OpenAICompatibleBackend(Backend):
         http_proxy = os.environ.get("http_proxy_url")
         https_proxy = os.environ.get("https_proxy_url", http_proxy)
 
-
         if http_proxy or https_proxy:
             proxies = {
-                "http://": http_proxy,
-                "https://": https_proxy,
+                "http://": httpx.HTTPTransport(proxy=http_proxy),
+                "https://": httpx.HTTPTransport(proxy=https_proxy),
             }
         else:
             proxies = None
 
-        http_client = DefaultHttpxClient(
-            proxies=proxies
-        )
+        http_client = DefaultHttpxClient(mounts=proxies)
         
         return http_client
 
