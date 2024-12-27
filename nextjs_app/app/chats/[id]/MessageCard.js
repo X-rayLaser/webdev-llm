@@ -117,7 +117,7 @@ export function RawMessage({ message, generationConfig }) {
 
     return (
         <div className="rounded-t">
-            <div className="bg-sky-700">
+            <div className="bg-slate-50">
                 {editMode ? (
                     <AdvancedMessageConstructor
                         formAction={formAction}
@@ -126,7 +126,7 @@ export function RawMessage({ message, generationConfig }) {
                         generationConfig={generationConfig}
                     />
                 ) : (
-                    <div className="p-4">
+                    <div className="py-4">
                         <ModalityViewer modalityObject={decoratedModality} showControls={false} />
                     </div>
                 )}

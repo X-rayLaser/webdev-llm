@@ -10,7 +10,7 @@ const TabContainer = ({ tabs }) => {
 
     return (
         <div className="flex flex-col border border-gray-300 rounded shadow-md">
-            <div className="flex border-b border-gray-300 bg-gray-100">
+            <div className="flex border-b border-sky-800 bg-sky-800">
                 {tabs.map(tab => (
                     <Tab key={tab.key} tab={tab} activeTab={activeTab} setActiveTab={setActiveTab} />
                 ))}
@@ -23,8 +23,8 @@ const TabContainer = ({ tabs }) => {
 };
 
 function Tab({ tab, activeTab, setActiveTab }) {
-    const activeClasses = 'bg-white text-blue-500 border-b-2 border-blue-500';
-    const inactiveClasses = 'text-gray-500 hover:text-blue-500';
+    const activeClasses = 'bg-sky-900 text-blue-200 border-b-2 border-blue-500';
+    const inactiveClasses = 'text-gray-200 hover:text-blue-500';
     const conditionalClasses = activeTab === tab.key ? activeClasses : inactiveClasses;
     return (
         <button

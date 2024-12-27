@@ -200,7 +200,7 @@ export default function AdvancedMessageConstructor({ formAction, rootModality=nu
     }
 
     return (
-        <div className="bg-white p-4">
+        <div className="bg-white py-4">
             <div>
                 {modalities.length > 0 && (
                     <ModalityViewer
@@ -213,8 +213,7 @@ export default function AdvancedMessageConstructor({ formAction, rootModality=nu
                 )}
                 {modalities.length === 0 && (
                     <div className="flex justify-center">
-                        <div className="text-3xl leading-loose text-center w-full lg:w-3/4 2xl:w-1/2 bg-indigo-100 p-8 border-2 border-indigo-500">
-                            <p>No modalities added so far.</p>
+                        <div className="text-3xl leading-relaxed text-center w-full lg:w-3/4 2xl:w-1/2 bg-indigo-100 p-8 border-2 border-indigo-500">
                             <p>Use these buttons below to add modalities one at a time.</p>
                         </div>
                     </div>
@@ -306,6 +305,14 @@ export default function AdvancedMessageConstructor({ formAction, rootModality=nu
     );
 }
 
+
+function Padding({ children }) {
+    return (
+        <div className="p-4">{children}</div>
+    )
+}
+
+
 export function ModalityViewer({ modalityObject, onSuccessfulUpdate, onSuccessfulDelete, showControls=true }) {
     const { modality_type, ...rest } = modalityObject;
 
@@ -318,20 +325,20 @@ export function ModalityViewer({ modalityObject, onSuccessfulUpdate, onSuccessfu
     };
 
     if (modality_type === "text") {
-        item = <TextModality {...props} />;
+        item = <Padding><TextModality {...props} /></Padding>;
     } else if (modality_type === "image") {
-        item = <ImageModality {...props} />;
+        item = <Padding><ImageModality {...props} /></Padding>;
     } else if (modality_type === "code") {
-        item = <CodeModality {...props} />;
+        item = <Padding><CodeModality {...props} /></Padding>;
     } else if (modality_type === "mixture") {
         let childrenItems = modalityObject.mixture.map((mod, idx) => 
-            <ModalityViewer 
-                key={idx}
+            <div key={idx} className="border-b last:border-b-0"><ModalityViewer 
                 modalityObject={mod}
                 onSuccessfulUpdate={onSuccessfulUpdate}
                 onSuccessfulDelete={onSuccessfulDelete}
                 showControls={showControls}
             />
+            </div>
         );
 
         item = (
@@ -394,7 +401,7 @@ function TextModality({ data, onSuccessfulUpdate, onSuccessfulDelete, showContro
     };
 
     return (
-        <div className="px-4 py-2 border rounded-lg shadow-sm bg-blue-100 leading-relaxed">
+        <div className="leading-relaxed">
 
             <div dangerouslySetInnerHTML={innerHtml} className="whitespace-pre-wrap" />
             {showControls && (
@@ -412,9 +419,9 @@ function TextModality({ data, onSuccessfulUpdate, onSuccessfulDelete, showContro
 function ImageModality({ data, onSuccessfulUpdate, onSuccessfulDelete, showControls=true }) {
     const bgColor = showControls ? "bg-blue-100" : "bg-sky-800"
     return (
-        <div className="rounded-lg shadow-sm">
+        <div className="rounded-lg">
             <div className="relative w-full">
-                <div className={`px-2 rounded-lg h-96 ${bgColor}`}>
+                <div className={`px-2 rounded-lg h-96`}>
                     <img className="h-full mx-auto" src={data.image.replace("django:8000", "localhost")} />
                 </div>
                 <div className="absolute px-2 right-0 top-0">
@@ -461,7 +468,7 @@ ${data.code}
     };
 
     return (
-        <div className="rounded-lg shadow-sm">
+        <div className="rounded-lg">
             <div className="px-4 py-2 rounded-t-lg bg-gray-700 text-white">
                 <div className="float-right text-gray-300">
                     {!copied && (
@@ -473,7 +480,7 @@ ${data.code}
                 </div>
                 <div>{data.file_path}</div>
             </div>
-            <div className="bg-blue-100 rounded-b-lg">
+            <div className="rounded-b-lg">
                 {showControls && (
                     <div className="ml-[-4px] float-right">
                         <DeleteControl
