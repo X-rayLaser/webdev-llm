@@ -35,6 +35,7 @@ class Preset(models.Model):
 
 class Configuration(models.Model):
     name = models.CharField(max_length=255, unique=True)
+    llm_model = models.CharField(max_length=255, blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     system_message = models.TextField(blank=True, null=True)
     

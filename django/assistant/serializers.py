@@ -42,7 +42,7 @@ class ConfigurationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Configuration
         fields = [
-            'id', 'name', 'description', 'system_message', 'preset', 'llm_server',
+            'id', 'name', 'llm_model', 'description', 'system_message', 'preset', 'llm_server',
             'build_servers', 'lint_servers', 'test_servers', 'interaction_servers',
             'autorun', 'max_iterations'
         ]

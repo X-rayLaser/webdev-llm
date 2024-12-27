@@ -57,7 +57,7 @@ function renderForm(formFields, names, errorMessage, submitButton) {
     );
 }
 
-export default function NewMessageForm({ chat, previousMessage, preset }) {
+export default function NewMessageForm({ chat, previousMessage, preset, configuration }) {
     const CREATE = "create";
     const GENERATE = "generate";
     const [currentAction, setCurrentAction] = useState(GENERATE);
@@ -73,7 +73,12 @@ export default function NewMessageForm({ chat, previousMessage, preset }) {
     const Form = formFactory(formFields, renderForm);
     const generateNextjsAction = startMessageGeneration.bind(null, chat.id, previousMessage.id);
 
-    const GenerateMessageForm = makeCreateForm(Form, generateNextjsAction, preset);
+    const defaults = {
+        model_name: configuration.llm_model || "",
+        ...preset
+    };
+
+    const GenerateMessageForm = makeCreateForm(Form, generateNextjsAction, defaults);
 
     function handleSuccess({ success, responseData }) {
         setCurrentAction(GENERATE);

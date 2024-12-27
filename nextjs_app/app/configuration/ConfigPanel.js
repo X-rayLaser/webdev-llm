@@ -18,6 +18,12 @@ function generateFields(servers, presets) {
         id: "create_configuration_name",
         label: "Name",
         placeholder: "Enter the configuration name",
+      }, {
+        name: "llm_model",
+        component: TextField,
+        id: "create_configuration_llm_model",
+        label: "Model",
+        placeholder: "Enter the LLM name",
       },
       {
         name: "description",
@@ -77,6 +83,7 @@ export function ConfigItem({ config, editForm }) {
 
   const {
     name,
+    llm_model,
     preset,
     llm_server,
     autorun,
@@ -88,6 +95,9 @@ export function ConfigItem({ config, editForm }) {
   const itemHeader = <ItemHeader title={config.name} icon={faScrewdriverWrench} />
   const itemBody = (
     <div className="grid grid-cols-1 gap-4">
+      <div>
+        <strong>LLM name:</strong> {llm_model || "N/A"}
+      </div>
       <div>
         <strong>Preset:</strong> {preset || "N/A"}
       </div>

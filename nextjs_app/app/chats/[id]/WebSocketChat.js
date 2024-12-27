@@ -17,7 +17,9 @@ socket.addEventListener("open", (event) => {
     socket.send(socketSessionId);
 });
 
-export default function WebSocketChat({ chat, messages, previousMessage, currentPreset, operations }) {
+export default function WebSocketChat({
+        chat, messages, previousMessage, currentPreset, configuration, operations 
+}) {
     const messageTexts = buildOperationsTable(operations, "message");
     const titles = buildOperationsTable(operations, "chat_title");
     const pictures = buildOperationsTable(operations, "chat_picture");
@@ -88,7 +90,9 @@ export default function WebSocketChat({ chat, messages, previousMessage, current
             
             {!inProgress && (
                 <div className="mt-4">
-                    <NewMessageForm chat={chat} previousMessage={previousMessage} preset={currentPreset} />
+                    <NewMessageForm chat={chat} previousMessage={previousMessage}
+                        preset={currentPreset} configuration={configuration}
+                    />
                 </div>
             )}
             {inProgress && (

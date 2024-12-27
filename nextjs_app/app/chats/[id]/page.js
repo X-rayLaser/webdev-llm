@@ -67,6 +67,7 @@ export default async function Page(props) {
                 messages={messages}
                 previousMessage={previousMessage}
                 currentPreset={currentPreset}
+                configuration={configuration}
                 operations={operations}
             />
         </PageWithSidePanel>
