@@ -53,8 +53,13 @@ export default async function Page(props) {
 
     const previousMessage = thread[thread.length - 1];
 
+    const generationConfig = {
+        model_name: configuration.llm_model || "",
+        ...currentPreset
+    };
+
     const messages = removeEmptyMessages(thread).map(
-        (msg, idx) => <MessageCard key={idx} message={msg} />
+        (msg, idx) => <MessageCard key={idx} message={msg} generationConfig={generationConfig} />
     );
 
     const opsResponse = await fetch(`http://django:8000/api/chats/${id}/generations/?status=in_progress`);

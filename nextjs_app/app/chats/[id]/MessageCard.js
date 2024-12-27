@@ -31,7 +31,7 @@ function decorateWithSources(modalityObject, sourceFiles) {
     }
 }
 
-export default function MessageCard({ message }) {
+export default function MessageCard({ message, generationConfig }) {
     const [currentMessage, setCurrentMessage] = useState(message);
 
     async function handleBuildFinished() {
@@ -45,7 +45,7 @@ export default function MessageCard({ message }) {
     }, [message]);
 
     const tabs = [
-        { key: 'Raw', label: 'Raw', content: <RawMessage message={currentMessage} /> },
+        { key: 'Raw', label: 'Raw', content: <RawMessage message={currentMessage} generationConfig={generationConfig} /> },
         { key: 'Code', label: 'Code', content: <div>Content for Tab 2</div> },
         { key: 'Preview', label: 'Preview', content: (
             <div className="p-4">
@@ -58,7 +58,7 @@ export default function MessageCard({ message }) {
     );
 }
 
-export function RawMessage({ message }) {
+export function RawMessage({ message, generationConfig }) {
     const [editMode, setEditMode] = useState(false);
     const [modality, setModality] = useState(message.content_ro);
     const [inProgress, setInProgress] = useState(false);
@@ -123,6 +123,7 @@ export function RawMessage({ message }) {
                         formAction={formAction}
                         rootModality={decoratedModality}
                         onCancel={() => setEditMode(false)}
+                        generationConfig={generationConfig}
                     />
                 ) : (
                     <div className="p-4">

@@ -13,7 +13,6 @@ export function OutlineButtonSmall({ className, children, ...rest }) {
 }
 
 
-
 export function Button({ className="", children, ...otherProps }) {
   return (
     <button className="bg-blue-700 px-10 py-2 rounded-md text-white hover:bg-blue-900 disabled:bg-gray-500"
@@ -24,7 +23,7 @@ export function Button({ className="", children, ...otherProps }) {
   );
 }
 
-export function SubmitButton({ onClick, text="Submit", children, disabled=false, ...otherProps }) {
+export function SubmitButton({ text="Submit", children, disabled=false, ...otherProps }) {
     return (
         <button className="bg-blue-700 px-10 py-2 rounded-md text-white hover:bg-blue-900 disabled:bg-gray-500"
             type="submit"

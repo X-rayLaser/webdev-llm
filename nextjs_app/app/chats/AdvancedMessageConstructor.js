@@ -5,7 +5,8 @@ import { getTopDownRenderer } from '../components/fieldset-renderers';
 import { AutoExpandingTextArea, ImageField, TextField } from "../components/common-forms";
 import { SubmitButton, CancelButton, OutlineButton, FixedSizeOutlineButton } from "../components/buttons";
 import { createTextModality, createMixedModality, createImageModality, createCodeModality,
-         updateModality, deleteModality, createMultimediaMessage } from '../actions';
+         updateModality, deleteModality, createMultimediaMessage, 
+         startMessageGeneration } from '../actions';
 import Modal from '../components/modal';
 import { Alert } from '../components/alerts';
 import { PanelItem, DeleteControl, Controls } from '../components/panels';
@@ -90,7 +91,7 @@ function actionFactory(parent, setParent, modalityAction) {
 }
 
 
-export default function AdvancedMessageConstructor({ formAction, rootModality=null, onCancel=null }) {
+export default function AdvancedMessageConstructor({ formAction, rootModality=null, onCancel=null, generationConfig=null }) {
     const ADD_TEXT = "add_text";
     const ADD_IMAGE = "add_image";
     const ADD_CODE = "add_code";
@@ -143,6 +144,12 @@ export default function AdvancedMessageConstructor({ formAction, rootModality=nu
         file_path: mod.file_path, content: mod.code
     }));
 
+    function resetState() {
+        setModalities([]);
+        setMode(null);
+        setSubmissionError("");
+        setParent(null);
+    }
 
     async function createMessage() {
         setSubmissionError("");
@@ -163,6 +170,36 @@ export default function AdvancedMessageConstructor({ formAction, rootModality=nu
 
     function handleSubmit(e) {
         setSendingForm(true);
+    }
+
+    async function handleGenerateResponse(e) {
+        setSendingForm(true);
+
+        setSubmissionError("");
+        let { success, responseData } = await formAction(parent, sourceTree);
+        
+        if (!success) {
+            setSubmissionError(responseData.message);
+            setSendingForm(false);
+            return;
+        }
+
+        const chatId = responseData.chat;
+        const parentMessageid = responseData.id;
+        const formData = new FormData();
+
+        for (const [key, value] of Object.entries(generationConfig)) {
+            formData.append(key, value);
+        }
+
+        const result = await startMessageGeneration(chatId, parentMessageid, null, formData);
+        if (result.success) {
+            resetState();
+        } else {
+            setSubmissionError(result.responseData.message);
+        }
+
+        setSendingForm(false);
     }
 
     return (
@@ -188,12 +225,18 @@ export default function AdvancedMessageConstructor({ formAction, rootModality=nu
 
                 <div className="flex justify-center">
                     <div className="mt-4 flex gap-2 w-full flex-wrap justify-center">
-                        <FixedSizeOutlineButton onClick={() => setMode(ADD_TEXT)} width={80}>
+                        <FixedSizeOutlineButton onClick={() => setMode(ADD_TEXT)} width={80} disabled={sendingForm}>
                             Text
                         </FixedSizeOutlineButton>
-                        <FixedSizeOutlineButton onClick={() => setMode(ADD_IMAGE)} width={80}>Image</FixedSizeOutlineButton>
-                        <FixedSizeOutlineButton onClick={() => setMode(DRAW_ON_CANVAS)} width={80}>Sketch</FixedSizeOutlineButton>
-                        <FixedSizeOutlineButton onClick={() => setMode(ADD_CODE)} width={80}>Code</FixedSizeOutlineButton>
+                        <FixedSizeOutlineButton onClick={() => setMode(ADD_IMAGE)} width={80} disabled={sendingForm}>
+                            Image
+                        </FixedSizeOutlineButton>
+                        <FixedSizeOutlineButton onClick={() => setMode(DRAW_ON_CANVAS)} width={80} disabled={sendingForm}>
+                            Sketch
+                        </FixedSizeOutlineButton>
+                        <FixedSizeOutlineButton onClick={() => setMode(ADD_CODE)} width={80} disabled={sendingForm}>
+                            Code
+                        </FixedSizeOutlineButton>
                     </div>
                 </div>
 
@@ -227,8 +270,20 @@ export default function AdvancedMessageConstructor({ formAction, rootModality=nu
             <form action={createMessage} onSubmit={handleSubmit} className="text-lg mt-4">
                 <div>
                     <div className="flex gap-2 justify-center">
+                        {generationConfig && (
+                            <div>
+                                <SubmitButton
+                                    text="Generate response"
+                                    type="button"
+                                    onClick={handleGenerateResponse}
+                                    disabled={sendingForm || modalities.length === 0}
+                                >
+                                    {sendingForm && <span className="ml-2"><FontAwesomeIcon icon={faSpinner} spin /></span>}
+                                </SubmitButton>
+                            </div>
+                        )}
                         <div>
-                            <SubmitButton text="Finalize message" disabled={sendingForm || modalities.length === 0}>
+                            <SubmitButton text="Save" disabled={sendingForm || modalities.length === 0}>
                                 {sendingForm && <span className="ml-2"><FontAwesomeIcon icon={faSpinner} spin /></span>}
                             </SubmitButton>
                         </div>

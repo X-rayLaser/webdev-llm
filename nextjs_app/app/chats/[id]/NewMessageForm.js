@@ -104,7 +104,7 @@ export default function NewMessageForm({ chat, previousMessage, preset, configur
             <div>
                 {currentAction === CREATE && (
                     <div className="rounded-md shadow-md border">
-                        <AdvancedMessageConstructor formAction={formAction} />
+                        <AdvancedMessageConstructor formAction={formAction} generationConfig={defaults} />
                     </div>
                 )}
                 {currentAction === GENERATE && (
