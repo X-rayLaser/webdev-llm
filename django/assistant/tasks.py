@@ -108,13 +108,17 @@ def generate_completion(completion_config: dict, socket_session_id: int):
     config = CompletionConfig.from_dict(completion_config)
     emitter = RedisEventEmitter(socket_session_id)
 
+    errors = None
     try:
         emitter(event_type="generation_started", data=dict(task_id=config.task_id))
         _generate(config, emitter)
+    except Exception as e:
+        errors = ["Unxpected error during message generation"]
     finally:
         generation = Generation.objects.get(task_id=config.task_id)
         generation.finished = True
         generation.stop_time = timezone.now()
+        generation.errors = errors
         # todo: set response_metadata field of generation_metadata field
         generation.save()
 

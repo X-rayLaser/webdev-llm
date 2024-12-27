@@ -7,6 +7,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSpinner } from '@fortawesome/free-solid-svg-icons';
 import { renderMarkdown } from "@/app/utils";
 import { getRandomInt } from "@/app/utils";
+import { Alert } from "@/app/components/alerts";
 
 const socket = new WebSocket(`ws://localhost:9000`);
 
@@ -27,6 +28,7 @@ export default function WebSocketChat({
     const [messageGenerationsTable, setMessageGenerationsTable] = useState(messageTexts);
     const [titleGenerationsTable, setTitleGenerationsTable] = useState(titles);
     const [imageGenerationsTable, setImageGenerationsTable] = useState(pictures);
+    const [errors, setErrors] = useState([]);
     const router = useRouter();
 
     function socketListener(event) {
@@ -37,6 +39,7 @@ export default function WebSocketChat({
         const removeEntryFunction = prevTable => removeTableEntry(prevTable, task_id)
 
         if (payload.event_type === "generation_started") {
+            setErrors([]);
             setMessageGenerationsTable(createEntryFuncion);
         } else if (payload.event_type === "token_arrived") {
             setMessageGenerationsTable(
@@ -44,6 +47,7 @@ export default function WebSocketChat({
             );
         } else if (payload.event_type === "generation_ended") {
             setMessageGenerationsTable(removeEntryFunction);
+            setErrors(payload.data.generation.errors);
             router.refresh();
         } else if (payload.event_type === "chat_title_generation_started") {
             setTitleGenerationsTable(createEntryFuncion);
@@ -87,6 +91,14 @@ export default function WebSocketChat({
             <div>{chatTitle}</div>
             <h2>Messages</h2>
             <div className="flex flex-col gap-4 justify-around">{messages}</div>
+
+            {errors && errors.length > 0 && (
+                <div className="flex flex-col gap-4 mt-4">
+                    {errors.map((error, idx) => (
+                        <Alert key={idx} text={error} level="danger" size="lg" />
+                    ))}
+                </div>
+            )}
             
             {!inProgress && (
                 <div className="mt-4">
