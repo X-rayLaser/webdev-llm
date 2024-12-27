@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import AdvancedMessageConstructor, { ModalityViewer } from "../AdvancedMessageConstructor";
 import { createMultimediaMessage, startMessageGeneration } from "@/app/actions";
 import { ButtonDropdown } from "@/app/components/buttons";
@@ -60,15 +60,18 @@ function renderForm(formFields, names, errorMessage, submitButton) {
 export default function NewMessageForm({ chat, previousMessage, preset, configuration }) {
     const CREATE = "create";
     const GENERATE = "generate";
-    const [currentAction, setCurrentAction] = useState(GENERATE);
     const role = previousMessage.role === "assistant" ? "user" : "assistant";
+
+    const [currentAction, setCurrentAction] = useState(role === "user" ? CREATE : GENERATE);
 
     const formAction = createMultimediaMessage.bind(null, role, previousMessage.id);
 
     const actions = [
-        { name: "action1", label: "Generate message", onSelect: () => setCurrentAction(GENERATE) },
-        { name: "action2", label: "Create message", onSelect: () => setCurrentAction(CREATE) },
+        { name: "generation", label: "Generate message", onSelect: () => setCurrentAction(GENERATE) },
+        { name: "create", label: "Create message", onSelect: () => setCurrentAction(CREATE) },
     ];
+
+    const defaultAction = currentAction === GENERATE ? {...actions[0]} : {...actions[1]};
 
     const Form = formFactory(formFields, renderForm);
     const generateNextjsAction = startMessageGeneration.bind(null, chat.id, previousMessage.id);
@@ -80,6 +83,10 @@ export default function NewMessageForm({ chat, previousMessage, preset, configur
 
     const GenerateMessageForm = makeCreateForm(Form, generateNextjsAction, defaults);
 
+    useEffect(() => {
+        setCurrentAction(previousMessage.role === "user" ? GENERATE : CREATE);
+    }, [previousMessage])
+
     function handleSuccess({ success, responseData }) {
         setCurrentAction(GENERATE);
     }
@@ -88,7 +95,7 @@ export default function NewMessageForm({ chat, previousMessage, preset, configur
         <div className="mb-4">
             <div className="flex gap-4 items-center mb-4">
                 <div>Choose action: </div>
-                <ButtonDropdown actions={actions} defaultAction={actions[0]} />
+                <ButtonDropdown actions={actions} defaultAction={defaultAction} />
                 <Tooltip content="Choose whether to use LLM to generate a message or to write it by yourself">
                     <FontAwesomeIcon icon={faCircleQuestion} size="lg" />
                 </Tooltip>

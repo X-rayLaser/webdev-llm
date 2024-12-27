@@ -45,8 +45,14 @@ function getRandomInt(max) {
     return Math.floor(Math.random() * max);
 }
 
+function capitalize(str) {
+    return str[0].toUpperCase() + str.slice(1).toLowerCase();
+}
+
+
 export {
     fetchChats,
     renderMarkdown,
-    getRandomInt
+    getRandomInt,
+    capitalize
 }

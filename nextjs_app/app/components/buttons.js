@@ -1,5 +1,5 @@
 "use client"
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 
 export function OutlineButtonSmall({ className, children, ...rest }) {
@@ -115,6 +115,11 @@ export function ButtonDropdown({ actions, defaultAction = null }) {
   // Initialize selectedAction with defaultAction if provided
   const [selectedAction, setSelectedAction] = useState(defaultAction);
   const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    setSelectedAction(defaultAction);
+    setIsOpen(false);
+  }, [actions, defaultAction]);
 
   return (
     <div className="relative inline-block">

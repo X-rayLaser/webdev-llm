@@ -1,7 +1,7 @@
 "use client"
 import React, { useState, useEffect, useRef } from "react";
 import { Alert } from './alerts';
-
+import { capitalize } from "../utils";
 
 function FlexInputField(props) {
     let { extraInputClasses, ...other} = props;
@@ -347,7 +347,3 @@ export const jsonPlaceholder = `{
     "param1": "value1",
     "param2": "value2"
 }`;
-
-function capitalize(str) {
-    return str[0].toUpperCase() + str.slice(1).toLowerCase();
-}

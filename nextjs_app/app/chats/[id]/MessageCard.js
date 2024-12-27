@@ -2,12 +2,15 @@
 import React, { useState, useEffect } from "react";
 import AdvancedMessageConstructor, { ModalityViewer } from "../AdvancedMessageConstructor";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPencil, faCircleChevronLeft, faCircleChevronRight, faSpinner } from '@fortawesome/free-solid-svg-icons'
+import { faPencil, faCircleChevronLeft, 
+    faCircleChevronRight, faSpinner, faRobot, faUserTie
+} from '@fortawesome/free-solid-svg-icons';
 import { cloneModality, createMultimediaMessage, switchBranch } from "@/app/actions";
 import { fetchMessage } from "@/app/data";
 import TabContainer from "@/app/components/TabContainer";
 import PreviewComponent from "./PreviewComponent";
 import { OutlineButton, OutlineButtonSmall } from "@/app/components/buttons";
+import { capitalize } from "@/app/utils";
 
 function decorateWithSources(modalityObject, sourceFiles) {
     if (modalityObject.modality_type === "code") {
@@ -157,6 +160,10 @@ export function RawMessage({ message }) {
                     )}
                     {!inProgress && (
                         <div>
+                            <span className="font-bold text-lg mr-4">
+                                <FontAwesomeIcon icon={message.role === "user" ? faUserTie : faRobot } />
+                                <span className="ml-2">{capitalize(message.role)}</span>
+                            </span>
                             <OutlineButtonSmall onClick={handleEditClick}>
                                 Edit <FontAwesomeIcon icon={faPencil} />
                             </OutlineButtonSmall>
