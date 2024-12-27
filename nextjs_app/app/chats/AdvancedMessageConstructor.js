@@ -159,10 +159,7 @@ export default function AdvancedMessageConstructor({ formAction, rootModality=nu
         }
 
         if (success) {
-            setModalities([]);
-            setMode(null);
-            setSubmissionError("");
-            setParent(null);
+            resetState();
         }
 
         setSendingForm(false);
