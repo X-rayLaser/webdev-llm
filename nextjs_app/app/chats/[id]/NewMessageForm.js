@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import AdvancedMessageConstructor, { ModalityViewer } from "../AdvancedMessageConstructor";
+import TabContainer from "@/app/components/TabContainer";
+import SimpleMessageConstructor from "./SimpleMessageConstructor";
 import { createMultimediaMessage, startMessageGeneration } from "@/app/actions";
 import { ButtonDropdown } from "@/app/components/buttons";
 import { Tooltip } from "@/app/components/tooltips";
@@ -91,6 +93,17 @@ export default function NewMessageForm({ chat, previousMessage, preset, configur
         setCurrentAction(GENERATE);
     }
 
+    const constructorTabs = [
+        { key: 'Simple', label: 'Simple', content: (
+            <div className="p-4">
+                <SimpleMessageConstructor chat={chat} previousMessage={previousMessage} generationConfig={defaults} />
+            </div>
+        )},
+        { key: 'Advanced', label: 'Advanced', content: (
+            <AdvancedMessageConstructor formAction={formAction} generationConfig={defaults} />
+        )},
+    ];
+
     return (
         <div className="mb-4">
             <div className="flex gap-4 items-center mb-4">
@@ -104,7 +117,7 @@ export default function NewMessageForm({ chat, previousMessage, preset, configur
             <div>
                 {currentAction === CREATE && (
                     <div className="rounded-md shadow-md border">
-                        <AdvancedMessageConstructor formAction={formAction} generationConfig={defaults} />
+                        <TabContainer tabs={constructorTabs} />
                     </div>
                 )}
                 {currentAction === GENERATE && (

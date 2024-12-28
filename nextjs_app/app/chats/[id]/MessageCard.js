@@ -46,7 +46,7 @@ export default function MessageCard({ message, generationConfig }) {
 
     const tabs = [
         { key: 'Raw', label: 'Raw', content: <RawMessage message={currentMessage} generationConfig={generationConfig} /> },
-        { key: 'Code', label: 'Code', content: <div>Content for Tab 2</div> },
+        //{ key: 'Code', label: 'Code', content: <div>Content for Tab 2</div> },
         { key: 'Preview', label: 'Preview', content: (
             <div className="p-4">
                 <PreviewComponent message={currentMessage} onBuildFinished={handleBuildFinished} />
@@ -126,7 +126,7 @@ export function RawMessage({ message, generationConfig }) {
                         generationConfig={generationConfig}
                     />
                 ) : (
-                    <div className="py-4">
+                    <div>
                         <ModalityViewer modalityObject={decoratedModality} showControls={false} />
                     </div>
                 )}
