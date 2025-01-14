@@ -27,6 +27,17 @@ class DummySummarizationBackend(Backend):
         return ' '.join(sampled_words)
 
 
+class FirstNCharsSummarizationBackend(Backend):
+    displayed_msg_len = 40
+
+    def summarize(self, text):
+        text = text or ""
+        if len(text) < self.displayed_msg_len:
+            return text
+        
+        return text[:self.displayed_msg_len] + "..."
+
+
 class NeuralBackend(Backend):
     def summarize(self, text):
         return text
@@ -34,5 +45,6 @@ class NeuralBackend(Backend):
 
 backends = {
     "dummy": DummySummarizationBackend,
+    "first_n_chars": FirstNCharsSummarizationBackend,
     "neural": NeuralBackend
 }
