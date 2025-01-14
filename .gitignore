@@ -6,6 +6,7 @@
 *.gif
 *.sqlite3
 secrets.py
+settings_local.py
 \.devcontainer/
 \.github/
 nextjs_app/node_modules

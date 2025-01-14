@@ -1,4 +1,4 @@
-from mysite.settings import *
+from mysite.settings_base import *
 
 GENERATION_BACKEND = "dummy"
 SUMMARIZATION_BACKEND = "dummy"
