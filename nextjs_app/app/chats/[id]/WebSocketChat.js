@@ -87,9 +87,7 @@ export default function WebSocketChat({
         <div>
             {titleGeneration && <LoadingMessage text="Generating a title for a chat..." />}
             {imageGeneration && <LoadingMessage text="Generating an image for a chat..." />}
-            
-            <div>{chatTitle}</div>
-            <h2>Messages</h2>
+
             <div className="flex flex-col gap-4 justify-around">{messages}</div>
 
             {errors && errors.length > 0 && (

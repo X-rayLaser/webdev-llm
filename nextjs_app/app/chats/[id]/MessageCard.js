@@ -54,7 +54,10 @@ export default function MessageCard({ message, generationConfig }) {
         )},
     ];
     return (
-        <TabContainer tabs={tabs} />
+        <div>
+            <TabContainer tabs={tabs} />
+            {message.parent && <Footer message={message} />}
+        </div>
     );
 }
 
@@ -105,16 +108,6 @@ export function RawMessage({ message, generationConfig }) {
         setInProgress(false);
     }
 
-    function handleLeftArrowClick() {
-        setInProgress(true);
-        switchBranch(message, message.branchIndex - 1).finally(() => setInProgress(false));
-    }
-
-    function handleRightArrowClick() {
-        setInProgress(true);
-        switchBranch(message, message.branchIndex + 1).finally(() => setInProgress(false));
-    }
-
     return (
         <div className="rounded-t">
             <div className="bg-slate-50">
@@ -128,48 +121,71 @@ export function RawMessage({ message, generationConfig }) {
                 ) : (
                     <div>
                         <ModalityViewer modalityObject={decoratedModality} showControls={false} />
+
+                        <div className="pl-4 pb-4">
+                            <OutlineButtonSmall onClick={handleEditClick} disabled={inProgress}>
+                                Edit <FontAwesomeIcon icon={faPencil} />
+                                {inProgress && (
+                                    <span className="ml-2">
+                                        <FontAwesomeIcon icon={faSpinner} spin size="lg" />
+                                    </span>
+                                )}
+                            </OutlineButtonSmall>
+                        </div>
                     </div>
                 )}
             </div>
-            {!editMode && previousMessage && (
-                <div className="bg-sky-900 px-4 py-2 flex justify-between items-center text-gray-200">
-                    {inProgress && (
+        </div>
+    );
+}
+
+function Footer({ message }) {
+    const [inProgress, setInProgress] = useState(false);
+
+    function handleLeftArrowClick() {
+        setInProgress(true);
+        switchBranch(message, message.branchIndex - 1).finally(() => setInProgress(false));
+    }
+
+    function handleRightArrowClick() {
+        setInProgress(true);
+        switchBranch(message, message.branchIndex + 1).finally(() => setInProgress(false));
+    }
+
+    return (
+        <div className="bg-sky-900 px-4 py-2 flex justify-between items-center text-gray-200">
+            {inProgress && (
+                <span>
+                    <FontAwesomeIcon icon={faSpinner} spin size="lg" />
+                </span>
+            )}
+            {message.branches > 1 && !inProgress && (
+                <div>
+                    <div className="flex gap-2 text-blue-300 text-lg">
+                        <button
+                            onClick={handleLeftArrowClick}
+                            disabled={message.branchIndex === 0}
+                        >
+                            <FontAwesomeIcon icon={faCircleChevronLeft} />
+                        </button>
                         <span>
-                            <FontAwesomeIcon icon={faSpinner} spin size="lg" />
+                            {message.branchIndex + 1} / {message.branches}
                         </span>
-                    )}
-                    {message.branches > 1 && !inProgress && (
-                        <div>
-                            <div className="flex gap-2 text-blue-300 text-lg">
-                                <button 
-                                    onClick={handleLeftArrowClick}
-                                    disabled={message.branchIndex === 0}
-                                >
-                                    <FontAwesomeIcon icon={faCircleChevronLeft} />
-                                </button>
-                                <span>
-                                    {message.branchIndex + 1} / {message.branches}
-                                </span>
-                                <button
-                                    onClick={handleRightArrowClick}
-                                    disabled={message.branchIndex === message.branches - 1}
-                                >
-                                    <FontAwesomeIcon icon={faCircleChevronRight} />
-                                </button>
-                            </div>
-                        </div>
-                    )}
-                    {!inProgress && (
-                        <div>
-                            <span className="font-bold text-lg mr-4">
-                                <FontAwesomeIcon icon={message.role === "user" ? faUserTie : faRobot } />
-                                <span className="ml-2">{capitalize(message.role)}</span>
-                            </span>
-                            <OutlineButtonSmall onClick={handleEditClick}>
-                                Edit <FontAwesomeIcon icon={faPencil} />
-                            </OutlineButtonSmall>
-                        </div>
-                    )}
+                        <button
+                            onClick={handleRightArrowClick}
+                            disabled={message.branchIndex === message.branches - 1}
+                        >
+                            <FontAwesomeIcon icon={faCircleChevronRight} />
+                        </button>
+                    </div>
+                </div>
+            )}
+            {!inProgress && (
+                <div>
+                    <span className="font-bold text-lg mr-4">
+                        <FontAwesomeIcon icon={message.role === "user" ? faUserTie : faRobot} />
+                        <span className="ml-2">{capitalize(message.role)}</span>
+                    </span>
                 </div>
             )}
         </div>
