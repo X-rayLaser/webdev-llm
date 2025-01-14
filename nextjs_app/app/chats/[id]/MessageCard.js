@@ -153,7 +153,7 @@ function Footer({ message }) {
     }
 
     return (
-        <div className="bg-sky-900 px-4 py-2 flex justify-between items-center text-gray-200">
+        <div className="bg-gray-50 px-4 py-2 flex justify-between items-center text-sky-900 border">
             {inProgress && (
                 <span>
                     <FontAwesomeIcon icon={faSpinner} spin size="lg" />
@@ -161,7 +161,7 @@ function Footer({ message }) {
             )}
             {message.branches > 1 && !inProgress && (
                 <div>
-                    <div className="flex gap-2 text-blue-300 text-lg">
+                    <div className="flex gap-2 text-sky-900 text-lg">
                         <button
                             onClick={handleLeftArrowClick}
                             disabled={message.branchIndex === 0}
