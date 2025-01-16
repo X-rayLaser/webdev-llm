@@ -1,5 +1,5 @@
 "use client"
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -42,12 +42,16 @@ export function Pagination({ totalPages }) {
 
 
 function PaginationLink({ disabled, icon, ...props }) {
+
+  const [ inProgress, setInProgress] = useState(false);
   const extraClasses = disabled ? "border-gray-600 opacity-50 cursor-not-allowed" : 
     "text-green-600 border-green-600 bg-green-100 hover:bg-green-800";
   return (
     <Link
-      disabled={disabled}
+      disabled={disabled || inProgress}
       className={`px-6 py-1 rounded border ${extraClasses}`}
+      onClick={e => setInProgress(true)}
+      prefetch={true}
       {...props}
     >
       <FontAwesomeIcon icon={icon} />

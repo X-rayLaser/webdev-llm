@@ -10,4 +10,6 @@ USER node
 
 RUN npm install
 
+RUN npx next build
+
 CMD ["npm", "run", "dev"]

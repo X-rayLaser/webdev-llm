@@ -35,6 +35,7 @@ export function formFactory(fields, renderFields) {
         for (let fieldSpec of fields) {
             let name = fieldSpec.name;
             let defaultValue = cleanDefault(defaults, name, fieldSpec.type);
+            // eslint-disable-next-line react-hooks/rules-of-hooks
             let [value, setValue] = useState(defaultValue);
             states[name] = value;
             setters[name] = setValue;

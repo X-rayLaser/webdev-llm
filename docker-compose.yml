@@ -73,6 +73,7 @@ services:
       - ./nextjs_app:/home/node/nextjs_app
     ports:
       - "3000:3000"
+    command: "./run_prod.sh"
 
   nginx:
     image: nginx

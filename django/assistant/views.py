@@ -161,6 +161,12 @@ class MultimediaMessageViewSet(viewsets.ModelViewSet):
     queryset = MultimediaMessage.objects.all()
     serializer_class = MultimediaMessageSerializer
 
+    def get_serializer(self, *args, **kwargs):
+        is_lite = self.request.query_params.get('lite')
+        if self.action in ['list', 'retrieve'] and is_lite:
+            kwargs["with_replies"] = False
+        return super().get_serializer(*args, **kwargs)
+
     @decorators.action(methods=['post'], detail=False)
     def make_revision(self, request):
         serializer = NewRevisionSerializer(data=request.data)

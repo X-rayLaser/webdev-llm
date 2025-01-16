@@ -262,6 +262,12 @@ class MultimediaMessageSerializer(serializers.ModelSerializer):
         fields = ['id', 'role', 'chat', 'parent', 'active_revision',
                   'content_ro', 'content', 'revisions', 'replies', 'src_tree', 'child_index']
 
+    def __init__(self, *args, **kwargs):
+        with_replies = kwargs.pop('with_replies', True)
+        super().__init__(*args, **kwargs)
+        if not with_replies:
+            self.fields.pop('replies')
+
     def get_replies(self, obj):
         kwargs = dict(context=self.context) if hasattr(self, "context") else {}
         return MultimediaMessageSerializer(obj.replies.all(), many=True, **kwargs).data
