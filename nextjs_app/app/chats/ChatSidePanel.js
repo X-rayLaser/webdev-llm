@@ -39,7 +39,7 @@ async function ChatList({ queryParams }) {
 
   let items = [];
   if (fixedChats && fixedChats.length > 0) {
-    items = fixedChats.map((chat, idx) => <DeletableChatItem key={idx} chat={chat} />);
+    items = fixedChats.map((chat, idx) => <DeletableChatItem key={idx} chat={chat} queryString={queryString} />);
   }
 
   return (

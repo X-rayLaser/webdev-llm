@@ -6,7 +6,7 @@ import { faTrash, faSpinner } from '@fortawesome/free-solid-svg-icons'
 import { ConfirmationModal } from "../components/modal";
 import { deleteChat } from "../actions";
 
-export function DeletableChatItem({ chat, maxLen = 25 }) {
+export function DeletableChatItem({ chat, maxLen = 25, queryString="" }) {
   const [show, setShow] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -24,7 +24,7 @@ export function DeletableChatItem({ chat, maxLen = 25 }) {
           alt={chat.name}
           className="w-12 h-12 rounded-l-md" />
         {!deleting && (
-          <Link href={`/chats/${chat.id}`} className="text-blue-500 flex">
+          <Link href={`/chats/${chat.id}?${queryString}`} className="text-blue-500 flex">
             <div className="max-w-44 overflow-hidden whitespace-nowrap inline-block">{chat.name}</div>
             <span>...</span>
           </Link>
