@@ -1,8 +1,7 @@
 import { Card } from "@/app/chats/ChatItem";
 import NewChatForm from "./NewChatForm";
-import ChatSidePanel from "./ChatSidePanel";
 import { fetchChats } from "../utils";
-import PageWithSidePanel from "./PageWithSidePanel";
+
 
 const exampleData = {
     header: "Introduction to React",
@@ -13,17 +12,12 @@ const exampleData = {
 };
 
 export default async function Page(props) {
-    console.log("before loading", new Date())
-    const query = await props.searchParams;
-
     //todo: error handling
     const configsResponse = await fetch("http://django:8000/api/configs/");
     const configs = await configsResponse.json();
-    console.log("loaded configs", new Date())
 
     const [ chats, ...rest ] = await fetchChats("http://django:8000/api/chats/");
     const topChats = chats.slice(0);
-    console.log("loaded chats", new Date())
 
     async function fetchMessage(url) {
         //use lite version of API endpoint to fetch the message
@@ -64,7 +58,6 @@ export default async function Page(props) {
     
     const results = await Promise.allSettled(promises);
 
-    console.log("fetched chatsWithMessages chats", new Date())
     results.forEach(result => {
         if (result.status === "fulfilled") {
             chatsWithMessages.push(result.value);
@@ -72,8 +65,6 @@ export default async function Page(props) {
             console.error("Promise rejected. Reason: ", result.reason);
         }
     });
-
-    console.log("prepared chatsWithMessages chats", new Date())
 
     const fallBackImage = "/app/test-image.jpeg";
     
@@ -91,7 +82,7 @@ export default async function Page(props) {
     ));
 
     return (
-        <PageWithSidePanel searchParams={query}>
+        <div>
             <div className="md:hidden">
                 <NewChatForm configs={configs} />
 
@@ -113,6 +104,6 @@ export default async function Page(props) {
                     </div>
                 </div>
             </div>
-        </PageWithSidePanel>
+        </div>
     )
 }

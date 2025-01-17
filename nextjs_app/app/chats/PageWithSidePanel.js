@@ -1,8 +1,8 @@
 import ChatSidePanel from "./ChatSidePanel";
 import ChatSidePanelToggle from "./ChatSidePanelToggle";
 
-export default async function PageWithSidePanel({ searchParams, children }) {
-    let sidePanel = <ChatSidePanel queryParams={searchParams} />;
+export default async function PageWithSidePanel({ children }) {
+    let sidePanel = <ChatSidePanel />;
     let togglePanel = <ChatSidePanelToggle chatSidePanel={sidePanel} />;
 
     return (

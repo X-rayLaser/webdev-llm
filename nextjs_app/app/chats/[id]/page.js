@@ -66,7 +66,7 @@ export default async function Page(props) {
     const operations = await opsResponse.json();
 
     return (
-        <PageWithSidePanel searchParams={searchParams}>
+        <div>
             <WebSocketChat
                 chat={chat}
                 messages={messages}
@@ -75,6 +75,6 @@ export default async function Page(props) {
                 configuration={configuration}
                 operations={operations}
             />
-        </PageWithSidePanel>
+        </div>
     );
 }

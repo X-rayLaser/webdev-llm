@@ -20,7 +20,8 @@ export function SearchBar({ queryParams }) {
       }
     });
 
-    replace(`${pathname}?${params.toString()}`);
+    const url = `/app${pathname}?${params.toString()}`;
+    window.history.pushState(null, '', url);
   }
 
   const handleSearchChange = (e) => {

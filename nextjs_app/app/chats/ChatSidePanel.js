@@ -1,4 +1,6 @@
-import React from "react";
+"use client"
+import React, { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { SearchBar } from "./SearchBar";
 import { Suspense } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -7,7 +9,8 @@ import { DeletableChatItem } from "./DeletableChatItem";
 import { fetchChats } from "../utils";
 import { Pagination } from "./Pagination";
 
-export default function ChatSidePanel({ queryParams }) {
+export default function ChatSidePanel() {
+  const queryParams = useSearchParams();
   const { term="", sortby="newest", filter="all", page=1, advanced=false } = queryParams;
   const suspenseKey = term + page + sortby + filter;
 
@@ -26,32 +29,55 @@ export default function ChatSidePanel({ queryParams }) {
   );
 };
 
-async function ChatList({ queryParams }) {
+
+function ChatList({ queryParams }) {
+  const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState([]);
+  const [totalPages, setTotalPages] = useState(1);
   const queryString = (new URLSearchParams(queryParams)).toString();
 
-  const [ chats, totalPages ] = await fetchChats("http://django:8000/api/chats/", queryString);
+  function loadData(baseUrl, query="") {
+    setLoading(true);
 
-  const fallbackImage = "/app/test-image.jpeg";
-  const fixedChats = chats.map(( { image, ...rest } ) => ({
-    image: image ? image.replace("django:8000", "localhost") : fallbackImage,
-    ...rest
-  }));
+    fetchChats(baseUrl, query).then(([chats, pages]) => {
+      const fallbackImage = "/app/test-image.jpeg";
+      const fixedChats = chats.map(({ image, ...rest }) => ({
+        image: image ? image.replace("django:8000", "localhost") : fallbackImage,
+        ...rest
+      }));
 
-  let items = [];
-  if (fixedChats && fixedChats.length > 0) {
-    items = fixedChats.map((chat, idx) => <DeletableChatItem key={idx} chat={chat} queryString={queryString} />);
+      if (fixedChats && fixedChats.length > 0) {
+        const fixedItems = fixedChats.map((chat, idx) => <DeletableChatItem key={idx} chat={chat} queryString={queryString} />);
+        setItems(fixedItems);
+      }
+
+      setTotalPages(pages);
+    }).finally(() => {
+      setLoading(false);
+    });
   }
+
+  useEffect(() => {
+
+    loadData("http://localhost/api/chats/", queryString);
+
+  }, [queryParams]);
+
+  const itemsSection = (
+    items.length > 0 ? <div className="space-y-2">{items}</div> : <p className="text-center">No chats found.</p>
+  );
 
   return (
     <div>
-      {items.length > 0 ? <div className="space-y-2">{items}</div> : <p className="text-center">No chats found.</p>}
-      {/* Pagination */}
+      {loading ? <Loader /> : itemsSection}
+
       {totalPages > 1 && (
-        <Pagination totalPages={totalPages} />
+        <Pagination totalPages={totalPages} inProgress={loading} />
       )}
     </div>
   );
 }
+
 
 function Loader() {
   return (
