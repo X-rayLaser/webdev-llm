@@ -80,7 +80,6 @@ export default async function Page(props) {
             />
         </div>
     ));
-
     return (
         <div>
             <div className="md:hidden">
@@ -105,5 +104,5 @@ export default async function Page(props) {
                 </div>
             </div>
         </div>
-    )
+    );
 }

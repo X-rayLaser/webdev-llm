@@ -3,8 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { SearchBar } from "./SearchBar";
 import { Suspense } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSpinner } from '@fortawesome/free-solid-svg-icons';
+import Loader from "./Loader";
 import { DeletableChatItem } from "./DeletableChatItem";
 import { fetchChats } from "../utils";
 import { Pagination } from "./Pagination";
@@ -75,17 +74,5 @@ function ChatList({ queryParams }) {
         <Pagination totalPages={totalPages} inProgress={loading} />
       )}
     </div>
-  );
-}
-
-
-function Loader() {
-  return (
-      <div className="mt-12">
-          <div className="text-3xl text-center text-blue-800 font-semibold">
-              <span>Loading... </span>
-              <span><FontAwesomeIcon icon={faSpinner} spin size="lg"/></span>
-          </div>
-      </div>
   );
 }

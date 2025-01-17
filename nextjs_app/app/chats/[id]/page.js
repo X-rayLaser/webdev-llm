@@ -1,4 +1,3 @@
-import PageWithSidePanel from "../PageWithSidePanel";
 import MessageCard from "./MessageCard";
 import WebSocketChat from "./WebSocketChat";
 
