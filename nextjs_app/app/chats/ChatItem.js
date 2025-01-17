@@ -1,9 +1,10 @@
 "use client"
+import Link from "next/link";
 import React from 'react';
 import Expandable from '../components/expandable';
 import { OutlineButton } from '../components/buttons';
 
-export function Card({ header, imageUrl, textTitle="Last message", prompt, lastMessage="", buttonLabel, onButtonClick, createdAt }) {
+export function Card({ header, imageUrl, textTitle="Last message", prompt, lastMessage="", buttonLabel, buttonHref, createdAt }) {
   const maxLen = 40;
   header = header.length < maxLen ? header : `${header.substring(0, maxLen)}...`;
 
@@ -38,7 +39,9 @@ export function Card({ header, imageUrl, textTitle="Last message", prompt, lastM
         <h6 className="font-bold text-left text-lg mb-2">Last message:</h6>
         <Expandable collapsedHeight={150}>{lastMessage}</Expandable>
         <div className="mt-4">
-          <OutlineButton onClick={onButtonClick}>{buttonLabel}</OutlineButton>
+          <OutlineButton>
+            <Link href={buttonHref}>{buttonLabel}</Link>
+          </OutlineButton>
         </div>
       </div>
 

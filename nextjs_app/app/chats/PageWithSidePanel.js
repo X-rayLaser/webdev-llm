@@ -1,8 +1,13 @@
+import { Suspense } from "react";
 import ChatSidePanel from "./ChatSidePanel";
 import ChatSidePanelToggle from "./ChatSidePanelToggle";
 
 export default async function PageWithSidePanel({ children }) {
-    let sidePanel = <ChatSidePanel />;
+    let sidePanel = (
+        <Suspense>
+            <ChatSidePanel />
+        </Suspense>
+    );
     let togglePanel = <ChatSidePanelToggle chatSidePanel={sidePanel} />;
 
     return (

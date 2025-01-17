@@ -122,16 +122,18 @@ export function RawMessage({ message, generationConfig }) {
                     <div>
                         <ModalityViewer modalityObject={decoratedModality} showControls={false} />
 
-                        <div className="pl-4 pb-4">
-                            <OutlineButtonSmall onClick={handleEditClick} disabled={inProgress}>
-                                Edit <FontAwesomeIcon icon={faPencil} />
-                                {inProgress && (
-                                    <span className="ml-2">
-                                        <FontAwesomeIcon icon={faSpinner} spin size="lg" />
-                                    </span>
-                                )}
-                            </OutlineButtonSmall>
-                        </div>
+                        {previousMessage && (
+                            <div className="pl-4 pb-4">
+                                <OutlineButtonSmall onClick={handleEditClick} disabled={inProgress}>
+                                    Edit <FontAwesomeIcon icon={faPencil} />
+                                    {inProgress && (
+                                        <span className="ml-2">
+                                            <FontAwesomeIcon icon={faSpinner} spin size="lg" />
+                                        </span>
+                                    )}
+                                </OutlineButtonSmall>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>

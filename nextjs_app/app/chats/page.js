@@ -2,15 +2,6 @@ import { Card } from "@/app/chats/ChatItem";
 import NewChatForm from "./NewChatForm";
 import { fetchChats } from "../utils";
 
-
-const exampleData = {
-    header: "Introduction to React",
-    imageUrl: "/app/test-image.jpeg",
-    text: "React is a popular JavaScript library for building user interfaces. Learn how to create components, manage state, and handle events efficiently with React.",
-    buttonLabel: "Resume chat",
-    createdAt: "2024-11-12T09:30:00",
-};
-
 export default async function Page(props) {
     //todo: error handling
     const configsResponse = await fetch("http://django:8000/api/configs/");
@@ -75,8 +66,9 @@ export default async function Page(props) {
                 imageUrl={(obj.chat.image && obj.chat.image.replace("django:8000", "localhost")) || fallBackImage}
                 prompt={obj.prompt.content_ro.text}
                 lastMessage={obj.lastMessage.content_ro.text}
-                buttonLabel={exampleData.buttonLabel}
-                createdAt={exampleData.createdAt}
+                buttonLabel="Resume chat"
+                buttonHref={`/chats/${obj.chat.id}`}
+                createdAt={obj.created}
             />
         </div>
     ));
