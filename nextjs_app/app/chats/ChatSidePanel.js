@@ -1,6 +1,6 @@
 "use client"
 import React, { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter, useParams } from "next/navigation";
 import { SearchBar } from "./SearchBar";
 import { Suspense } from 'react';
 import Loader from "./Loader";
@@ -33,7 +33,11 @@ function ChatList({ queryParams }) {
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
+  const router = useRouter();
+  const params = useParams();
   const queryString = (new URLSearchParams(queryParams)).toString();
+
+  const loadUrl = "http://localhost/api/chats/";
 
   function loadData(baseUrl, query="") {
     setLoading(true);
@@ -45,11 +49,7 @@ function ChatList({ queryParams }) {
         ...rest
       }));
 
-      if (fixedChats && fixedChats.length > 0) {
-        const fixedItems = fixedChats.map((chat, idx) => <DeletableChatItem key={idx} chat={chat} queryString={queryString} />);
-        setItems(fixedItems);
-      }
-
+      setItems(fixedChats);
       setTotalPages(pages);
     }).finally(() => {
       setLoading(false);
@@ -57,13 +57,24 @@ function ChatList({ queryParams }) {
   }
 
   useEffect(() => {
-
-    loadData("http://localhost/api/chats/", queryString);
+    loadData(loadUrl, queryString);
 
   }, [queryParams]);
 
+  function handleDeleted(chat) {
+    if (params.id && params.id == chat.id) {
+      router.push(`/chats/?${queryString}`);
+    }
+    setItems(prevItems => prevItems.filter(item => item.id !== chat.id));
+  }
+
+  const elements = items.map((chat, idx) => 
+    <DeletableChatItem key={idx} chat={chat} queryString={queryString} 
+      onDeleted={() => handleDeleted(chat)}/>
+  );
+
   const itemsSection = (
-    items.length > 0 ? <div className="space-y-2">{items}</div> : <p className="text-center">No chats found.</p>
+    items.length > 0 ? <div className="space-y-2">{elements}</div> : <p className="text-center">No chats found.</p>
   );
 
   return (

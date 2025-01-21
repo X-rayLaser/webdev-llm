@@ -6,12 +6,15 @@ import { faTrash, faSpinner } from '@fortawesome/free-solid-svg-icons'
 import { ConfirmationModal } from "../components/modal";
 import { deleteChat } from "../actions";
 
-export function DeletableChatItem({ chat, maxLen = 25, queryString="" }) {
+export function DeletableChatItem({ chat, maxLen = 25, queryString="", onDeleted }) {
   const [show, setShow] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   function handleYes() {
-    deleteChat(chat.id).then(result => setDeleting(false));
+    deleteChat(chat.id).then(result => {
+      setDeleting(false);
+      onDeleted();
+    });
     setShow(false);
     setDeleting(true);
   }

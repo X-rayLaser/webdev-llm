@@ -278,7 +278,6 @@ async function deleteChat(id) {
         itemName: "chat"
     });
     const result = await deletionActionSet.destroy(id);
-    redirect(`/chats/`);
     return result;
 }
 
