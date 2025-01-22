@@ -326,3 +326,11 @@ def prepare_messages(history, system_message=None):
     if system_message:
         messages = [{ "role": "system", "content": system_message }] + messages
     return messages
+
+
+def fix_newlines(text):
+    """Convert line breaks to Markdown line breaks"""
+    if text:
+        text = re.sub('\r\n', '\n', text)
+        text = re.sub('\n', '\n\n', text)
+    return text

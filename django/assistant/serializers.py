@@ -8,7 +8,7 @@ from .models import (
     MultimediaMessage, Revision, Chat, Generation, GenerationMetadata
 )
 from assistant.tasks import generate_completion, launch_operation_suite, CompletionConfig
-
+from assistant.utils import fix_newlines
 
 class ServerSerializer(serializers.ModelSerializer):
     class Meta:
@@ -171,6 +171,14 @@ class ModalitySerializer(serializers.ModelSerializer):
             objs = ModalitySerializer(obj.mixture.order_by("order"), many=True).data
             return objs
         return []
+
+    def validate_text(self, data):
+        is_being_created = bool(self.instance is None)
+
+        if is_being_created:
+            data = fix_newlines(data)
+            
+        return data
 
     def validate(self, data):
         

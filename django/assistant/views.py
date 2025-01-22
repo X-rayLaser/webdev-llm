@@ -22,6 +22,7 @@ from .serializers import (
 )
 
 from .tasks import summarize_text, generate_chat_picture
+from .utils import fix_newlines
 
 class ServerViewSet(viewsets.ModelViewSet):
     queryset = Server.objects.all()
@@ -104,6 +105,8 @@ class ChatViewSet(viewsets.ModelViewSet):
     def start_new_chat(self, request):
         serializer = ChatSerializer(data=request.data, context={'request': request}) # todo: need to use new serializer with prompt field
         prompt = request.data["prompt"]
+        prompt = fix_newlines(prompt)
+
         # todo: automatically generate unique name for a chat
         
         serializer.is_valid(raise_exception=True)

@@ -401,9 +401,9 @@ function TextModality({ data, onSuccessfulUpdate, onSuccessfulDelete, showContro
     };
 
     return (
-        <div className="leading-relaxed">
+        <div className="leading-loose">
 
-            <div dangerouslySetInnerHTML={innerHtml} className="whitespace-pre-wrap" />
+            <div dangerouslySetInnerHTML={innerHtml} className="" />
             {showControls && (
                 <GenericModalityControls
                     data={data}
@@ -491,7 +491,7 @@ ${data.code}
                     </div>
                 )}
 
-                <div className="whitespace-pre-wrap" dangerouslySetInnerHTML={innerHtml} />
+                <div className="" dangerouslySetInnerHTML={innerHtml} />
             </div>
         </div>
     );

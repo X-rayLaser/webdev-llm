@@ -31,11 +31,11 @@ function renderMarkdown(text) {
                 try {
                     let value = hljs.highlight(str, { language: lang }).value;
 
-                    return `<code class="hljs">${value}</code>`;
+                    return `<pre><code class="hljs">${value}</code></pre>`;
                 } catch (__) { }
             }
 
-            return '<code class="hljs">' + md.utils.escapeHtml(str) + '</code>';
+            return '<pre><code class="hljs">' + md.utils.escapeHtml(str) + '</code></pre>';
         }
     });
     return md.render(text);
