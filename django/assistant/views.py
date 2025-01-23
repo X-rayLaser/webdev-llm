@@ -170,6 +170,24 @@ class MultimediaMessageViewSet(viewsets.ModelViewSet):
             kwargs["with_replies"] = False
         return super().get_serializer(*args, **kwargs)
 
+
+    @decorators.action(methods=['post'], detail=True)
+    def regenerate(self, request, pk=None):
+        message = self.get_object()
+        config = message.get_root().chat.configuration
+        default_model_name = config.llm_model or "llama3.2"
+        data = dict(model_name=default_model_name, params={})
+
+        if message.generations.exists():
+            last_generation = message.generations.last()
+            metadata = last_generation.generation_metadata
+            if metadata:
+                data = dict(model_name=metadata.model_name or default_model_name, params=metadata.params or {})
+
+        data["message"] = message.id
+        response_data = start_message_generation(data=data)
+        return Response(response_data, status=status.HTTP_201_CREATED)
+
     @decorators.action(methods=['post'], detail=False)
     def make_revision(self, request):
         serializer = NewRevisionSerializer(data=request.data)
@@ -227,12 +245,15 @@ class GenerationViewSet(mixins.CreateModelMixin,
         return filter_generations(queryset, status_filter)
 
     def create(self, request, *args, **kwargs):
-        serializer = NewGenerationTaskSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        generation = serializer.save()
-        
-        response_data = GenerationSerializer(generation).data
+        response_data = start_message_generation(data=request.data)
         return Response(response_data, status=status.HTTP_201_CREATED)
+
+
+def start_message_generation(data):
+    serializer = NewGenerationTaskSerializer(data=data)
+    serializer.is_valid(raise_exception=True)
+    generation = serializer.save()
+    return GenerationSerializer(generation).data
 
 
 def filter_generations(queryset, status_filter):

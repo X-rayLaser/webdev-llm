@@ -135,7 +135,7 @@ function GeneratingMessage({ task_id, text }) {
             </h4>
             {text && (
                 <div className="border-x-2 border-b-2 border-indigo-900 p-4 leading-loose bg-blue-100 rounded-b-lg">
-                    <pre dangerouslySetInnerHTML={innerHtml} className="whitespace-pre-wrap" />
+                    <pre dangerouslySetInnerHTML={innerHtml} />
                 </div>
             )}
         </div>

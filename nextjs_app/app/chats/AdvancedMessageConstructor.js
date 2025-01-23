@@ -403,7 +403,7 @@ function TextModality({ data, onSuccessfulUpdate, onSuccessfulDelete, showContro
     return (
         <div className="leading-loose">
 
-            <div dangerouslySetInnerHTML={innerHtml} className="" />
+            <div dangerouslySetInnerHTML={innerHtml} />
             {showControls && (
                 <GenericModalityControls
                     data={data}
@@ -491,7 +491,7 @@ ${data.code}
                     </div>
                 )}
 
-                <div className="" dangerouslySetInnerHTML={innerHtml} />
+                <div dangerouslySetInnerHTML={innerHtml} />
             </div>
         </div>
     );

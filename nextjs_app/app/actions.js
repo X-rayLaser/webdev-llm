@@ -417,6 +417,13 @@ async function startMessageGeneration(chatId, parentMessageId, prevState, formDa
     return result;
 }
 
+async function regenerateMessage(chatId, parentMessageid) {
+    const url = `${baseApiUrl}/multimedia-messages/${parentMessageid}/regenerate/`;
+    const data = {};
+    const result = await sendJsonObject(url, data, "Regeneration failed");
+    return result
+}
+
 async function launchBuild(messageId, revisionId) {
     const url = `${baseApiUrl}/multimedia-messages/${messageId}/launch-build/`;
     const data = {
@@ -438,5 +445,6 @@ export {
     cloneModality,
     switchBranch,
     startMessageGeneration,
+    regenerateMessage,
     launchBuild
 };
