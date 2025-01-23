@@ -57,6 +57,8 @@ def create_response_message(raw_response, role, parent=None, chat=None):
 
     new_message = MultimediaMessage(role=role, content=mixture)
     if parent is not None:
+        parent.child_index = parent.replies.count()
+        parent.save()
         new_message.parent = parent
     else:
         new_message.chat = chat

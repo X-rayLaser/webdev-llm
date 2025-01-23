@@ -401,7 +401,7 @@ function TextModality({ data, onSuccessfulUpdate, onSuccessfulDelete, showContro
     };
 
     return (
-        <div className="leading-loose">
+        <div className="leading-loose text-lg">
 
             <div dangerouslySetInnerHTML={innerHtml} />
             {showControls && (
