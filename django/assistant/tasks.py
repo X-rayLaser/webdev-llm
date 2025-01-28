@@ -3,6 +3,7 @@ import json
 import uuid
 import os
 from typing import Dict
+import traceback
 import requests
 from django.utils import timezone
 from celery import shared_task
@@ -115,6 +116,7 @@ def generate_completion(completion_config: dict, socket_session_id: int):
         emitter(event_type="generation_started", data=dict(task_id=config.task_id))
         _generate(config, emitter)
     except Exception as e:
+        print(traceback.format_exc())
         errors = ["Unxpected error during message generation"]
     finally:
         generation = Generation.objects.get(task_id=config.task_id)

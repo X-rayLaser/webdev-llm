@@ -51,6 +51,9 @@ class OpenAICompatibleBackend(Backend):
         http_client = self.get_http_client()
 
         timeout = 30 * 60 # 30 minutes
+
+        params = self.prepare_params(job)
+
         client = openai.OpenAI(
             base_url=f"{job.base_url}/v1",
             api_key="sk-no-key-required",
@@ -62,7 +65,8 @@ class OpenAICompatibleBackend(Backend):
             model=job.model,
             messages=job.messages,
             stream=True,
-            extra_body={"cache_prompt": True}
+            extra_body={"cache_prompt": True},
+            **params
         )
 
         for chunk in stream:
@@ -85,6 +89,15 @@ class OpenAICompatibleBackend(Backend):
         http_client = DefaultHttpxClient(mounts=proxies)
         
         return http_client
+
+    def prepare_params(self, job: ChatCompletionJob):
+        mapping = {
+            "temperature": "temperature",
+            "top_p": "top_p",
+            "repeat_penalty": "frequency_penalty",
+            "n_predict": "max_tokens"
+        }
+        return {mapping[name]:value for name, value in job.params.items() if name in mapping}
 
 
 backends = {

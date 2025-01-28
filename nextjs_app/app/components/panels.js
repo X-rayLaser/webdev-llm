@@ -41,7 +41,7 @@ export default function Panel({ title, icon, addButtonText, noElementsText="No i
       </h4>
       {elements.length > 0 && <FlexRowPanel>{elements}</FlexRowPanel>}
       {elements.length === 0 && <h5 className="text-lg text-center">{noElementsText}</h5>}
-      <div className="mt-4 flex justify-center md:justify-start">
+      <div className="mt-4 flex justify-center">
           <ProminentButton onClick={() => setShowModal(true)}>
             {addButtonText}
           </ProminentButton>

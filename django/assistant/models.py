@@ -241,6 +241,22 @@ class MultimediaMessage(models.Model):
 
         return list(reversed(history))
 
+    def get_last_generation(self):
+        """Returns the most recent generation in the chat up until (and including) this message.
+
+        Excludes generations with associated generation metadata.
+        """
+        root = self.get_root()
+        chat = root.chat
+        if not chat:
+            return
+
+        chat_generations = chat.generations.filter(
+            generation_metadata__isnull=False
+        ).filter(message__created__lte=self.created)
+
+        return chat_generations.last()
+
     def clone(self):
         # todo: write unit tests
         content = self.content.clone()

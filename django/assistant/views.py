@@ -173,18 +173,21 @@ class MultimediaMessageViewSet(viewsets.ModelViewSet):
 
     @decorators.action(methods=['post'], detail=True)
     def regenerate(self, request, pk=None):
+        """Regenerate a message for a parent message with a given pk"""
         message = self.get_object()
+
         config = message.get_root().chat.configuration
-        default_model_name = config.llm_model or "llama3.2"
-        data = dict(model_name=default_model_name, params={})
+        model_name = config.llm_model or "llama3.2"
+        params = PresetSerializer(config.preset).data
 
-        if message.generations.exists():
-            last_generation = message.generations.last()
+        last_generation = message.get_last_generation()
+
+        if last_generation:
             metadata = last_generation.generation_metadata
-            if metadata:
-                data = dict(model_name=metadata.model_name or default_model_name, params=metadata.params or {})
+            model_name = metadata.model_name or model_name
+            params = metadata.params or params
 
-        data["message"] = message.id
+        data = dict(model_name=model_name, params=params, message=message.id)
         response_data = start_message_generation(data=data)
         return Response(response_data, status=status.HTTP_201_CREATED)
 

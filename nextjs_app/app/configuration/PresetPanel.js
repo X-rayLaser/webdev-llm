@@ -105,7 +105,7 @@ const PresetItem = ({ preset }) => {
           <strong>Min P:</strong> {min_p}
         </div>
         <div>
-          <strong>Repeat Penalty:</strong> {repeat_penalty}
+          <strong>Frequency Penalty:</strong> {repeat_penalty}
         </div>
         <div>
           <strong>Max tokens:</strong> {n_predict}
