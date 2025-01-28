@@ -30,6 +30,10 @@ class MessageSegment:
 
 NamedCodeSegment = namedtuple("NamedCodeSegment", "index segment candidate_name")
 
+JAVASCRIPT = 'javascript'
+PYTHON = 'python'
+CSS = 'css'
+
 
 def process_raw_message(text: str) -> Tuple[List[MessageSegment], List[Dict[str, str]]]:
     segments = parse_raw_message(text)
@@ -111,14 +115,13 @@ def detect_js(code):
 
 def normalize_language(language):
     language = language.lower()
-    JAVASCRIPT = 'javascript'
-    PYTHON = 'python'
-    CSS = 'css'
 
     mapping = {
         'js': JAVASCRIPT,
         'jsx': JAVASCRIPT,
         'javascript': JAVASCRIPT,
+        'css': CSS,
+        'css3': CSS,
         'python': PYTHON
     }
 
@@ -127,15 +130,17 @@ def normalize_language(language):
 
 def get_sources(segments) -> List[Dict[str, str]]:
     code_segments = get_named_code_segments(segments)
-    js_segments = get_language_segments(code_segments, "javascript")
-    python_segments = get_language_segments(code_segments, "python")
-    css_segments = get_language_segments(code_segments, "css")
+    js_segments = get_language_segments(code_segments, JAVASCRIPT)
+    python_segments = get_language_segments(code_segments, PYTHON)
+    css_segments = get_language_segments(code_segments, CSS)
+    other_segments = get_other_segments(code_segments, [JAVASCRIPT, CSS, PYTHON])
 
     python_sources = make_language_sources(python_segments, "main.py", "module_{}.css")
     css_sources = make_language_sources(css_segments, "styles.css", "styles_{}.css")
     js_sources = make_js_sources(js_segments)
+    other_sources = make_language_sources(other_segments, "untitled", "untitled_{}")
  
-    sources = js_sources + python_sources + css_sources
+    sources = js_sources + python_sources + css_sources + other_sources
 
     sources.sort(key=lambda item: item["index"])
     return sources
@@ -200,7 +205,7 @@ def get_named_code_segments(segments):
 
 
 def find_files(text):
-    pattern = re.compile("(\"|\')?(?P<path>[/a-zA-Z0-9_-]*\.(js|css))(\"|\')?:?$",
+    pattern = re.compile("(\"|\')?(?P<path>[/a-zA-Z0-9_-]*\.(js|css|py))(\"|\')?:?$",
                          flags=re.MULTILINE)
     return find_all(pattern, text, lambda match: match.group("path"))
 
@@ -208,6 +213,11 @@ def find_files(text):
 def get_language_segments(named_segments, language):
     return [obj for obj in named_segments
             if obj.segment.metadata["language"] == language]
+
+
+def get_other_segments(named_segments, exclude_list):
+    return [obj for obj in named_segments
+            if obj.segment.metadata["language"] not in exclude_list]
 
 
 def make_language_sources(segments, main_path, main_template):
