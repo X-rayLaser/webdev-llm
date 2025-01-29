@@ -1,8 +1,11 @@
 import { Card } from "@/app/chats/ChatItem";
 import NewChatForm from "./NewChatForm";
-import { fetchChats } from "../utils";
+import { fetchChats, fixUrlHost } from "../utils";
+import { headers } from 'next/headers';
 
 export default async function Page(props) {
+    const headersList = await headers();
+    const currentHost = headersList.get('host');
     //todo: error handling
     const configsResponse = await fetch("http://django:8000/api/configs/");
     const configs = await configsResponse.json();
@@ -63,7 +66,7 @@ export default async function Page(props) {
         <div key={idx} className="mb-4">
             <Card
                 header={obj.chat.name}
-                imageUrl={(obj.chat.image && obj.chat.image.replace("django:8000", "localhost")) || fallBackImage}
+                imageUrl={(obj.chat.image && fixUrlHost(obj.chat.image, currentHost)) || fallBackImage}
                 prompt={obj.prompt.content_ro.text}
                 lastMessage={obj.lastMessage.content_ro.text}
                 buttonLabel="Resume chat"

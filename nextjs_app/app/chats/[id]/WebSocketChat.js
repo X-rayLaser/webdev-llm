@@ -6,17 +6,20 @@ import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSpinner } from '@fortawesome/free-solid-svg-icons';
 import { renderMarkdown } from "@/app/utils";
-import { getRandomInt } from "@/app/utils";
+import { getRandomInt, getHostNameOrLocalhost } from "@/app/utils";
 import { Alert } from "@/app/components/alerts";
 
-const socket = new WebSocket(`ws://localhost:9000`);
+function openSocket(url) {
+    const socket = new WebSocket(url);
 
-let n = getRandomInt(Math.pow(2, 31));
-let socketSessionId = `${n}`;
-socketSessionId = 0;
-socket.addEventListener("open", (event) => {
-    socket.send(socketSessionId);
-});
+    let n = getRandomInt(Math.pow(2, 31));
+    let socketSessionId = `${n}`;
+    socketSessionId = 0;
+    socket.addEventListener("open", (event) => {
+        socket.send(socketSessionId);
+    });
+    return socket;
+}
 
 export default function WebSocketChat({
         chat, messages, previousMessage, currentPreset, configuration, operations 
@@ -65,6 +68,9 @@ export default function WebSocketChat({
     }
 
     useEffect(() => {
+        const hostName = getHostNameOrLocalhost(window);
+        const url = `ws://${hostName}:9000`;
+        const socket = openSocket(url);
         socket.addEventListener("message", socketListener);
 
         return () => {

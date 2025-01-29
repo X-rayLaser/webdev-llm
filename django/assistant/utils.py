@@ -36,6 +36,8 @@ CSS = 'css'
 
 
 def process_raw_message(text: str) -> Tuple[List[MessageSegment], List[Dict[str, str]]]:
+    # todo: separate extraction of file names from follow preprocessing required for build process
+    # todo: here only attempt to extract names given to files by LLM and save them to Modality and Revision
     segments = parse_raw_message(text)
     sources = get_sources(segments)
 

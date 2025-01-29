@@ -5,7 +5,7 @@ import { SearchBar } from "./SearchBar";
 import { Suspense } from 'react';
 import Loader from "./Loader";
 import { DeletableChatItem } from "./DeletableChatItem";
-import { fetchChats } from "../utils";
+import { fetchChats, fixUrlHost, getHostOrLocalhost } from "../utils";
 import { Pagination } from "./Pagination";
 
 export default function ChatSidePanel() {
@@ -37,15 +37,17 @@ function ChatList({ queryParams }) {
   const params = useParams();
   const queryString = (new URLSearchParams(queryParams)).toString();
 
-  const loadUrl = "http://localhost/api/chats/";
+  const loadUrl = "/api/chats/";
 
   function loadData(baseUrl, query="") {
     setLoading(true);
 
+    const currentHost = getHostOrLocalhost(window);
+
     fetchChats(baseUrl, query).then(([chats, pages]) => {
       const fallbackImage = "/app/test-image.jpeg";
       const fixedChats = chats.map(({ image, ...rest }) => ({
-        image: image ? image.replace("django:8000", "localhost") : fallbackImage,
+        image: image ? fixUrlHost(image, currentHost) : fallbackImage,
         ...rest
       }));
 

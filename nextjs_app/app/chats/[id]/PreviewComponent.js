@@ -1,6 +1,7 @@
 "use client"
 import React, { useEffect, useState } from 'react';
 import { launchBuild } from '@/app/actions';
+import { getHostNameOrLocalhost } from '@/app/utils';
 import { Button } from '@/app/components/buttons';
 import { fetchDataFromUrl, fetchStatesData } from '@/app/data';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -159,7 +160,7 @@ const FailedOperationItem = ({ item }) => {
 const SuccessfulOperationItem = ({ item }) => {
     const beforeLogs = item.url ? (
         <div>
-            App URL: <Link className="font-bold text-blue-400" href={`http://localhost${item.url}`} target='blank'>
+            App URL: <Link className="font-bold text-blue-400" href={`${item.url}`} target='blank'>
                 Click to open it in a new tab
             </Link>
         </div>
@@ -284,7 +285,8 @@ const PreviewComponent = ({ message, onBuildFinished }) => {
         const handleWebSocketMessage = getWebsocketListener(
             activeRevisionId, setStateData, onBuildFinished
         );
-        const socket = new WebSocket("ws://localhost:9000");
+        const hostName = getHostNameOrLocalhost(window);
+        const socket = new WebSocket(`ws://${hostName}:9000`);
         socket.addEventListener("open", (event) => {
             socket.send(0);
         });

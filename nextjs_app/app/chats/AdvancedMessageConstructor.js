@@ -12,7 +12,7 @@ import { Alert } from '../components/alerts';
 import { PanelItem, DeleteControl, Controls } from '../components/panels';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCopy, faSpinner } from '@fortawesome/free-solid-svg-icons'
-import { renderMarkdown } from '../utils';
+import { fixUrlHost, getHostOrLocalhost, renderMarkdown } from '../utils';
 import DrawingCanvas from './DrawingCanvas';
 
 const textFormFields = [{
@@ -417,12 +417,19 @@ function TextModality({ data, onSuccessfulUpdate, onSuccessfulDelete, showContro
 }
 
 function ImageModality({ data, onSuccessfulUpdate, onSuccessfulDelete, showControls=true }) {
-    const bgColor = showControls ? "bg-blue-100" : "bg-sky-800"
+    const [imageUrl, setImageUrl] = useState(null);
+    const bgColor = showControls ? "bg-blue-100" : "bg-sky-800";
+
+    useEffect(() => {
+        const currentHost = getHostOrLocalhost(window);
+        const fixedUrl = fixUrlHost(data.image, currentHost);
+        setImageUrl(fixedUrl);
+    }, [data]);
     return (
         <div className="rounded-lg">
             <div className="relative w-full">
                 <div className={`px-2 rounded-lg h-96`}>
-                    <img className="h-full mx-auto" src={data.image.replace("django:8000", "localhost")} />
+                    <img className="h-full mx-auto" src={imageUrl} />
                 </div>
                 <div className="absolute px-2 right-0 top-0">
                     {showControls && (

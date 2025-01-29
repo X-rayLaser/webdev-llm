@@ -24,6 +24,19 @@ async function fetchChats(baseUrl, query) {
 }
 
 
+function fixUrlHost(url, newHost) {
+    //replaces part of URL after scheme://
+    return url.replace("django:8000", newHost);
+}
+
+function getHostOrLocalhost(window) {
+    return (window && window.location.host) || "localhost";
+}
+
+function getHostNameOrLocalhost(window) {
+    return (window && window.location.hostname) || "localhost";
+}
+
 function renderMarkdown(text) {
     const md = markdownit({
         highlight: function (str, lang) {
@@ -52,6 +65,9 @@ function capitalize(str) {
 
 export {
     fetchChats,
+    fixUrlHost,
+    getHostOrLocalhost,
+    getHostNameOrLocalhost,
     renderMarkdown,
     getRandomInt,
     capitalize
