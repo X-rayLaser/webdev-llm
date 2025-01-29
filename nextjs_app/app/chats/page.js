@@ -98,3 +98,5 @@ export default async function Page(props) {
         </div>
     );
 }
+
+export const dynamic = 'force-dynamic';
