@@ -61,6 +61,9 @@ function generateFields(servers, presets) {
         id: "create_configuration_max_iterations",
         label: "Max Iterations",
         placeholder: "Enter the maximum number of iterations",
+        min: 1,
+        max: 100,
+        step: 1
       },
       {
         name: "autorun",

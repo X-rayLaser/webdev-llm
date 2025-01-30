@@ -21,7 +21,8 @@ export const fields = [{
   id: "temperature_create",
   label: "Temperature",
   min: 0,
-  max: 100
+  max: 10,
+  step: 0.01
 }, {
   name: "top_k",
   component: NumberField,
@@ -29,28 +30,31 @@ export const fields = [{
   label: "Top K",
   min: 1,
   max: 10000,
-  step: 50
+  step: 1
 }, {
   name: "top_p",
   component: NumberField,
   id: "top_p_create",
   label: "Top P",
   min: 0,
-  max: 1
+  max: 1,
+  step: 0.01
 }, {
   name: "min_p",
   component: NumberField,
   id: "min_p_create",
   label: "Min P",
   min: 0,
-  max: 1
+  max: 1,
+  step: 0.01
 }, {
   name: "repeat_penalty",
   component: NumberField,
   id: "repeat_penalty_create",
   label: "Repeat Penalty",
   min: -4,
-  max: 4
+  max: 4,
+  step: 0.01
 }, {
   name: "n_predict",
   component: NumberField,
@@ -58,7 +62,7 @@ export const fields = [{
   label: "Max tokens to predict",
   min: 0,
   max: 10000,
-  step: 256
+  step: 1
 }, {
   name: "extra_params",
   component: TextArea,

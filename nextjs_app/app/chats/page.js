@@ -36,14 +36,14 @@ export default async function Page(props) {
     }
 
     async function getFirstAndLastMessages(chat) {
-        const [prompt, lastMessage] = await Promise.all([getPrompt(chat), getLastMessage(chat)]);
-        return { prompt, lastMessage };
+        const [prompt, lastText] = await Promise.all([getPrompt(chat), chat.last_text]);
+        return { prompt, lastText };
     }
 
     const promises = topChats.map(chat => 
         new Promise(
             (resolve, reject) => getFirstAndLastMessages(chat).then(res => {
-                resolve({ chat, prompt: res.prompt, lastMessage: res.lastMessage });
+                resolve({ chat, prompt: res.prompt, lastText: res.lastText });
             }).catch(reject)
         )
     );
@@ -68,10 +68,10 @@ export default async function Page(props) {
                 header={obj.chat.name}
                 imageUrl={(obj.chat.image && fixUrlHost(obj.chat.image, currentHost)) || fallBackImage}
                 prompt={obj.prompt.content_ro.text}
-                lastMessage={obj.lastMessage.content_ro.text}
+                lastMessage={obj.lastText}
                 buttonLabel="Resume chat"
                 buttonHref={`/chats/${obj.chat.id}`}
-                createdAt={obj.created}
+                createdAt={new Date(obj.chat.created).toLocaleString()}
             />
         </div>
     ));

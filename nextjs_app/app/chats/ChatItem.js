@@ -3,10 +3,16 @@ import Link from "next/link";
 import React from 'react';
 import Expandable from '../components/expandable';
 import { OutlineButton } from '../components/buttons';
+import { renderMarkdown } from "../utils";
 
 export function Card({ header, imageUrl, textTitle="Last message", prompt, lastMessage="", buttonLabel, buttonHref, createdAt }) {
   const maxLen = 40;
   header = header.length < maxLen ? header : `${header.substring(0, maxLen)}...`;
+
+  lastMessage = lastMessage && renderMarkdown(lastMessage);
+  let lastMessageInnerHtml = {
+    __html: lastMessage
+  };
 
   return (
     <div className="border rounded-lg shadow-md bg-white w-full">
@@ -37,7 +43,9 @@ export function Card({ header, imageUrl, textTitle="Last message", prompt, lastM
 
       <div className="p-4 bg-slate-100">
         <h6 className="font-bold text-left text-lg mb-2">Last message:</h6>
-        <Expandable collapsedHeight={150}>{lastMessage}</Expandable>
+        <Expandable collapsedHeight={150}>
+          <div dangerouslySetInnerHTML={lastMessageInnerHtml} className="flex flex-col gap-2" />
+        </Expandable>
         <div className="mt-4">
           <OutlineButton>
             <Link href={buttonHref}>{buttonLabel}</Link>
@@ -47,7 +55,7 @@ export function Card({ header, imageUrl, textTitle="Last message", prompt, lastM
 
       {/* Footer */}
       <div className="text-sm text-gray-200 bg-gray-700 text-left p-4 border-t rounded-b-lg">
-        Created at: {new Date(createdAt).toLocaleString()}
+        Created at: {createdAt}
       </div>
     </div>
   );

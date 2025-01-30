@@ -401,9 +401,9 @@ function TextModality({ data, onSuccessfulUpdate, onSuccessfulDelete, showContro
     };
 
     return (
-        <div className="leading-loose text-lg">
+        <div className="leading-relaxed text-lg">
 
-            <div dangerouslySetInnerHTML={innerHtml} />
+            <div dangerouslySetInnerHTML={innerHtml} className="flex flex-col gap-4" />
             {showControls && (
                 <GenericModalityControls
                     data={data}
