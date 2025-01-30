@@ -4,6 +4,19 @@ import { SelectField, AutoExpandingTextArea } from "../components/common-forms";
 import { formFactory, makeCreateForm } from "../components/form-factory";
 import { startNewChat } from "../actions";
 
+
+function truncate(s, size) {
+  if (!s) {
+    return s;
+  }
+
+  if (s.length <= size) {
+    return s;
+  }
+  return s.substring(0, size) + "...";
+}
+
+
 function generateFields(configs) {
   return [{
     name: "prompt",
@@ -15,7 +28,12 @@ function generateFields(configs) {
     name: "configuration",
     component: SelectField,
     id: "chat_configuration",
-    options: configs.map(config => ({ label: config.name, value: `http://django:8000/api/configs/${config.id}/` })) //because of using Hyperlinked serializer
+    options: configs.map(config => 
+      ({
+        label: truncate(config.name, 16),
+        value: `http://django:8000/api/configs/${config.id}/`
+      })
+    ) //because of using Hyperlinked serializer
   }];
 }
 
@@ -24,9 +42,11 @@ function render(fieldsToRender, names, errorMessage, button) {
     <div>
 
       {fieldsToRender.prompt}
-      <div className="flex items-center mt-2 mb-2 gap-4">
+      <div className="mt-2 mb-2 md:flex md:items-center md:gap-4">
         {fieldsToRender.configuration}
-        {button}
+        <div className="mt-2">
+          {button}
+        </div>
       </div>
       {errorMessage}
     </div>

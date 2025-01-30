@@ -75,10 +75,12 @@ export default async function Page(props) {
             />
         </div>
     ));
+
+    let form = <NewChatForm configs={configs} />;
     return (
         <div>
             <div className="md:hidden">
-                <NewChatForm configs={configs} />
+                {form}
 
                 <div className="mt-16">
                     <h4 className="text-2xl mb-4 text-center font-bold">Recent chats</h4>
@@ -89,7 +91,7 @@ export default async function Page(props) {
                 <div className="grow px-4">
                     <div className="w-full lg:w-3/4 xl:w-1/2 mx-auto p-4 border border-blue-800 rounded-lg shadow-lg">
                         <h2 className="text-center font-bold text-2xl mb-2">Start new chat</h2>
-                        <NewChatForm configs={configs} />
+                        {form}
                     </div>
 
                     <div className="mt-16">

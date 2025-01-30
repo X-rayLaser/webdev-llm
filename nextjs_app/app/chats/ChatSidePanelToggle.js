@@ -31,7 +31,7 @@ export default function ChatSidePanelToggle({ chatSidePanel }) {
                     <div className="h-full"></div>
                     <button
                         onClick={togglePanelVisibility}
-                        className="absolute top-0 z-100 p-2 bg-blue-400 text-white rounded-r-lg hover:bg-gray-500"
+                        className="absolute top-0 z-100 p-2 bg-blue-400 opacity-30 text-white rounded-r-lg hover:bg-gray-500"
                         title="Expand Panel"
                     >
                         <FontAwesomeIcon icon={faAnglesRight} size="lg" />

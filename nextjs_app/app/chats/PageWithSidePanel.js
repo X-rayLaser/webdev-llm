@@ -20,7 +20,7 @@ export default async function PageWithSidePanel({ children }) {
                             
                 </div>
 
-                <div className="ml-8">
+                <div className="px-2">
                     {children}
                 </div>
             </div>
