@@ -1,4 +1,5 @@
 import math
+from rest_framework.decorators import api_view
 from rest_framework import viewsets
 from rest_framework import generics, mixins
 from rest_framework import decorators
@@ -6,23 +7,33 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
 from django.conf import settings
+from django.shortcuts import get_object_or_404
 
 
 from .models import (
     Configuration, Server, Preset, Build, LinterCheck, TestRun, OperationSuite,
-    Comment, Thread, Chat, MultimediaMessage, Modality, Generation, GenerationMetadata
+    Comment, Thread, Chat, MultimediaMessage, Modality, Generation, GenerationMetadata,
+    Revision, reduce_source_tree
 )
 from .serializers import (
     ConfigurationSerializer, ServerSerializer, PresetSerializer,
     BuildSerializer, LinterCheckSerializer, TestRunSerializer, OperationSuiteSerializer,
     ThreadSerializer, ChatSerializer, MultimediaMessageSerializer, ModalitySerializer,
-    NewRevisionSerializer, CommentSerializer, ModalitiesOrderingSerializer,
+    RevisionSerializer, NewRevisionSerializer, CommentSerializer, ModalitiesOrderingSerializer,
     GenerationSerializer, GenerationMetadataSerializer, NewGenerationTaskSerializer,
     BuildLaunchSerializer
 )
 
 from .tasks import summarize_text, generate_chat_picture
 from .utils import fix_newlines
+
+
+@api_view()
+def source_tree_view(request, pk):
+    revision = get_object_or_404(Revision, pk=pk)
+    source_tree = reduce_source_tree(revision)
+    return Response(source_tree)
+
 
 class ServerViewSet(viewsets.ModelViewSet):
     queryset = Server.objects.all()

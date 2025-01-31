@@ -15,9 +15,12 @@ from assistant import summary_backends
 from assistant import text2image_backends
 from assistant.models import (
     Chat, MultimediaMessage, Modality, Revision, Generation,
-    OperationSuite, Build
+    OperationSuite, Build, reduce_source_tree
 )
-from assistant.utils import process_raw_message, prepare_messages, MessageSegment
+from assistant.utils import (
+    process_raw_message, extract_modalities, prepare_messages, prepare_build_files,
+    MessageSegment
+)
 from assistant import serializers
 
 
@@ -50,11 +53,10 @@ class CompletionConfig:
 
 
 def create_response_message(raw_response, role, parent=None, chat=None):
-    segments, sources = process_raw_message(raw_response)
-    
     mixture = Modality.objects.create(modality_type="mixture")
     # todo: extract image modalities
-    modalities = [seg.create_modality(mixture) for seg in segments]
+
+    modalities, sources = extract_modalities(raw_response, parent=mixture)
 
     new_message = MultimediaMessage(role=role, content=mixture)
     if parent is not None:
@@ -186,6 +188,8 @@ def launch_operation_suite(revision_id, socket_session_id):
     message = revision.message
     suite = OperationSuite.objects.create(revision=revision)
 
+    final_src_tree = reduce_source_tree(revision)
+    prepare_build_files(final_src_tree)
     data = {
         "source_tree": revision.src_tree
     }

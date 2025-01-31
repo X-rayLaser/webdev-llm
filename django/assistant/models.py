@@ -277,6 +277,27 @@ class MultimediaMessage(models.Model):
         return f"{self.role.capitalize()} message"
 
 
+def reduce_source_tree(revision):
+
+    def updated_tree(old_tree, new_tree):
+        """Note, this may change ordering"""
+        res_dict = {entry["file_path"]:entry for entry in old_tree}
+
+        for entry in new_tree:
+            path = entry["file_path"]
+            res_dict[path] = entry
+
+        return list(res_dict.values())
+
+    src_tree = []
+    for message in revision.message.get_history():
+        rev = message.revisions.first()
+        if rev:
+            src_tree = updated_tree(src_tree, rev.src_tree)
+
+    return src_tree
+
+
 class Modality(models.Model):
     class ModalityType(models.TextChoices):
         TEXT = 'text', _('Text')

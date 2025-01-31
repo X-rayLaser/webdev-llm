@@ -40,7 +40,22 @@ def process_raw_message(text: str) -> Tuple[List[MessageSegment], List[Dict[str,
     # todo: here only attempt to extract names given to files by LLM and save them to Modality and Revision
     segments = parse_raw_message(text)
     sources = get_sources(segments)
+    return patch_segments_and_sources(segments, sources)
 
+
+def extract_modalities(text: str, parent=None) -> List[Modality]:
+    segments = parse_raw_message(text)
+    named_code_segments = get_named_code_segments(segments)
+    sources = make_language_sources(named_code_segments, "untitled_0", "untitled_{}")
+    sources.sort(key=lambda item: item["index"])
+
+    segments, sources = patch_segments_and_sources(segments, sources)
+
+    modalities = [seg.create_modality(parent) for seg in segments]
+    return modalities, sources
+
+
+def patch_segments_and_sources(segments, sources):
     for src in sources:
         idx = src["index"]
         segments[idx].metadata["file_path"] = src["file_path"]
@@ -130,8 +145,25 @@ def normalize_language(language):
     return mapping.get(language, language)
 
 
+def prepare_build_files(source_files):
+    code_segments = []
+    for idx, file in enumerate(source_files):
+        content = file.get("content", "")
+        language = file.get("language", CSS)
+        file_path = file.get("file_path")
+        metadata = dict(language=language, file_path=file_path)
+        segment = MessageSegment(type="code", content=content, metadata=metadata)
+        code_segments.append(NamedCodeSegment(idx, segment, file_path))
+
+    return get_source_tree(segments)
+
+
 def get_sources(segments) -> List[Dict[str, str]]:
     code_segments = get_named_code_segments(segments)
+    return get_source_tree(code_segments)
+
+
+def get_source_tree(code_segments):
     js_segments = get_language_segments(code_segments, JAVASCRIPT)
     python_segments = get_language_segments(code_segments, PYTHON)
     css_segments = get_language_segments(code_segments, CSS)
@@ -201,6 +233,7 @@ def get_named_code_segments(segments):
             candidates = find_files(seg.content)
             candidate_name = candidates and candidates[-1]
         elif seg.type == "code":
+            # todo: first, try to extract file name from comment string at the top of the file
             res.append(NamedCodeSegment(idx, seg, candidate_name))
             candidate_name = None
     return res
