@@ -1,5 +1,7 @@
 import MessageCard from "./MessageCard";
 import WebSocketChat from "./WebSocketChat";
+//import CodeEditor from "./CodeEditor";
+import IDE from "./SimpleIDE";
 
 function getThread(rootMsg) {
     const thread = [rootMsg];
@@ -45,7 +47,6 @@ export default async function Page(props) {
     const presets = await presetsResponse.json();
     const currentPreset = presets.filter(p => p.name === configuration.preset)[0];
 
-
     const openningMessageResponse = await fetch(chat.messages[0]);
     const openningMessage = await openningMessageResponse.json();
     const thread = getThread(openningMessage);
@@ -64,6 +65,9 @@ export default async function Page(props) {
     const opsResponse = await fetch(`http://django:8000/api/chats/${id}/generations/?status=in_progress`);
     const operations = await opsResponse.json();
 
+    const revisions = thread.filter(msg => msg.revisions && msg.revisions.length > 0).map(msg => msg.revisions[0]);
+    const activRevision = revisions[revisions.length - 1];
+
     return (
         <div>
             <WebSocketChat
@@ -74,6 +78,8 @@ export default async function Page(props) {
                 configuration={configuration}
                 operations={operations}
             />
+
+            <IDE activeRevision={activRevision} revisions={revisions} />
         </div>
     );
 }

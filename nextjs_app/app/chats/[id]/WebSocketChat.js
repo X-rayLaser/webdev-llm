@@ -9,6 +9,7 @@ import { renderMarkdown } from "@/app/utils";
 import { getRandomInt, getHostNameOrLocalhost } from "@/app/utils";
 import { Alert } from "@/app/components/alerts";
 
+
 function openSocket(url) {
     const socket = new WebSocket(url);
 
@@ -117,6 +118,8 @@ export default function WebSocketChat({
         </div>
     );
 }
+
+
 
 function LoadingMessage({ text }) {
     return (

@@ -394,7 +394,7 @@ function GenericModalityControls({
 }
 
 function TextModality({ data, onSuccessfulUpdate, onSuccessfulDelete, showControls=true }) {
-    const renderedText = renderMarkdown(data.text);
+    const renderedText = renderMarkdown(data.text || "");
 
     let innerHtml = {
         __html: renderedText

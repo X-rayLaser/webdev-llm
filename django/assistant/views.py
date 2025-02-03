@@ -21,18 +21,29 @@ from .serializers import (
     ThreadSerializer, ChatSerializer, MultimediaMessageSerializer, ModalitySerializer,
     RevisionSerializer, NewRevisionSerializer, CommentSerializer, ModalitiesOrderingSerializer,
     GenerationSerializer, GenerationMetadataSerializer, NewGenerationTaskSerializer,
-    BuildLaunchSerializer
+    BuildLaunchSerializer, MakeRevisionSerializer
 )
 
 from .tasks import summarize_text, generate_chat_picture
 from .utils import fix_newlines
 
 
-@api_view()
-def source_tree_view(request, pk):
-    revision = get_object_or_404(Revision, pk=pk)
-    source_tree = reduce_source_tree(revision)
-    return Response(source_tree)
+class RevisionViewSet(viewsets.GenericViewSet):
+    queryset = Revision.objects.all()
+    serializer_class = RevisionSerializer
+
+    @decorators.action(methods=['get'], detail=True, url_path="source_trees")
+    def source_trees(self, request, pk=None):
+        revision = self.get_object()
+        source_tree = reduce_source_tree(revision)
+        return Response(source_tree)
+
+    @decorators.action(methods=['post'], detail=True, url_path="make_revision")
+    def make_revision(self, request, pk=None):
+        ser = MakeRevisionSerializer(data=dict(parent_revision=pk, **request.data))
+        ser.is_valid(raise_exception=True)
+        new_revision = ser.save()
+        return Response(RevisionSerializer(new_revision, context={'request': request}).data)
 
 
 class ServerViewSet(viewsets.ModelViewSet):

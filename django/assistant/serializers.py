@@ -158,6 +158,32 @@ class NewRevisionSerializer(serializers.ModelSerializer):
         fields = ['id', 'src_tree', 'message']
 
 
+class MakeRevisionSerializer(serializers.Serializer):
+    parent_revision = serializers.PrimaryKeyRelatedField(queryset=Revision.objects.all(), many=False)
+    commit_text = serializers.CharField(max_length=1024, default="I made some changes to the files")
+    src_tree = serializers.JSONField()
+
+    def create(self, validated_data):
+        parent_rev = validated_data.pop('parent_revision')
+        parent_msg = parent_rev.message
+
+        text = validated_data.pop('commit_text')
+        sources = validated_data.pop('src_tree')
+        modality_container = Modality.objects.create(modality_type="mixture")
+        Modality.objects.create(modality_type="text", text=text, mixed_modality=modality_container)
+
+        role = "assistant" if parent_msg.role == "user" else "user"
+
+        # todo: use atomic context manager (increment child index only if remaining code succeeds)
+        parent_msg.child_index = parent_msg.replies.count()
+        parent_msg.save()
+        new_message = MultimediaMessage.objects.create(
+            role=role, content=modality_container, parent=parent_msg
+        )
+
+        return Revision.objects.create(message=new_message, src_tree=sources)
+
+
 class ModalitySerializer(serializers.ModelSerializer):
     mixture = serializers.SerializerMethodField()
 

@@ -433,6 +433,21 @@ async function launchBuild(messageId, revisionId) {
     return result
 }
 
+async function fetchSourceFiles(revisionId) {
+    const sourceResponse = await fetch(`http://django:8000/api/revisions/${revisionId}/source_trees/`);
+    return await sourceResponse.json();
+}
+
+async function makeRevision(revisionId, sourceFiles) {
+    const url = `${baseApiUrl}/revisions/${revisionId}/make_revision/`;
+    const data = {
+        "src_tree": sourceFiles,
+        "commit_text": "Made some changes"
+    };
+    const result = await sendJsonObject(url, data, "Failed to make revision");
+    return result
+}
+
 export {
     createServerEntry, updateServerEntry, deleteServerEntry,
     createPresetEntry, updatePresetEntry, deletePresetEntry,
@@ -446,5 +461,7 @@ export {
     switchBranch,
     startMessageGeneration,
     regenerateMessage,
-    launchBuild
+    launchBuild,
+    fetchSourceFiles,
+    makeRevision
 };

@@ -13,10 +13,10 @@ router.register(r'multimedia-messages', views.MultimediaMessageViewSet)
 router.register(r'modalities', views.ModalityViewSet)
 router.register(r'comments', views.CommentViewSet)
 router.register(r'generations', views.GenerationViewSet)
+router.register(r'revisions', views.RevisionViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
-    path('source_trees/<int:pk>/', views.source_tree_view, name='source-tree-detail'),
     path('builds/<int:pk>/', views.BuildDetailView.as_view(), name='build-detail'),
     path('checks/<int:pk>/', views.LinterCheckDetailView.as_view(), name='lintercheck-detail'),
     path('tests/<int:pk>/', views.TestRunDetailView.as_view(), name='testrun-detail'),
