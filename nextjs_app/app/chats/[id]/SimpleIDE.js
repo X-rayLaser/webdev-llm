@@ -84,7 +84,8 @@ function VCSContainer({
     parentFiles,
     currentFiles,
     stagingChanges,
-    onVcsItemClick,
+    onCommittedItemClick,
+    onStagedItemClick,
     onCommit,
     onDiscard,
 }) {
@@ -155,11 +156,16 @@ function VCSContainer({
             <h3 className="font-semibold mb-2">Version Control</h3>
             <div className="mb-4">
                 <h4 className="font-medium text-sm mb-1">Committed Changes</h4>
-                <ul>{committedChanges.map((item) => renderItem(item, item.status === "edited" ? onVcsItemClick : null))}</ul>
+                <ul>{committedChanges.map((item) => renderItem(item, item.status === "edited" ? onCommittedItemClick : null))}</ul>
             </div>
             <div>
                 <h4 className="font-medium text-sm mb-1">Staging Area</h4>
-                <ul>{stagingList.map((item) => renderItem(item, item.status === "edited" ? onVcsItemClick : null))}</ul>
+                <ul>
+                    {stagingList.map((item) => {
+                        const clickHandler = (item.status === "new" || item.status === "edited") ? onStagedItemClick : null
+                        return renderItem(item, clickHandler);
+                    })}
+                </ul>
                 <div className="mt-2 flex justify-end space-x-2">
                     <button
                         onClick={onDiscard}
@@ -329,7 +335,10 @@ export default function IDE({ activeRevision, revisions }) {
         if (stagingChanges[file.file_path] && stagingChanges[file.file_path].status === "deleted") {
             return;
         }
-        setSelectedFile(file);
+
+        let stagedFile = stagingChanges[file.file_path];
+        stagedFile = stagedFile && {...stagedFile};
+        setSelectedFile(stagedFile || file);
         setDiffFile(null);
     };
 
@@ -339,6 +348,7 @@ export default function IDE({ activeRevision, revisions }) {
             ...prev,
             [filePath]: { file_path: filePath, content: "", status: "new" },
         }));
+
         // We do not change the file browser (which shows only the files from current revision).
     };
 
@@ -362,11 +372,21 @@ export default function IDE({ activeRevision, revisions }) {
         if (!selectedFile) return;
         setStagingChanges((prev) => {
             const existing = prev[selectedFile.file_path];
-            // If file was previously new, remain "new" until edited.
+            const original = currentFiles.find(f => f.file_path === selectedFile.file_path);
+
+            // if a selected file was already edited,
+            // but there is no change between original and current content, unstage the file
+            if (existing && existing.status === "edited" && original && original.content === newContent) {
+                return Object.fromEntries(
+                    Object.entries(prev).filter(([key, value]) => key !== selectedFile.file_path)
+                );
+            }
+
             let newStatus = existing ? existing.status : "edited";
-            // If the file was "new" and user edits it, change status to "edited".
-            if (existing && existing.status === "new" && newContent.trim() !== "") {
-                newStatus = "edited";
+
+            // If the file was "new", keep it this way".
+            if (existing && existing.status === "new") {
+                newStatus = "new";
             }
             return {
                 ...prev,
@@ -375,19 +395,23 @@ export default function IDE({ activeRevision, revisions }) {
         });
     };
 
-    const handleVcsItemClick = (item) => {
-        // Find the corresponding file in stagingChanges or in currentFiles (if not staged)
+    const handleStagedItemClick = (item) => {
         let staged = stagingChanges[item.file_path];
 
-        if (staged && staged.status === "edited") {
-            // For diff viewer: get parent's version (if exists) and new content.
-            // todo: check that this is correct implementation
+        if (staged && staged.status === "new") {
+            setSelectedFile(staged);
+            setDiffFile(null);
+        } else if (staged && staged.status === "edited") {
             const current = currentFiles.find((f) => f.file_path === item.file_path);
             const oldContent = current ? current.content : "";
             const newContent = staged.content;
             setDiffFile({ file_path: item.file_path, oldContent, newContent });
             setSelectedFile(null);
-        } else if (!staged && item.status === "edited") {
+        }
+    };
+
+    const handleCommittedItemClick = (item) => {
+        if (item.status === "edited") {
             const old = parentFiles.find((f) => f.file_path === item.file_path);
             const current = currentFiles.find((f) => f.file_path === item.file_path);
             const oldContent = old ? old.content : "";
@@ -395,7 +419,7 @@ export default function IDE({ activeRevision, revisions }) {
             setDiffFile({ file_path: item.file_path, oldContent, newContent });
             setSelectedFile(null);
         }
-    };
+    }
 
     const handleDiscardChanges = () => {
         setShowDiscardModal(true);
@@ -469,7 +493,8 @@ export default function IDE({ activeRevision, revisions }) {
                         parentFiles={parentFiles}
                         currentFiles={currentFiles}
                         stagingChanges={stagingChanges}
-                        onVcsItemClick={handleVcsItemClick}
+                        onCommittedItemClick={handleCommittedItemClick}
+                        onStagedItemClick={handleStagedItemClick}
                         onCommit={handleCommitChanges}
                         onDiscard={handleDiscardChanges}
                     />

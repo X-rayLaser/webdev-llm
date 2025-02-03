@@ -66,7 +66,7 @@ export default async function Page(props) {
     const operations = await opsResponse.json();
 
     const revisions = thread.filter(msg => msg.revisions && msg.revisions.length > 0).map(msg => msg.revisions[0]);
-    const activRevision = revisions[revisions.length - 1];
+    const activeRevision = revisions[revisions.length - 1];
 
     return (
         <div>
@@ -79,7 +79,7 @@ export default async function Page(props) {
                 operations={operations}
             />
 
-            <IDE activeRevision={activRevision} revisions={revisions} />
+            <IDE activeRevision={activeRevision} revisions={revisions} />
         </div>
     );
 }
