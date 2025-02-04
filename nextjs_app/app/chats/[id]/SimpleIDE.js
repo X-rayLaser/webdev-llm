@@ -166,30 +166,44 @@ function VCSContainer({
             <h3 className="font-semibold mb-2">Version Control</h3>
             <div className="mb-4">
                 <h4 className="font-medium text-sm mb-1">Committed Changes</h4>
-                <ul>{committedChanges.map((item) => renderItem(item, item.status === "edited" ? onCommittedItemClick : null))}</ul>
+                {committedChanges.length === 0 ? (
+                    <div className="text-center text-lg mt-4">No changes between this revision and previous one</div>
+                ) : (
+                    <ul>
+                        {committedChanges.map((item) =>
+                            renderItem(item, item.status === "edited" ? onCommittedItemClick : null)
+                        )}
+                    </ul>
+                )}
             </div>
             <div>
                 <h4 className="font-medium text-sm mb-1">Staging Area</h4>
-                <ul>
-                    {stagingList.map((item) => {
-                        const clickHandler = (item.status === "new" || item.status === "edited") ? onStagedItemClick : null
-                        return renderItem(item, clickHandler);
-                    })}
-                </ul>
-                <div className="mt-2 flex justify-end space-x-2">
-                    <button
-                        onClick={onDiscard}
-                        className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
-                    >
-                        Discard
-                    </button>
-                    <button
-                        onClick={onCommit}
-                        className="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600"
-                    >
-                        Commit
-                    </button>
-                </div>
+                {stagingList.length === 0 ? (
+                    <div className="text-center text-lg mt-4">Area is empty. No changes to commit.</div>
+                ) : (
+                    <div>
+                        <ul>
+                            {stagingList.map((item) => {
+                                const clickHandler = (item.status === "new" || item.status === "edited") ? onStagedItemClick : null
+                                return renderItem(item, clickHandler);
+                            })}
+                        </ul>
+                        <div className="mt-2 flex justify-end space-x-2">
+                            <button
+                                onClick={onDiscard}
+                                className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
+                            >
+                                Discard
+                            </button>
+                            <button
+                                onClick={onCommit}
+                                className="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600"
+                            >
+                                Commit
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -243,13 +257,22 @@ function FileEditor({ file, onContentChange }) {
         navigator.clipboard.writeText(content);
     };
 
+    const disableUndo = (historyIndex <= 0);
+    const disableRedo = (historyIndex >= history.length - 1);
+
     return (
         <div className="flex flex-col h-full">
             <div className="flex space-x-2 bg-gray-100 p-2 border-b">
-                <button onClick={handleUndo} title="Undo" className="hover:text-blue-500">
+                <button onClick={handleUndo} title="Undo"
+                    disabled={disableUndo}
+                    className="hover:text-blue-500 disabled:opacity-30"
+                >
                     <FontAwesomeIcon icon={faUndo} />
                 </button>
-                <button onClick={handleRedo} title="Redo" className="hover:text-blue-500">
+                <button onClick={handleRedo} title="Redo"
+                    disabled={disableRedo}
+                    className="hover:text-blue-500 disabled:opacity-30"
+                >
                     <FontAwesomeIcon icon={faRedo} />
                 </button>
                 <button onClick={handleCopy} title="Copy" className="hover:text-blue-500">
@@ -334,7 +357,8 @@ export default function IDE({ activeRevision, revisions }) {
 
     const handleRevisionChange = (e) => {
         const revisionId = e.target.value;
-        const rev = revisions.find((r) => r.id === revisionId);
+        const rev = revisions.find((r) => r.id == revisionId);
+
         if (rev) {
             setSelectedRevision(rev);
         }
@@ -442,6 +466,7 @@ export default function IDE({ activeRevision, revisions }) {
 
     const confirmDiscard = () => {
         setStagingChanges({});
+        setDiffFile(null);
         setShowDiscardModal(false);
     };
 
@@ -494,7 +519,7 @@ export default function IDE({ activeRevision, revisions }) {
                 >
                     {revisions.map((rev) => (
                         <option key={rev.id} value={rev.id}>
-                            {new Date(rev.created).toLocaleString()}
+                            {rev.created}
                         </option>
                     ))}
                 </select>
