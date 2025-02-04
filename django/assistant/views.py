@@ -40,7 +40,9 @@ class RevisionViewSet(viewsets.GenericViewSet):
 
     @decorators.action(methods=['post'], detail=True, url_path="make_revision")
     def make_revision(self, request, pk=None):
-        ser = MakeRevisionSerializer(data=dict(parent_revision=pk, **request.data))
+        data = request.data.copy()
+        data.update(parent_revision=pk)
+        ser = MakeRevisionSerializer(data=data)
         ser.is_valid(raise_exception=True)
         new_revision = ser.save()
         return Response(RevisionSerializer(new_revision, context={'request': request}).data)

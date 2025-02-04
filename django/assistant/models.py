@@ -285,7 +285,11 @@ def reduce_source_tree(revision):
 
         for entry in new_tree:
             path = entry["file_path"]
-            res_dict[path] = entry
+            if "deleted" in entry:
+                if path in res_dict:
+                    del res_dict[path]
+            else:
+                res_dict[path] = entry
 
         return list(res_dict.values())
 

@@ -438,13 +438,14 @@ async function fetchSourceFiles(revisionId) {
     return await sourceResponse.json();
 }
 
-async function makeRevision(chatId, revisionId, sourceFiles, commitText="") {
+async function makeRevision(chatId, revisionId, sourceFiles, prevState, formData) {
     const url = `${baseApiUrl}/revisions/${revisionId}/make_revision/`;
-    const data = {
-        "src_tree": sourceFiles,
-        "commit_text": commitText || "I changes some files"
-    };
-    const result = await sendJsonObject(url, data, "Failed to make revision");
+
+    const commitText = formData.get("commit_text") || "I made some changes to the files";
+    formData.set("commit_text", commitText);
+    formData.append("src_tree", JSON.stringify(sourceFiles));
+    
+    const result = await sendData({ url, formData, serverErrorMessage: "Failed to make revision"});
 
     if (result.success) {
         revalidatePath(`/chats/${chatId}`);

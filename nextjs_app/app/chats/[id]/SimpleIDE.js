@@ -3,6 +3,9 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { fetchSourceFiles, makeRevision } from "@/app/actions";
 import { ConfirmationModal } from "@/app/components/modal";
+import { formFactory, makeCreateForm } from "@/app/components/form-factory";
+import { DiscardButton, CommitButton } from "@/app/components/buttons";
+import { AutoExpandingTextArea } from "@/app/components/common-forms";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTrashAlt, faUndo, faRedo, faCopy, faPlus } from "@fortawesome/free-solid-svg-icons";
 
@@ -96,12 +99,9 @@ function VCSContainer({
     stagingChanges,
     onCommittedItemClick,
     onStagedItemClick,
-    onCommit,
     onDiscard,
+    commitAction
 }) {
-
-    const [commitText, setCommitText] = useState("");
-
     // Compute committed changes (diff between parentFiles and currentFiles)
     const computeCommittedChanges = () => {
         const changes = [];
@@ -164,6 +164,40 @@ function VCSContainer({
         );
     };
 
+    const fields = [{
+        name: "commit_text",
+        component: AutoExpandingTextArea,
+        id: "commit_text_field_id",
+        placeholder: "Optional comment describing the changes made"
+      }];
+      
+      
+    function renderFields(formFields, names, errorMessage, submitButton) {
+        return (
+            <div>
+                <div>{formFields.commit_text}</div>
+
+                <div className="mt-2">{errorMessage}</div>
+
+                <div className="mt-2 flex justify-end space-x-2">
+                    <DiscardButton onClick={onDiscard} />
+                    {submitButton}
+                </div>
+            </div>
+        );
+    }
+
+    const sourceFiles = Object.values(stagingChanges).map((change) => {
+        // Only include "deleted" flag if file is marked as deleted.
+        const { file_path, content, status } = change;
+        if (status === "deleted") return { file_path, content, deleted: true };
+        return { file_path, content };
+    });
+    
+    const creationAction = commitAction.bind(null, sourceFiles);
+    const RevisionForm = formFactory(fields, renderFields, CommitButton, "Commit");
+    const CreateRevisionForm = makeCreateForm(RevisionForm, creationAction);
+
     return (
         <div className="border p-2 rounded">
             <h3 className="font-semibold mb-2">Version Control</h3>
@@ -191,26 +225,7 @@ function VCSContainer({
                                 return renderItem(item, clickHandler);
                             })}
                         </ul>
-                        <textarea 
-                            rows="3"
-                            placeholder="Optional comment describing the changes made"
-                            value={commitText}
-                            onChange={e => setCommitText(e.target.value)}
-                            className="w-full border mt-2 p-2" />
-                        <div className="mt-2 flex justify-end space-x-2">
-                            <button
-                                onClick={onDiscard}
-                                className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
-                            >
-                                Discard
-                            </button>
-                            <button
-                                onClick={() => onCommit(commitText)}
-                                className="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600"
-                            >
-                                Commit
-                            </button>
-                        </div>
+                        <CreateRevisionForm onSuccess={() => null} />
                     </div>
                 )}
             </div>
@@ -513,6 +528,8 @@ export default function IDE({ chatId, activeRevision, revisions }) {
     );
     const browserFiles = [...currentRevisionUndeletedFiles, ...stagedCreated];
 
+    const commitAction = makeRevision.bind(null, chatId, selectedRevision.id);
+
     return (
         <div className="flex flex-col h-full">
             {/* Top: Revision Dropdown */}
@@ -550,8 +567,8 @@ export default function IDE({ chatId, activeRevision, revisions }) {
                         stagingChanges={stagingChanges}
                         onCommittedItemClick={handleCommittedItemClick}
                         onStagedItemClick={handleStagedItemClick}
-                        onCommit={handleCommitChanges}
                         onDiscard={handleDiscardChanges}
+                        commitAction={commitAction}
                     />
                 </div>
                 {/* Right section: either file editor or diff viewer */}
