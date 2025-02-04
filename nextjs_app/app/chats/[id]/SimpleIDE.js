@@ -7,6 +7,13 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTrashAlt, faUndo, faRedo, faCopy, faPlus } from "@fortawesome/free-solid-svg-icons";
 
 
+function unstageFile(stagingArea, file_path) {
+    return Object.fromEntries(
+        Object.entries(stagingArea).filter(([key, value]) => key !== file_path)
+    );
+}
+
+
 function generateDiff(oldText = "", newText = "") {
     const oldLines = oldText.split("\n");
     const newLines = newText.split("\n");
@@ -28,6 +35,8 @@ function generateDiff(oldText = "", newText = "") {
 
 function FileBrowser({ files, onSelectFile, onDeleteFile, onAddFile, selectedFilePath }) {
     const [newFileName, setNewFileName] = useState("");
+
+    const isEmptyName = newFileName.trim() === "" ? true : false;
 
     const handleAdd = () => {
         if (newFileName.trim() !== "") {
@@ -70,7 +79,8 @@ function FileBrowser({ files, onSelectFile, onDeleteFile, onAddFile, selectedFil
                 />
                 <button
                     onClick={handleAdd}
-                    className="ml-2 bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
+                    disabled={isEmptyName}
+                    className="ml-2 bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 disabled:bg-gray-300"
                 >
                     <FontAwesomeIcon icon={faPlus} />
                 </button>
@@ -344,22 +354,29 @@ export default function IDE({ activeRevision, revisions }) {
 
     const handleAddFile = (filePath) => {
         // Add to staging changes as new file.
+
+        if (stagingChanges[filePath] || currentFiles.find(f => f.file_path === filePath)) {
+            alert(`File with name "${filePath}" already exists!`);
+            return;
+        }
+
         setStagingChanges((prev) => ({
             ...prev,
             [filePath]: { file_path: filePath, content: "", status: "new" },
         }));
-
-        // We do not change the file browser (which shows only the files from current revision).
     };
 
     const handleDeleteFile = (file) => {
         setStagingChanges((prev) => {
             const existing = prev[file.file_path];
-            // If the file was already new, keep its content but mark as deleted.
-            const newStatus = "deleted";
+            // if file to be deleted was created in the browser, unstage it
+            if (existing && existing.status === "new") {
+                return unstageFile(prev, file.file_path);
+            }
+
             return {
                 ...prev,
-                [file.file_path]: { file_path: file.file_path, content: file.content, status: newStatus },
+                [file.file_path]: { file_path: file.file_path, content: file.content, status: "deleted" },
             };
         });
         // Also if the file is currently opened in editor, close it.
@@ -377,9 +394,7 @@ export default function IDE({ activeRevision, revisions }) {
             // if a selected file was already edited,
             // but there is no change between original and current content, unstage the file
             if (existing && existing.status === "edited" && original && original.content === newContent) {
-                return Object.fromEntries(
-                    Object.entries(prev).filter(([key, value]) => key !== selectedFile.file_path)
-                );
+                return unstageFile(prev, selectedFile.file_path);
             }
 
             let newStatus = existing ? existing.status : "edited";
@@ -458,6 +473,12 @@ export default function IDE({ activeRevision, revisions }) {
         }
     };
 
+    const stagedCreated = Object.values(stagingChanges).filter(sf => sf.status === "new");
+    const currentRevisionUndeletedFiles = currentFiles.filter(
+        f => !(stagingChanges[f.file_path] && stagingChanges[f.file_path].status === "deleted")
+    );
+    const browserFiles = [...currentRevisionUndeletedFiles, ...stagedCreated];
+
     return (
         <div className="flex flex-col h-full">
             {/* Top: Revision Dropdown */}
@@ -483,7 +504,7 @@ export default function IDE({ activeRevision, revisions }) {
                 {/* Left section: file browser + VCS container */}
                 <div className="w-full sm:w-1/3 border-r overflow-auto p-2">
                     <FileBrowser
-                        files={currentFiles}
+                        files={browserFiles}
                         onSelectFile={handleSelectFile}
                         onDeleteFile={handleDeleteFile}
                         onAddFile={handleAddFile}
