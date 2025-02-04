@@ -79,7 +79,7 @@ export default async function Page(props) {
                 operations={operations}
             />
 
-            <IDE activeRevision={activeRevision} revisions={revisions} />
+            <IDE chatId={chat.id} activeRevision={activeRevision} revisions={revisions} />
         </div>
     );
 }

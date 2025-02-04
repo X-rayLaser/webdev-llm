@@ -99,6 +99,9 @@ function VCSContainer({
     onCommit,
     onDiscard,
 }) {
+
+    const [commitText, setCommitText] = useState("");
+
     // Compute committed changes (diff between parentFiles and currentFiles)
     const computeCommittedChanges = () => {
         const changes = [];
@@ -188,6 +191,12 @@ function VCSContainer({
                                 return renderItem(item, clickHandler);
                             })}
                         </ul>
+                        <textarea 
+                            rows="3"
+                            placeholder="Optional comment describing the changes made"
+                            value={commitText}
+                            onChange={e => setCommitText(e.target.value)}
+                            className="w-full border mt-2 p-2" />
                         <div className="mt-2 flex justify-end space-x-2">
                             <button
                                 onClick={onDiscard}
@@ -196,7 +205,7 @@ function VCSContainer({
                                 Discard
                             </button>
                             <button
-                                onClick={onCommit}
+                                onClick={() => onCommit(commitText)}
                                 className="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600"
                             >
                                 Commit
@@ -310,7 +319,7 @@ function DiffViewer({ oldContent, newContent }) {
 }
 
 
-export default function IDE({ activeRevision, revisions }) {
+export default function IDE({ chatId, activeRevision, revisions }) {
     // Selected revision state (dropdown)
     const [selectedRevision, setSelectedRevision] = useState(activeRevision);
     // File trees for current and parent revisions
@@ -475,7 +484,7 @@ export default function IDE({ activeRevision, revisions }) {
     };
 
     // Handler for committing changes.
-    const handleCommitChanges = async () => {
+    const handleCommitChanges = async (commitText) => {
         // Prepare an array of changed files from staging.
         const sourceFiles = Object.values(stagingChanges).map((change) => {
             // Only include "deleted" flag if file is marked as deleted.
@@ -484,7 +493,7 @@ export default function IDE({ activeRevision, revisions }) {
             return { file_path, content };
         });
         try {
-            const result = await makeRevision(selectedRevision.id, sourceFiles);
+            const result = await makeRevision(chatId, selectedRevision.id, sourceFiles, commitText);
             if (result.success) {
                 // After commit, reload files.
                 await loadFiles(selectedRevision.id);

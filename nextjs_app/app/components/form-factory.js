@@ -25,7 +25,7 @@ function cleanDefault(defaults, fieldName, type) {
     return defaultValue
 }
 
-export function formFactory(fields, renderFields) {
+export function formFactory(fields, renderFields, submitButtonText="Submit") {
 
     function FormComponent({ action, defaults, onSuccess }) {
         const states = {};
@@ -107,7 +107,7 @@ export function formFactory(fields, renderFields) {
 
         const submitButton = (
             <div>
-                <SubmitButton disabled={runningSubmission}>
+                <SubmitButton disabled={runningSubmission} text={submitButtonText}>
                 {runningSubmission && <span className="ml-2"><FontAwesomeIcon icon={faCog} spin /></span>}
                 </SubmitButton>
             </div>
