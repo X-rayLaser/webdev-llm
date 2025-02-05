@@ -36,6 +36,7 @@ CSS = 'css'
 
 
 def process_raw_message(text: str) -> Tuple[List[MessageSegment], List[Dict[str, str]]]:
+    # deprecated in favor of extract_modalities
     # todo: separate extraction of file names from follow preprocessing required for build process
     # todo: here only attempt to extract names given to files by LLM and save them to Modality and Revision
     segments = parse_raw_message(text)
@@ -44,15 +45,39 @@ def process_raw_message(text: str) -> Tuple[List[MessageSegment], List[Dict[str,
 
 
 def extract_modalities(text: str, parent=None) -> List[Modality]:
-    segments = parse_raw_message(text)
-    named_code_segments = get_named_code_segments(segments)
-    sources = make_language_sources(named_code_segments, "untitled_0", "untitled_{}")
-    sources.sort(key=lambda item: item["index"])
-
-    segments, sources = patch_segments_and_sources(segments, sources)
-
+    segments, sources = extract_segments_with_sources(text)
     modalities = [seg.create_modality(parent) for seg in segments]
     return modalities, sources
+
+
+def extract_segments_with_sources(text):
+    segments = parse_raw_message(text)
+    decorated_segments = get_named_code_segments(segments)
+    named_code_segments = [s for s in decorated_segments if s.candidate_name]
+    unnamed_code_segments = [s for s in decorated_segments if not s.candidate_name]
+
+    language_groups = {}
+
+    lang_to_ext = {
+        JAVASCRIPT: ".js",
+        PYTHON: ".py",
+        CSS: ".css"
+    }
+
+    for unnamed_seg in unnamed_code_segments:
+        language = unnamed_seg.segment.metadata.get("language")
+        extension = lang_to_ext.get(language, "")
+        language_groups.setdefault(extension, []).append(unnamed_seg)
+
+    sources = []
+    for ext, segment_group in language_groups.items():
+        sources = sources + make_language_sources(
+            segment_group, f"untitled_0{ext}", "untitled_{}" + ext
+        )
+
+    sources = sources + make_language_sources(named_code_segments, "", "")
+    sources.sort(key=lambda item: item["index"])
+    return patch_segments_and_sources(segments, sources)
 
 
 def patch_segments_and_sources(segments, sources):
@@ -102,7 +127,9 @@ def detect_language(code):
     if detect_python(code):
         return "python"
 
-    return "css"
+    if detect_css(code):
+        return "css"
+    return ""
 
 
 def detect_python(code):
@@ -130,6 +157,11 @@ def detect_js(code):
     return re.search(regex, code, flags=re.DOTALL)
 
 
+def detect_css(code):
+    # todo: implement
+    return False
+
+
 def normalize_language(language):
     language = language.lower()
 
@@ -155,7 +187,7 @@ def prepare_build_files(source_files):
         segment = MessageSegment(type="code", content=content, metadata=metadata)
         code_segments.append(NamedCodeSegment(idx, segment, file_path))
 
-    return get_source_tree(segments)
+    return get_source_tree(code_segments)
 
 
 def get_sources(segments) -> List[Dict[str, str]]:
@@ -240,7 +272,7 @@ def get_named_code_segments(segments):
 
 
 def find_files(text):
-    pattern = re.compile("(\"|\')?(?P<path>[/a-zA-Z0-9_-]*\.(js|css|py))(\"|\')?:?$",
+    pattern = re.compile("(\"|\')?(?P<path>[/a-zA-Z0-9_-]*\.(js|css|py))(\"|\')?:?",
                          flags=re.MULTILINE)
     return find_all(pattern, text, lambda match: match.group("path"))
 
@@ -261,8 +293,8 @@ def make_language_sources(segments, main_path, main_template):
         name = name or main_path
         sources = [make_source(idx, name, segment.content)]
     else:
-        sources = [make_source(idx, (name or main_template.format(idx)), seg.content)
-                   for idx, seg, name in segments]
+        sources = [make_source(idx, (name or main_template.format(src_file_no)), seg.content)
+                   for src_file_no, (idx, seg, name) in enumerate(segments)]
     return sources
 
 

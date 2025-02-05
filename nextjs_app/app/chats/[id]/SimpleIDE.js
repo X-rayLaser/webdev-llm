@@ -17,6 +17,42 @@ function unstageFile(stagingArea, file_path) {
 }
 
 
+// Compute committed changes (diff between parentFiles and currentFiles)
+const computeCommittedChanges = (parentFiles, currentFiles) => {
+    const changes = [];
+    const parentMap = {};
+    parentFiles.forEach((f) => {
+        parentMap[f.file_path] = f;
+    });
+    currentFiles.forEach((f) => {
+        if (parentMap[f.file_path]) {
+            // File existed in parent; compare content
+            if (parentMap[f.file_path].content !== f.content) {
+                changes.push({
+                    file_path: f.file_path,
+                    status: "edited",
+                });
+            }
+        } else {
+            changes.push({
+                file_path: f.file_path,
+                status: "new",
+            });
+        }
+    });
+    // Look for deletions (files in parent not in current)
+    parentFiles.forEach((f) => {
+        if (!currentFiles.find((cf) => cf.file_path === f.file_path)) {
+            changes.push({
+                file_path: f.file_path,
+                status: "deleted",
+            });
+        }
+    });
+    return changes;
+};
+
+
 function generateDiff(oldText = "", newText = "") {
     const oldLines = oldText.split("\n");
     const newLines = newText.split("\n");
@@ -92,6 +128,26 @@ function FileBrowser({ files, onSelectFile, onDeleteFile, onAddFile, selectedFil
     );
 }
 
+function VCSItem({ item, onClick = null }) {
+    // todo: refactor this: set onClick to null if item is not edited
+    let badgeColor = "";
+    if (item.status === "new") badgeColor = "bg-green-200 text-green-800";
+    if (item.status === "edited") badgeColor = "bg-blue-200 text-blue-800";
+    if (item.status === "deleted") badgeColor = "bg-red-200 text-red-800";
+    return (
+        <li
+            className={`flex justify-between items-center px-2 py-1 hover:bg-gray-100 cursor-pointer ${onClick ? "cursor-pointer" : ""
+                }`}
+            onClick={() => onClick && onClick(item)}
+        >
+            <span>{item.file_path}</span>
+            <span className={`text-xs font-semibold px-1 py-0.5 rounded ${badgeColor}`}>
+                {item.status}
+            </span>
+        </li>
+    );
+};
+
 
 function VCSContainer({
     parentFiles,
@@ -102,67 +158,10 @@ function VCSContainer({
     onDiscard,
     commitAction
 }) {
-    // Compute committed changes (diff between parentFiles and currentFiles)
-    const computeCommittedChanges = () => {
-        const changes = [];
-        const parentMap = {};
-        parentFiles.forEach((f) => {
-            parentMap[f.file_path] = f;
-        });
-        currentFiles.forEach((f) => {
-            if (parentMap[f.file_path]) {
-                // File existed in parent; compare content
-                if (parentMap[f.file_path].content !== f.content) {
-                    changes.push({
-                        file_path: f.file_path,
-                        status: "edited",
-                    });
-                }
-            } else {
-                changes.push({
-                    file_path: f.file_path,
-                    status: "new",
-                });
-            }
-        });
-        // Look for deletions (files in parent not in current)
-        parentFiles.forEach((f) => {
-            if (!currentFiles.find((cf) => cf.file_path === f.file_path)) {
-                changes.push({
-                    file_path: f.file_path,
-                    status: "deleted",
-                });
-            }
-        });
-        return changes;
-    };
-
-    const committedChanges = computeCommittedChanges();
+    const committedChanges = computeCommittedChanges(parentFiles, currentFiles);
 
     // stagingChanges is an object: { [file_path]: { file_path, content, status } }
     const stagingList = Object.values(stagingChanges);
-
-    // Render a list item with status badge styling.
-    const renderItem = (item, onClick = null) => {
-        // todo: refactor this: set onClick to null if item is not edited
-        let badgeColor = "";
-        if (item.status === "new") badgeColor = "bg-green-200 text-green-800";
-        if (item.status === "edited") badgeColor = "bg-blue-200 text-blue-800";
-        if (item.status === "deleted") badgeColor = "bg-red-200 text-red-800";
-        return (
-            <li
-                key={item.file_path}
-                className={`flex justify-between items-center px-2 py-1 hover:bg-gray-100 cursor-pointer ${onClick ? "cursor-pointer" : ""
-                    }`}
-                onClick={() => onClick && onClick(item)}
-            >
-                <span>{item.file_path}</span>
-                <span className={`text-xs font-semibold px-1 py-0.5 rounded ${badgeColor}`}>
-                    {item.status}
-                </span>
-            </li>
-        );
-    };
 
     const fields = [{
         name: "commit_text",
@@ -208,7 +207,8 @@ function VCSContainer({
                 ) : (
                     <ul>
                         {committedChanges.map((item) =>
-                            renderItem(item, item.status === "edited" ? onCommittedItemClick : null)
+                            <VCSItem key={item.file_path} item={item} 
+                                onClick={item.status === "edited" ? onCommittedItemClick : null} />
                         )}
                     </ul>
                 )}
@@ -222,7 +222,7 @@ function VCSContainer({
                         <ul>
                             {stagingList.map((item) => {
                                 const clickHandler = (item.status === "new" || item.status === "edited") ? onStagedItemClick : null
-                                return renderItem(item, clickHandler);
+                                return <VCSItem key={item.file_path} item={item} onClick={clickHandler} />;
                             })}
                         </ul>
                         <CreateRevisionForm onSuccess={() => null} />
@@ -496,30 +496,6 @@ export default function IDE({ chatId, activeRevision, revisions }) {
 
     const cancelDiscard = () => {
         setShowDiscardModal(false);
-    };
-
-    // Handler for committing changes.
-    const handleCommitChanges = async (commitText) => {
-        // Prepare an array of changed files from staging.
-        const sourceFiles = Object.values(stagingChanges).map((change) => {
-            // Only include "deleted" flag if file is marked as deleted.
-            const { file_path, content, status } = change;
-            if (status === "deleted") return { file_path, content, deleted: true };
-            return { file_path, content };
-        });
-        try {
-            const result = await makeRevision(chatId, selectedRevision.id, sourceFiles, commitText);
-            if (result.success) {
-                // After commit, reload files.
-                await loadFiles(selectedRevision.id);
-                setStagingChanges({});
-            } else {
-                // Handle error – e.g. show alert (or use a toast)
-                alert("Commit failed: " + result.responseData.message);
-            }
-        } catch (error) {
-            console.error("Error committing revision:", error);
-        }
     };
 
     const stagedCreated = Object.values(stagingChanges).filter(sf => sf.status === "new");

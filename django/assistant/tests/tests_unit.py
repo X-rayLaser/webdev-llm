@@ -5,7 +5,8 @@ from rest_framework.test import APITestCase
 from assistant.models import Chat, MultimediaMessage, Modality, Revision
 from assistant.tests.utils import create_default_chat, create_message, create_text_modality
 from assistant.utils import (
-    process_raw_message, prepare_messages, convert_modality, MessageSegment
+    process_raw_message, prepare_messages, convert_modality, MessageSegment,
+    extract_segments_with_sources
 )
 
 
@@ -224,7 +225,7 @@ class LanguageDetectionTests(unittest.TestCase):
             "contains_css_selector_styles": "```p { height: 100%; }```"
         }
 
-        self.run_subtests(cases, "css")
+        self.run_subtests(cases, "")
 
     def run_subtests(self, cases, expected_language):
 
@@ -379,6 +380,80 @@ class SourceFilesNameResolutionTests(unittest.TestCase):
         self.assertEqual(sources[0]["file_path"], "project/main.js")
         self.assertEqual(sources[1]["file_path"], "project/config.js")
         self.assertEqual(sources[2]["file_path"], "project/utils.js")
+
+    def test_names_extraction(self):
+        test_cases = {
+            "single_file": (
+                "S file named script.js.```\nconsole.log('Hello');```",
+                ["script.js"]
+            ),
+            "text_section_only_contains_file_name": (
+                "script.js```\nconsole.log('Hello');```",
+                ["script.js"]
+            ),
+            "text_section_ends_with_file_name": (
+                "Here is a script.js```\nconsole.log('Hello');```",
+                ["script.js"]
+            ),
+            "text_section_ends_with_file_name_and_colon": (
+                "Here is a script.js:```\nconsole.log('Hello');```",
+                ["script.js"]
+            ),
+            "text_section_ends_with_file_name_and_colon_and_newline": (
+                "Here is a script.js:\n```\nconsole.log('Hello');```",
+                ["script.js"]
+            ),
+            "text_section_starts_with_file_name": (
+                "script.js is shown below\n```\nconsole.log('Hello');```",
+                ["script.js"]
+            ),
+            "text_section_contains_file_name_in_the_middle": (
+                "Here is script.js shown below:\n```\nconsole.log('Hello');```",
+                ["script.js"]
+            ),
+            "unnamed_js_code_block": (
+                "Random text.```\nconsole.log('Test');```More text.",
+                ["untitled_0.js"]
+            ),
+            "unnamed_cpp_code_block": (
+                "Random text.```\n*(ptr++);```More text.",
+                ["untitled_0"]
+            ),
+            "multiple_named_files": (
+                "File a.js.```\nalert('A');```File b.js.```\nalert('B');```",
+                ["a.js", "b.js"]
+            ),
+            "interleaved_text": (
+                "Intro. File one.js.```\nconsole.log(1);```Some text. File two.js.```\nconsole.log(2);```",
+                ["one.js", "two.js"]
+            ),
+            "mixed_named_js_file_and_unnamed": (
+                "Code:```\nlet x = 1;```File known.js.```\nlet y = 2;```",
+                ["untitled_0.js", "known.js"]
+            ),
+            "mixed_named_and_unnamed": (
+                "Code:```\n*(ptr++);```File known.js.```\nlet y = 2;```",
+                ["untitled_0", "known.js"]
+            ),
+            "text_then_js_code": (
+                "Just some text.```javascript\nconsole.log('JS block');```",
+                ["untitled_0.js"]
+            ),
+             "named_file_then_unknown_file": (
+                "main.js:\n```\n'use client';```\nunknown file```\nsome text```",
+                ["main.js", "untitled_0"]
+            ),
+            "file_sequence_mixture": (
+                "````javascript\nconsole.log('JS');````\n````python\nprint('Python');````\n````javascript\nconsole.log('Another JS');````\n````\nUnknown code block\n````",
+                ["untitled_0.js", "untitled_0.py", "untitled_1.js", "untitled_0"]
+            ),
+        }
+
+        for case, (text, expected_names) in test_cases.items():
+            with self.subTest(case):
+                _, sources = extract_segments_with_sources(text)
+                extracted_names = [source["file_path"] for source in sources]
+                self.assertEqual(extracted_names, expected_names)
 
 
 class MultimediaMessageMethodTests(APITestCase):
