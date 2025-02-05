@@ -266,9 +266,22 @@ def get_named_code_segments(segments):
             candidate_name = candidates and candidates[-1]
         elif seg.type == "code":
             # todo: first, try to extract file name from comment string at the top of the file
+            name_in_comment = extract_name_from_comment(seg)
+            if name_in_comment:
+                candidate_name = name_in_comment
             res.append(NamedCodeSegment(idx, seg, candidate_name))
             candidate_name = None
     return res
+
+
+def extract_name_from_comment(segment):
+    """Tries to find a name of a given segment in the first non empty comment string"""
+    lines = segment.content.split('\n') or []
+    lines = [line for line in lines if line.strip()]
+    comment_openers = ["//", "/*", "#"]
+    if lines and any(lines[0].startswith(openner) for openner in comment_openers):
+        candidates = find_files(lines[0])
+        return candidates and candidates[-1]
 
 
 def find_files(text):

@@ -411,6 +411,26 @@ class SourceFilesNameResolutionTests(unittest.TestCase):
                 "Here is script.js shown below:\n```\nconsole.log('Hello');```",
                 ["script.js"]
             ),
+            "multiple_file_references_in_text_section": (
+                "Here is file.py and styles.css. And here is script.js shown below:\n```\nconsole.log('Hello');```",
+                ["script.js"]
+            ),
+            "js_file_name_given_in_a_comment": (
+                "```javascript\n//comment line with file name 'script.js' in the middle\nsome content```",
+                ["script.js"]
+            ),
+            "python_file_name_given_in_a_comment": (
+                "```\n\n\n# comment line with file name 'main.py' in the middle\nsome content```",
+                ["main.py"]
+            ),
+            "comment_name_overrides_name_referenced_in_preceding_text_section": (
+                "The name of the file is script.js```\n# comment line with file name main.py in the middle\nsome content```",
+                ["main.py"]
+            ),
+            "blank_code_section": (
+                "```\n\n\n```",
+                ["untitled_0"]
+            ),
             "unnamed_js_code_block": (
                 "Random text.```\nconsole.log('Test');```More text.",
                 ["untitled_0.js"]
