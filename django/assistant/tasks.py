@@ -189,9 +189,9 @@ def launch_operation_suite(revision_id, socket_session_id):
     suite = OperationSuite.objects.create(revision=revision)
 
     final_src_tree = reduce_source_tree(revision)
-    prepare_build_files(final_src_tree)
+
     data = {
-        "source_tree": revision.src_tree
+        "source_tree": prepare_build_files(final_src_tree)
     }
     build_servers = message.get_root().chat.configuration.build_servers.all()
     
@@ -223,6 +223,7 @@ def launch_operation_suite(revision_id, socket_session_id):
             build.url = f'{settings.ARTIFACTS_URL}/{folder_name}/index.html'
             break
         except Exception as e:
+            print(traceback.format_exc())
             build.success = False
             build.errors = ["Operation was not completed correctly"]
         finally:
@@ -268,7 +269,7 @@ def post_json(url, data):
     response = requests.post(url, data=json.dumps(data), headers=headers)
     if response:
         return response.json()
-    raise Exception(f'Bad status code: {response.status_code}')
+    raise Exception(f'Bad status code: {response.status_code}. Response: {response.json()}')
 
 
 

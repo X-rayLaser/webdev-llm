@@ -209,6 +209,7 @@ def get_source_tree(code_segments):
     sources = js_sources + python_sources + css_sources + other_sources
 
     sources.sort(key=lambda item: item["index"])
+    sources = [dict(content=src["content"], file_path=src["file_path"]) for src in sources]
     return sources
 
 
