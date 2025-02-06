@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useCallback, useRef } from "react";
+import { diffLines as findDiff } from "diff";
 import { fetchSourceFiles, makeRevision } from "@/app/actions";
 import { ConfirmationModal } from "@/app/components/modal";
 import { formFactory, makeCreateForm } from "@/app/components/form-factory";
@@ -52,23 +53,22 @@ const computeCommittedChanges = (parentFiles, currentFiles) => {
     return changes;
 };
 
-
 function generateDiff(oldText = "", newText = "") {
-    const oldLines = oldText.split("\n");
-    const newLines = newText.split("\n");
-    const maxLen = Math.max(oldLines.length, newLines.length);
-    const diffLines = [];
-    for (let i = 0; i < maxLen; i++) {
-        const oldLine = oldLines[i] || "";
-        const newLine = newLines[i] || "";
-        if (oldLine === newLine) {
-            diffLines.push({ type: "unchanged", text: newLine });
+    const diff = findDiff(oldText, newText);
+
+    const makeChangeItem = change => {
+        let itemType;
+        if (change.added) {
+            itemType = "added";
+        } else if (change.removed) {
+            itemType = "removed";
         } else {
-            if (oldLine) diffLines.push({ type: "removed", text: oldLine });
-            if (newLine) diffLines.push({ type: "added", text: newLine });
+            itemType = "unchanged";
         }
+        return { type: itemType, text: change.value };
     }
-    return diffLines;
+
+    return diff.map(change => makeChangeItem(change));
 }
 
 
@@ -324,7 +324,6 @@ function DiffViewer({ oldContent, newContent }) {
                 if (line.type === "removed") bgClass = "bg-red-100";
                 return (
                     <pre key={index} className={`${bgClass} whitespace-pre-wrap`}>
-                        {line.type === "added" ? "+ " : line.type === "removed" ? "- " : "  "}
                         {line.text}
                     </pre>
                 );
