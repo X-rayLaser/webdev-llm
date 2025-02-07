@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { launchBuild } from '@/app/actions';
 import { getHostNameOrLocalhost } from '@/app/utils';
 import { Button } from '@/app/components/buttons';
-import { fetchDataFromUrl, fetchStatesData } from '@/app/data';
+import { fetchDataFromUrl, fetchRevisions, fetchStatesData } from '@/app/data';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { 
     faSpinner, faHammer, faExclamation, faFaceFrownOpen, faFaceSmile, faEye
@@ -233,17 +233,16 @@ const SitePreviewBox = ({ url }) => {
     );
 }
 
-const PreviewComponent = ({ message, onBuildFinished }) => {
+const PreviewComponent = ({ chatId }) => {
     const [lastOperationSuite, setLastOperationSuite] = useState(null);
-    const [activeRevisionId, setActiveRevisionId] = useState(
-        message.active_revision ? message.active_revision : getLastRevisionId(message.revisions)
-    );
+    const [revisions, setRevisions] = useState([]);
+    const [selectedRevisionId, setSelectedRevisionId] = useState(null);
     const [stateData, setStateData] = useState(null);
     const [isBuildDisabled, setIsBuildDisabled] = useState(true);
 
     const fetchLastSuiteForActiveRevision = async () => {
-        let activeRevision = message.revisions.find(
-            (revision) => revision.id === activeRevisionId
+        let activeRevision = revisions.find(
+            (revision) => revision.id == selectedRevisionId
         );
 
         if (activeRevision && activeRevision.operation_suites.length > 0) {
@@ -268,22 +267,32 @@ const PreviewComponent = ({ message, onBuildFinished }) => {
         }
     };
 
+    const initOnMount = () => {
+        fetchRevisions(chatId).then(revs => {
+            setRevisions(revs);
+            const activeId = getLastRevisionId(revs);
+            setSelectedRevisionId(activeId);
+        });
+    }
+
+    const handleBuildFinished = () => {
+        fetchRevisions(chatId).then(revs => {
+            setRevisions(revs);
+        });
+    }
+
+    useEffect(() => {
+        initOnMount();
+    }, []);
+
     useEffect(() => {
         setIsBuildDisabled(true);
         fetchLastSuiteForActiveRevision();
-    }, [activeRevisionId, message]);
-
-    useEffect(() => {
-        const activeId = (message.active_revision ? message.active_revision 
-            : getLastRevisionId(message.revisions)
-        );
-        setActiveRevisionId(activeId)
-        fetchLastSuiteForActiveRevision();
-    }, [message]);
+    }, [revisions, selectedRevisionId]);
 
     useEffect(() => {
         const handleWebSocketMessage = getWebsocketListener(
-            activeRevisionId, setStateData, onBuildFinished
+            selectedRevisionId, setStateData, handleBuildFinished
         );
         const hostName = getHostNameOrLocalhost(window);
         const socket = new WebSocket(`ws://${hostName}:9000`);
@@ -297,11 +306,19 @@ const PreviewComponent = ({ message, onBuildFinished }) => {
             socket.removeEventListener("message", handleWebSocketMessage);
             socket.close();
         };
-    }, [activeRevisionId]);
+    }, [selectedRevisionId]);
+
+    async function handleSelect(e) {
+        const value = parseInt(e.target.value);
+        const revs = await fetchRevisions(chatId);
+        setRevisions(revs);
+        setSelectedRevisionId(value);
+    }
 
     async function handleBuildClick() {
         setIsBuildDisabled(true);
-        await launchBuild(message.id, activeRevisionId);
+        setStateData(null);
+        await launchBuild(selectedRevisionId);
     }
 
     const successful = stateData?.successful || [];
@@ -324,10 +341,10 @@ const PreviewComponent = ({ message, onBuildFinished }) => {
                 <label htmlFor="revisions-select">Revisions</label>
                 <select
                     id="revisions-select"
-                    value={activeRevisionId || ""}
-                    onChange={(e) => setActiveRevisionId(e.target.value)}
+                    value={selectedRevisionId || ""}
+                    onChange={handleSelect}
                 >
-                    {message.revisions.map((revision) => (
+                    {revisions.map((revision) => (
                         <option key={revision.id} value={revision.id}>
                             {revision.created}
                         </option>

@@ -30,6 +30,12 @@ export const fetchStatesData = async (states) => {
 };
 
 
+export const fetchRevisions = async (chatId) => {
+    const url = `http://django:8000/api/chats/${chatId}/revisions/`;
+    return fetchDataFromUrl(url)
+}
+
+
 export const fetchMessage = async (id) => {
     let data;
     try {

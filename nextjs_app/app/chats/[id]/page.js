@@ -1,7 +1,7 @@
 import MessageCard from "./MessageCard";
 import WebSocketChat from "./WebSocketChat";
-//import CodeEditor from "./CodeEditor";
 import IDE from "./SimpleIDE";
+import Project from "./Project";
 
 function getThread(rootMsg) {
     const thread = [rootMsg];
@@ -69,20 +69,16 @@ export default async function Page(props) {
     const activeRevision = revisions[revisions.length - 1];
 
     return (
-        <div>
-            <WebSocketChat
+        <Project
                 chat={chat}
                 messages={messages}
                 previousMessage={previousMessage}
                 currentPreset={currentPreset}
                 configuration={configuration}
                 operations={operations}
+                revisions={revisions}
+                activeRevision={activeRevision}
             />
-
-            {revisions.length > 0 && (
-                <IDE chatId={chat.id} activeRevision={activeRevision} revisions={revisions} />
-            )}
-        </div>
     );
 }
 

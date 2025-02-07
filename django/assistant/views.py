@@ -38,6 +38,13 @@ class RevisionViewSet(viewsets.GenericViewSet):
         source_tree = reduce_source_tree(revision)
         return Response(source_tree)
 
+    @decorators.action(methods=['post'], detail=True, url_path="launch-build")
+    def launch_build(self, request, pk=None):
+        ser = BuildLaunchSerializer(data=dict(revision=pk))
+        ser.is_valid(raise_exception=True)
+        ser.save()
+        return Response({})
+
     @decorators.action(methods=['post'], detail=True, url_path="make_revision")
     def make_revision(self, request, pk=None):
         data = request.data.copy()
@@ -124,6 +131,13 @@ class ChatViewSet(viewsets.ModelViewSet):
     serializer_class = ChatSerializer
     pagination_class = StandardResultsSetPagination
     # todo: fix tests if any were broken by this
+
+    @decorators.action(methods=['get'], detail=True, url_path="revisions")
+    def revisions(self, request, pk=None):
+        chat = self.get_object()
+        revisions = chat.get_revisions()
+        ser = RevisionSerializer(revisions, many=True, context={'request': request})
+        return Response(ser.data)
 
     @decorators.action(methods=['post'], detail=False, url_path="start-new-chat")
     def start_new_chat(self, request):
@@ -224,6 +238,7 @@ class MultimediaMessageViewSet(viewsets.ModelViewSet):
 
     @decorators.action(methods=['post'], detail=True, url_path="launch-build")
     def launch_build(self, request, pk=None):
+        # deprecated (superseded by RevisionViewset.launch_build
         ser = BuildLaunchSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
         ser.save()

@@ -200,6 +200,23 @@ class Chat(models.Model):
     image = models.ImageField(upload_to="chat_images/", blank=True, null=True)
     created = models.DateTimeField(auto_now_add=True)
 
+    def get_message_ids(self):
+        root_msg = self.messages.first()
+        if not root_msg:
+            return []
+
+        msg = root_msg
+        result = [msg.id]
+        # todo: error handling
+        while msg.replies.exists():
+            msg = msg.replies.all()[msg.child_index]
+            result.append(msg.id)
+        return result
+
+    def get_revisions(self):
+        ids = self.get_message_ids()
+        return Revision.objects.filter(message__id__in=ids)
+
     def __str__(self):
         return self.name
 

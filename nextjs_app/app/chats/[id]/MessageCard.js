@@ -56,7 +56,7 @@ export default function MessageCard({ message, generationConfig }) {
     ];
     return (
         <div>
-            <TabContainer tabs={tabs} />
+            <RawMessage message={currentMessage} generationConfig={generationConfig} />
             {message.parent && <Footer message={message} />}
         </div>
     );

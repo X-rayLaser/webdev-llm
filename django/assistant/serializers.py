@@ -169,8 +169,16 @@ class MakeRevisionSerializer(serializers.Serializer):
 
         text = validated_data.pop('commit_text')
         sources = validated_data.pop('src_tree')
+
         modality_container = Modality.objects.create(modality_type="mixture")
         Modality.objects.create(modality_type="text", text=text, mixed_modality=modality_container)
+
+        for src in sources:
+            if 'file_path' in src and 'deleted' not in src:
+                file_path = src["file_path"]
+                Modality.objects.create(
+                    modality_type="code", file_path=file_path, mixed_modality=modality_container
+                )
 
         role = "assistant" if parent_msg.role == "user" else "user"
 
