@@ -189,7 +189,10 @@ class MakeRevisionSerializer(serializers.Serializer):
             role=role, content=modality_container, parent=parent_msg
         )
 
-        return Revision.objects.create(message=new_message, src_tree=sources)
+        revision = Revision.objects.create(message=new_message, src_tree=sources)
+        new_message.active_revision = revision
+        new_message.save()
+        return revision
 
 
 class ModalitySerializer(serializers.ModelSerializer):

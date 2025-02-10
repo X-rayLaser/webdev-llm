@@ -233,7 +233,7 @@ class MultimediaMessage(models.Model):
                              blank=True, null=True)
     parent = models.ForeignKey('self', on_delete=models.CASCADE, related_name='replies',
                                blank=True, null=True)
-    # todo: only active_revision can be updated
+    # todo: move active_revision to chat
     active_revision = models.OneToOneField('Revision', on_delete=models.SET_NULL, 
                                            blank=True, null=True, related_name='active_message')
     created = models.DateTimeField(auto_now_add=True)
