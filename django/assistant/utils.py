@@ -187,7 +187,8 @@ def prepare_build_files(source_files):
         segment = MessageSegment(type="code", content=content, metadata=metadata)
         code_segments.append(NamedCodeSegment(idx, segment, file_path))
 
-    return get_source_tree(code_segments)
+    sources =  get_source_tree(code_segments)
+    return [dict(content=src["content"], file_path=src["file_path"]) for src in sources]
 
 
 def get_sources(segments) -> List[Dict[str, str]]:
@@ -209,7 +210,6 @@ def get_source_tree(code_segments):
     sources = js_sources + python_sources + css_sources + other_sources
 
     sources.sort(key=lambda item: item["index"])
-    sources = [dict(content=src["content"], file_path=src["file_path"]) for src in sources]
     return sources
 
 
@@ -259,19 +259,22 @@ def resolve_couple(js_segments):
 
 
 def get_named_code_segments(segments):
-    candidate_name = None
+    candidates = []
     res = []
+
     for idx, seg in enumerate(segments):
         if seg.type == "text":
             candidates = find_files(seg.content)
-            candidate_name = candidates and candidates[-1]
         elif seg.type == "code":
-            # todo: first, try to extract file name from comment string at the top of the file
-            name_in_comment = extract_name_from_comment(seg)
-            if name_in_comment:
-                candidate_name = name_in_comment
+            candidate_name = extract_name_from_comment(seg)
+
+            if not candidate_name:
+                candidate_name = select_candidate(candidates, seg)
+
+            if not candidate_name:
+                candidate_name = candidates and candidates[-1]
             res.append(NamedCodeSegment(idx, seg, candidate_name))
-            candidate_name = None
+            candidates = []
     return res
 
 
@@ -283,6 +286,26 @@ def extract_name_from_comment(segment):
     if lines and any(lines[0].startswith(openner) for openner in comment_openers):
         candidates = find_files(lines[0])
         return candidates and candidates[-1]
+
+
+def select_candidate(candidates, segment):
+    """Attempts to guess name of the last file written in a programming language of a segment"""
+    lang2extensions = {
+        CSS: [".css"],
+        JAVASCRIPT: [".js", ".jsx"],
+        PYTHON: [".py"]
+    }
+
+    if not segment.metadata:
+        return
+
+    lc_candidates = [c.lower() for c in candidates if c]
+
+    language = segment.metadata.get("language")
+    if language:
+        extensions = lang2extensions.get(language, [])
+        matches = [s for s in reversed(lc_candidates) if any(s.endswith(ext) for ext in extensions)]
+        return matches and matches[0]
 
 
 def find_files(text):
