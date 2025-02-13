@@ -10,6 +10,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import Link from "next/link";
 
+
 const calculateDuration = (startTime, endTime = new Date()) => {
     const start = new Date(startTime);
     const end = new Date(endTime);
@@ -158,11 +159,12 @@ const FailedOperationItem = ({ item }) => {
 };
 
 const SuccessfulOperationItem = ({ item }) => {
+    const url = ''
     const beforeLogs = item.url ? (
         <div>
-            App URL: <Link className="font-bold text-blue-400" href={`${item.url}`} target='blank'>
+            App URL: <a className="font-bold text-blue-400" href={`${item.url}`} target='blank'>
                 Click to open it in a new tab
-            </Link>
+            </a>
         </div>
     ) : null;
     return (

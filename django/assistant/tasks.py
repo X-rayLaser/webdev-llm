@@ -19,7 +19,7 @@ from assistant.models import (
 )
 from assistant.utils import (
     process_raw_message, extract_modalities, prepare_messages, prepare_build_files,
-    MessageSegment
+    MessageSegment, get_named_code_segments, NamedCodeSegment
 )
 from assistant import serializers
 
@@ -52,11 +52,73 @@ class CompletionConfig:
         return cls(**data)
 
 
-def create_response_message(raw_response, role, parent=None, chat=None):
+def generate_file_names(raw_response, config):
+    backend_class = backends[config.backend_name]
+    generator = backend_class()
+
+    prompt = """
+Process the following document, find all the source files in it and extract their names.
+Output format should be a dictionary mapping first (non-blank) line of each file to it's name.
+For example, {{"var x = 0": "some_js_file.js", "a = [1,2,3]": "some_python_file.py"}}
+Please, output only the resulting JSON and nothing else.
+
+START OF DOCUMENT
+{}
+END OF DOCUMENT
+""".format(raw_response)
+    messages = [dict(role="user", content=prompt)]
+    params = dict(temperature=0.1, top_p=1)
+
+    job = ChatCompletionJob(model=config.model_name, base_url=config.server_url,
+                            messages=messages, params=params)
+
+    tokens = list(generator.generate(job))
+
+    try:
+        entries = json.loads(generator.response)
+        return {k.strip():v.strip() for k, v in entries.items()}
+    except ValueError:
+        print(traceback.format_exc())
+        return {}
+
+
+def extract_first_non_empty_line(named_segment):
+    lines = named_segment.segment.content.split('\n') or []
+    lines = [line for line in lines if line.strip()]
+    return (lines and lines[0].strip()) or ""
+
+
+def _extract_names_with_llm_fallback(raw_response, config):
+
+    def extract_names(segments):
+        decorated_segments = get_named_code_segments(segments, extra_guess=False)
+        generated_names = generate_file_names(raw_response, config)
+        res = []
+
+        for seg in decorated_segments:
+            first_line = extract_first_non_empty_line(seg)
+
+            if seg.candidate_name:
+                res.append(seg)
+            else:
+                candidate_name = generated_names.get(first_line)
+                res.append(NamedCodeSegment(seg.index, seg.segment, candidate_name))
+
+        return res
+
+    return extract_names
+
+
+def create_response_message(raw_response, config, role, parent=None, chat=None):
     mixture = Modality.objects.create(modality_type="mixture")
     # todo: extract image modalities
 
-    modalities, sources = extract_modalities(raw_response, parent=mixture)
+    if settings.LLM_BASED_NAME_EXTRACTION:
+        extract_fn = _extract_names_with_llm_fallback(raw_response, config)
+    else:
+        extract_fn = get_named_code_segments
+
+    modalities, sources = extract_modalities(raw_response, parent=mixture, extract_names=extract_fn)
 
     new_message = MultimediaMessage(role=role, content=mixture)
     if parent is not None:
@@ -105,7 +167,7 @@ def _generate(config, emitter):
         emitter(event_type="token_arrived", data=dict(token=token, task_id=config.task_id))
 
     role = "user" if len(history) % 2 == 0 else "assistant"
-    return create_response_message(generator.response, role, parent=message, chat=chat)
+    return create_response_message(generator.response, config, role, parent=message, chat=chat)
 
 
 @shared_task

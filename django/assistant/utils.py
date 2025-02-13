@@ -44,15 +44,19 @@ def process_raw_message(text: str) -> Tuple[List[MessageSegment], List[Dict[str,
     return patch_segments_and_sources(segments, sources)
 
 
-def extract_modalities(text: str, parent=None) -> List[Modality]:
-    segments, sources = extract_segments_with_sources(text)
+def extract_modalities(text: str, parent=None, extract_names=None) -> List[Modality]:
+    segments, sources = extract_segments_with_sources(text, extract_names)
     modalities = [seg.create_modality(parent) for seg in segments]
     return modalities, sources
 
 
-def extract_segments_with_sources(text):
+def extract_segments_with_sources(text, extract_names=None):
     segments = parse_raw_message(text)
-    decorated_segments = get_named_code_segments(segments)
+
+    if not extract_names:
+        extract_names = get_named_code_segments
+
+    decorated_segments = extract_names(segments)
     named_code_segments = [s for s in decorated_segments if s.candidate_name]
     unnamed_code_segments = [s for s in decorated_segments if not s.candidate_name]
 
@@ -258,7 +262,7 @@ def resolve_couple(js_segments):
             make_source(id2, path2, segment2.content)]
 
 
-def get_named_code_segments(segments):
+def get_named_code_segments(segments, extra_guess=True):
     candidates = []
     res = []
 
@@ -271,7 +275,7 @@ def get_named_code_segments(segments):
             if not candidate_name:
                 candidate_name = select_candidate(candidates, seg)
 
-            if not candidate_name:
+            if extra_guess and not candidate_name:
                 candidate_name = candidates and candidates[-1]
             res.append(NamedCodeSegment(idx, seg, candidate_name))
             candidates = []
@@ -400,7 +404,6 @@ def image_field_to_data_uri(image_field, mime_type=None):
     except Exception as e:
         print(f"Error converting image to data URI: {e}")
         return None
-
 
 
 def convert_modality(message, modality):
