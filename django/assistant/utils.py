@@ -94,7 +94,7 @@ def patch_segments_and_sources(segments, sources):
 
 
 def parse_raw_message(text) -> List[MessageSegment]:
-    pattern = re.compile("```(?P<lang>[a-zA-Z]+\n)?\s*(?P<code_block>.*?)```", flags=re.DOTALL)
+    pattern = re.compile("```(?P<lang>[a-zA-Z\+]+\n)?\s*(?P<code_block>.*?)```", flags=re.DOTALL)
     match = pattern.search(text)
 
     if not match:

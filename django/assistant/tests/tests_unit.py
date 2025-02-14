@@ -148,6 +148,14 @@ export default MainComponent;
         for i, segment in enumerate(expected_segments):
             self.assertEqual(sources[i]["content"], segment.content)
 
+    def test_with_cpp(self):
+        raw_message = "```c++\nint main() { return 0; }```"
+        segments, sources = process_raw_message(raw_message)
+
+        self.assertEqual(sources[0]["file_path"], segments[0].metadata["file_path"])
+        self.assertEqual(sources[0]["content"], segments[0].content)
+        self.assertEqual("int main() { return 0; }", sources[0]["content"])
+
 
 class LanguageDetectionTests(unittest.TestCase):
     def test_javascript_code_block_with_unspecified_language(self):
