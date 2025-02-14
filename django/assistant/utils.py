@@ -112,16 +112,67 @@ def parse_raw_message(text) -> List[MessageSegment]:
     if text_block.strip():
         segments.append(MessageSegment(type="text", content=text_block))
 
-    kwargs = dict(type="code", content=code)
-    kwargs["metadata"] = dict(language=language)
-    
-    segments.append(MessageSegment(**kwargs))
+    code_segments = parse_code_segments(code, language)
+    segments.extend(code_segments)
 
     tail = text[end:]
     if tail.strip():
         tail_segments = parse_raw_message(tail)
         segments.extend(tail_segments)
     return segments
+
+
+def parse_code_segments(code: str, language: str) -> List[MessageSegment]:
+    code = code or ""
+
+    fallback = [MessageSegment(type="code", content=code, metadata={"language": language})]
+
+    if not language:
+        return fallback
+
+    lines = code.splitlines()
+    marker_regex = get_marker_regex(language)
+    
+    marker_positions = []
+    for i, line in enumerate(lines):
+        match = marker_regex.match(line)
+        if match:
+            filename = match.group(1)
+            marker_positions.append((i, filename))
+    
+    if not marker_positions:
+        return fallback
+    
+    first_non_empty_index = next((i for i, line in enumerate(lines) if line.strip()), None)
+    if first_non_empty_index is None or first_non_empty_index != marker_positions[0][0]:
+        return fallback
+    
+    segments = []
+    marker_positions.append((len(lines), None))
+    
+    for idx in range(len(marker_positions) - 1):
+        start_index, filename = marker_positions[idx]
+        next_index, _ = marker_positions[idx + 1]
+        file_content = "\n".join(lines[start_index: next_index]).rstrip()
+        segments.append(
+            MessageSegment(
+                type="code",
+                content=file_content,
+                metadata={"language": language}
+            )
+        )
+    
+    return segments
+
+
+def get_marker_regex(language: str):
+    comment_patterns = {
+        "javascript": r'^\s*//\s*(\S+)\s*$',
+        "python": r'^\s*#\s*(\S+)\s*$',
+        "css": r'^\s*/\*\s*(\S+)\s*\*/$',
+        "html": r'^\s*<!--\s*(\S+)\s*-->$',
+    }
+    return re.compile(comment_patterns.get(language.lower(), r'^\s*//\s*(\S+)\s*$'))
 
 
 def detect_language(code):

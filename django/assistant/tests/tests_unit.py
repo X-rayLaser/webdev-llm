@@ -94,8 +94,7 @@ function MainComponent() {
     return <div>Hello World!</div>;
 }
 
-export default MainComponent;
-"""
+export default MainComponent;"""
         expected_segment = MessageSegment(
             type="code", content=expected_content, 
             metadata={"language": "javascript", "file_path": "main.js"}
@@ -155,6 +154,32 @@ export default MainComponent;
         self.assertEqual(sources[0]["file_path"], segments[0].metadata["file_path"])
         self.assertEqual(sources[0]["content"], segments[0].content)
         self.assertEqual("int main() { return 0; }", sources[0]["content"])
+
+    def test_single_language_block_with_two_files_comment_separated(self):
+        raw_message = """
+```jsx
+// MainComponent.js
+console.log(1)
+
+// Secondary.js
+console.log(2)
+```
+"""
+
+        segments, sources = process_raw_message(raw_message)
+
+        expected_segments = [
+            MessageSegment(type="code", content="// MainComponent.js\nconsole.log(1)",
+                           metadata={"language": "javascript", "file_path": "MainComponent.js"}),
+            MessageSegment(type="code", content="// Secondary.js\nconsole.log(2)",
+                           metadata={"language": "javascript", "file_path": "Secondary.js"}),
+        ]
+
+        self.assertEqual(segments, expected_segments)
+
+        self.assertEqual(len(sources), 2)
+        for i, segment in enumerate(expected_segments):
+            self.assertEqual(sources[i]["content"], segment.content)
 
 
 class LanguageDetectionTests(unittest.TestCase):
