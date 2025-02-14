@@ -364,7 +364,9 @@ def select_candidate(candidates, segment):
 
 
 def find_files(text):
-    pattern = re.compile("(\"|\')?(?P<path>[/a-zA-Z0-9_-]*\.(js|css|py))(\"|\')?:?",
+    extensions = ["js", "jsx", "ts", "css", "py", "rb", "html", "c++", "c", "cpp", "hpp", "h", "sh"]
+    re_ext = "|".join(extensions)
+    pattern = re.compile("(\"|\')?(?P<path>[/a-zA-Z0-9_-]*\.({}))(\"|\')?:?".format(re_ext),
                          flags=re.MULTILINE)
     return find_all(pattern, text, lambda match: match.group("path"))
 

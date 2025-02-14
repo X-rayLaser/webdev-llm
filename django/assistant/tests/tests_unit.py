@@ -452,6 +452,10 @@ class SourceFilesNameResolutionTests(unittest.TestCase):
                 "```javascript\n//comment line with file name 'script.js' in the middle\nsome content```",
                 ["script.js"]
             ),
+            "ruby_file_name_given_in_a_comment_with_spaces": (
+                "```javascript\n  //    script.rb in the middle\nsome content```",
+                ["script.rb"]
+            ),
             "python_file_name_given_in_a_comment": (
                 "```\n\n\n# comment line with file name 'main.py' in the middle\nsome content```",
                 ["main.py"]
