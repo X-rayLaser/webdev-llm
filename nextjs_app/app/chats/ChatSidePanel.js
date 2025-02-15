@@ -10,13 +10,20 @@ import { Pagination } from "./Pagination";
 
 export default function ChatSidePanel() {
   const queryParams = useSearchParams();
-  const { term="", sortby="newest", filter="all", page=1, advanced=false } = queryParams;
-  const suspenseKey = term + page + sortby + filter;
+
+  const paramsObject = {
+    term: queryParams.get("term") || "",
+    sortby: queryParams.get("sortby") || "newest",
+    filter: queryParams.get("filter") || "All",
+    page: queryParams.get("page") || 1,
+    advanced: queryParams.get("advanced") || false
+  };
+  const suspenseKey = paramsObject.term + paramsObject.page + paramsObject.sortby + paramsObject.filter;
 
   return (
     <div className="p-4 border-r overflow-y-auto bg-slate-200 h-dvh">
       {/* Search Form */}
-      <SearchBar queryParams={queryParams} />
+      <SearchBar queryParams={paramsObject} />
 
 
       <hr className="bg-gray-400 h-[2px] my-4" />

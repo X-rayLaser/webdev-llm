@@ -290,6 +290,16 @@ class MultimediaMessage(models.Model):
                     message.save()
         return message
 
+    def add_chat(self):
+        if self.parent is not None and self.chat is None:
+            chat_prompt = self.parent.get_root()
+            if chat_prompt:
+                self.chat = chat_prompt.chat
+
+    def save(self, **kwargs):
+        self.add_chat()
+        super().save(**kwargs)
+
     def __str__(self):
         return f"{self.role.capitalize()} message"
 

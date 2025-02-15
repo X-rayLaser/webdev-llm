@@ -168,7 +168,17 @@ class ChatViewSet(viewsets.ModelViewSet):
         term = self.request.query_params.get("term", "")
         sortby = self.request.query_params.get("sortby", "newest")
         ordering = "created" if sortby == "oldest" else "-created"
-        return self.queryset.filter(name__contains=term).order_by(ordering)
+        filter = self.request.query_params.get("filter", "All")
+        if filter == "withCode":
+            q = self.queryset.filter(messages__content__modality_type="code")
+            q = q | self.queryset.filter(messages__content__mixture__modality_type="code")
+        elif filter == "noCode":
+            q = self.queryset.exclude(
+                messages__content__mixture__modality_type="code"
+            )
+        else:
+            q = self.queryset
+        return q.filter(name__contains=term).order_by(ordering).distinct()
 
     @decorators.action(methods=['get'], detail=True)
     def generations(self, request, pk=None):
