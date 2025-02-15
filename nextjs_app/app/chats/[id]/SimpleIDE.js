@@ -8,7 +8,7 @@ import { formFactory, makeCreateForm } from "@/app/components/form-factory";
 import { DiscardButton, CommitButton } from "@/app/components/buttons";
 import { AutoExpandingTextArea } from "@/app/components/common-forms";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faTrashAlt, faUndo, faRedo, faCopy, faPlus } from "@fortawesome/free-solid-svg-icons";
+import { faTrashAlt, faPenAlt, faUndo, faRedo, faCopy, faPlus } from "@fortawesome/free-solid-svg-icons";
 
 
 function unstageFile(stagingArea, file_path) {
@@ -74,37 +74,94 @@ function generateDiff(oldText = "", newText = "") {
 
 function FileBrowser({ files, onSelectFile, onDeleteFile, onAddFile, selectedFilePath }) {
     const [newFileName, setNewFileName] = useState("");
+    const [editIndex, setEditIndex] = useState(-1);
+    const [editedName, setEditedName] = useState("");
+    const inputRef = useRef(null);
 
     const isEmptyName = newFileName.trim() === "" ? true : false;
 
-    const handleAdd = () => {
-        if (newFileName.trim() !== "") {
-            onAddFile(newFileName.trim());
+    const addNoneEmptyFile = (name, initialContent)  => {
+        if (name.trim() !== "") {
+            onAddFile(name.trim(), initialContent);
             setNewFileName("");
         }
+    }
+
+    const handleAdd = () => {
+        addNoneEmptyFile(newFileName, "");
     };
+
+    const handleEdit = (e, idx, file) => {
+        e.stopPropagation();
+        setEditIndex(idx);
+        setEditedName(file.file_path);
+        setTimeout(() => {
+            if (inputRef && inputRef.current) {
+                inputRef.current.focus();
+            }
+        }, 200);
+    }
+
+    const handleEnter = (idx) => {
+        const file = files[idx];
+        if (editedName.trim() === "") {
+            alert("Name must not be empty/blank");
+            return;
+        }
+        if (file) {
+            onDeleteFile(file);
+            addNoneEmptyFile(editedName, file.content);
+        }
+
+        setEditedName("");
+        setEditIndex(-1);
+    }
+
+    const editField = (
+        <input
+            type="text"
+            placeholder="Updated name"
+            value={editedName}
+            onChange={e => setEditedName(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' ? handleEnter(editIndex) : ""}
+            onBlur={e => {
+                setEditIndex(-1);
+                setEditedName("");
+            }}
+            className="flex-1 border rounded px-1 py-0.5"
+            ref={inputRef}
+        />
+    );
 
     return (
         <div className="border p-2 rounded mb-4">
             <h3 className="font-semibold mb-2">Files</h3>
             <ul>
-                {files.map((file) => (
+                {files.map((file, idx) => (
                     <li
                         key={file.file_path}
                         className={`flex justify-between items-center px-2 py-1 hover:bg-gray-100 cursor-pointer ${selectedFilePath === file.file_path ? "bg-gray-200" : ""
                             }`}
                         onClick={() => onSelectFile(file)}
                     >
-                        <span>{file.file_path}</span>
-                        <button
-                            className="text-red-500 hover:text-red-700"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onDeleteFile(file);
-                            }}
-                        >
-                            <FontAwesomeIcon icon={faTrashAlt} />
-                        </button>
+                        {idx === editIndex ? <div>{editField}</div> : <span>{file.file_path}</span>}
+                        <div>
+                            <button
+                                className="text-slate-500 hover:text-slate-700 mr-2"
+                                onClick={(e) => handleEdit(e, idx, file)}
+                            >
+                                <FontAwesomeIcon icon={faPenAlt} />
+                            </button>
+                            <button
+                                className="text-red-500 hover:text-red-700"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onDeleteFile(file);
+                                }}
+                            >
+                                <FontAwesomeIcon icon={faTrashAlt} />
+                            </button>
+                        </div>
                     </li>
                 ))}
             </ul>
@@ -399,8 +456,9 @@ export default function IDE({ chatId, activeRevision, revisions }) {
         setDiffFile(null);
     };
 
-    const handleAddFile = (filePath) => {
+    const handleAddFile = (filePath, initialContent) => {
         // Add to staging changes as new file.
+        initialContent = initialContent || "";
 
         if (stagingChanges[filePath] || currentFiles.find(f => f.file_path === filePath)) {
             alert(`File with name "${filePath}" already exists!`);
@@ -409,7 +467,7 @@ export default function IDE({ chatId, activeRevision, revisions }) {
 
         setStagingChanges((prev) => ({
             ...prev,
-            [filePath]: { file_path: filePath, content: "", status: "new" },
+            [filePath]: { file_path: filePath, content: initialContent, status: "new" },
         }));
     };
 
