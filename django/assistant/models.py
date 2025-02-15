@@ -217,6 +217,31 @@ class Chat(models.Model):
         ids = self.get_message_ids()
         return Revision.objects.filter(message__id__in=ids)
 
+    def get_last_text(self):
+        root = self.messages.first()
+        if not root:
+            return ""
+        
+        def get_text(msg):
+            modality = msg.content
+            if modality.modality_type == "text":
+                return modality.text
+
+            text_modality = modality.mixture.filter(modality_type="text").last()
+            if text_modality:
+                return text_modality.text
+
+        last = root
+        last_text = get_text(last) or ""
+        
+        while last.replies.exists():
+            replies = last.replies.all()
+            last = replies[last.child_index]
+            text = get_text(last)
+            if text:
+                last_text = text
+        return last_text
+
     def __str__(self):
         return self.name
 

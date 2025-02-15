@@ -28,15 +28,13 @@ export default async function Page(props) {
     }
 
     async function getLastMessage(chat) {
-        if (chat.messages.length === 0) {
-            throw "Unexpected error - empty chat";
-        }
-        const lastUrl = chat.messages[chat.messages.length - 1];
-        return lastUrl ? await fetchMessage(lastUrl) : "";
+        const lastUrl = `http://django:8000/api/chats/${chat.id}/last_text/`;
+        const result = await fetchMessage(lastUrl);
+        return result.last_text;
     }
 
     async function getFirstAndLastMessages(chat) {
-        const [prompt, lastText] = await Promise.all([getPrompt(chat), chat.last_text]);
+        const [prompt, lastText] = await Promise.all([getPrompt(chat), getLastMessage(chat)]);
         return { prompt, lastText };
     }
 

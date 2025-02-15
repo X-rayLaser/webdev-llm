@@ -132,6 +132,12 @@ class ChatViewSet(viewsets.ModelViewSet):
     pagination_class = StandardResultsSetPagination
     # todo: fix tests if any were broken by this
 
+    @decorators.action(methods=['get'], detail=True)
+    def last_text(self, request, pk=None):
+        chat = self.get_object()
+        text = chat.get_last_text()
+        return Response({'last_text': text})
+
     @decorators.action(methods=['get'], detail=True, url_path="revisions")
     def revisions(self, request, pk=None):
         chat = self.get_object()
