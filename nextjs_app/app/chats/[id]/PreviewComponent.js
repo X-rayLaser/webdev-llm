@@ -339,7 +339,7 @@ const PreviewComponent = ({ chatId }) => {
     );
     return (
         <div className="flex flex-col gap-4">
-            <div className="flex gap-2 items-center">
+            <div className="flex gap-2 items-center flex-wrap">
                 <label htmlFor="revisions-select">Revisions</label>
                 <select
                     id="revisions-select"

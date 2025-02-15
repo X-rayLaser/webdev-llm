@@ -14,7 +14,7 @@ export default async function PageWithSidePanel({ children }) {
         <div>
             <div className="md:hidden">
                 <div className="w-80">
-                    <div className="fixed max-w-[inherit] h-dvh">
+                    <div className="fixed max-w-[inherit] h-dvh z-10">
                         {togglePanel}
                     </div>
                             
@@ -27,7 +27,7 @@ export default async function PageWithSidePanel({ children }) {
             <div className="hidden md:block">
                 <div className="flex items-start">
                     <div className="shrink-0 grow-0 w-10/12 sm:w-80 max-w-[800px]">
-                        <div className="fixed w-[inherit] max-w-[inherit]">
+                        <div className="fixed w-[inherit] max-w-[inherit] z-10">
                             {togglePanel}
                         </div>
                     </div>
