@@ -76,7 +76,7 @@ END OF DOCUMENT
 
     try:
         entries = json.loads(generator.response)
-        return {k.strip():v.strip() for k, v in entries.items()}
+        return {str(k).strip():str(v).strip() for k, v in entries.items() if k and v}
     except ValueError:
         print(traceback.format_exc())
         return {}
