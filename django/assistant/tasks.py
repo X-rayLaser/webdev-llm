@@ -15,7 +15,7 @@ from assistant import summary_backends
 from assistant import text2image_backends
 from assistant.models import (
     Chat, MultimediaMessage, Modality, Revision, Generation,
-    OperationSuite, Build, reduce_source_tree
+    OperationSuite, Build, Server, reduce_source_tree
 )
 from assistant.utils import (
     process_raw_message, extract_modalities, prepare_messages, prepare_build_files,
@@ -245,7 +245,7 @@ def generate_chat_picture(text, chat_id, backend_name, socket_session_id):
 
 
 @shared_task
-def launch_operation_suite(revision_id, socket_session_id):
+def launch_operation_suite(revision_id, socket_session_id, builder_id=None, **build_params):
     revision = Revision.objects.get(pk=revision_id)
     message = revision.message
     suite = OperationSuite.objects.create(revision=revision)
@@ -255,12 +255,16 @@ def launch_operation_suite(revision_id, socket_session_id):
     data = {
         "source_tree": prepare_build_files(final_src_tree)
     }
+    data.update(build_params)
     build_servers = message.get_root().chat.configuration.build_servers.all()
     
     class BuiltInServer:
         url = "http://builder:8888"
 
-    if not build_servers.exists():
+    server = Server.objects.filter(pk=builder_id).first()
+    if server is not None:
+        build_servers = [server]
+    else:
         build_servers = [BuiltInServer]
 
     emitter = RedisEventEmitter(socket_session_id)

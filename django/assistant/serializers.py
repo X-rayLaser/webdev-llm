@@ -452,7 +452,14 @@ class NewGenerationTaskSerializer(serializers.ModelSerializer):
 
 class BuildLaunchSerializer(serializers.Serializer):
     revision = serializers.PrimaryKeyRelatedField(queryset=Revision.objects.all())
+    build_server = serializers.PrimaryKeyRelatedField(queryset=Server.objects.all(), required=False)
+    params = serializers.JSONField(required=False)
 
     def save(self):
         revision = self.validated_data["revision"]
-        launch_operation_suite.delay_on_commit(revision.id, socket_session_id=0)
+        server = self.validated_data.get("build_server")
+        params = self.validated_data.get("params", {})
+        builder_id = server and server.id
+        launch_operation_suite.delay_on_commit(
+            revision.id, socket_session_id=0, builder_id=builder_id, build_params=params
+        )

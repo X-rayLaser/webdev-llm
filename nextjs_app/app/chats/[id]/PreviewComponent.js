@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { launchBuild } from '@/app/actions';
 import { getHostNameOrLocalhost } from '@/app/utils';
 import { Button } from '@/app/components/buttons';
-import { fetchDataFromUrl, fetchRevisions, fetchStatesData } from '@/app/data';
+import { fetchDataFromUrl, fetchRevisions, fetchServers, fetchStatesData } from '@/app/data';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { 
     faSpinner, faHammer, faExclamation, faFaceFrownOpen, faFaceSmile, faEye
@@ -236,6 +236,9 @@ const SitePreviewBox = ({ url }) => {
 }
 
 const PreviewComponent = ({ chatId }) => {
+    const [servers, setServers] = useState([]);
+    const [selectedServerId, setSelectedServerId] = useState(null);
+    const [buildParams, setBuildParams] = useState("");
     const [lastOperationSuite, setLastOperationSuite] = useState(null);
     const [revisions, setRevisions] = useState([]);
     const [selectedRevisionId, setSelectedRevisionId] = useState(null);
@@ -274,6 +277,10 @@ const PreviewComponent = ({ chatId }) => {
             setRevisions(revs);
             const activeId = getLastRevisionId(revs);
             setSelectedRevisionId(activeId);
+        });
+
+        fetchServers().then(serverData => {
+            setServers(serverData);
         });
     }
 
@@ -317,10 +324,18 @@ const PreviewComponent = ({ chatId }) => {
         setSelectedRevisionId(value);
     }
 
+    function handleSelectBuilder(e) {
+        setSelectedServerId(e.target.value);
+    }
+
+    function handleParamsChange(e) {
+        setBuildParams(e.target.value);
+    }
+
     async function handleBuildClick() {
         setIsBuildDisabled(true);
         setStateData(null);
-        await launchBuild(selectedRevisionId);
+        await launchBuild(selectedRevisionId, selectedServerId, buildParams);
     }
 
     const successful = stateData?.successful || [];
@@ -337,27 +352,64 @@ const PreviewComponent = ({ chatId }) => {
             ))}
         </div>
     );
+
+    const augmentedServers = [{
+        id: "",
+        name: "Default"
+    }, ...servers];
+
     return (
         <div className="flex flex-col gap-4">
-            <div className="flex gap-2 items-center flex-wrap">
-                <label htmlFor="revisions-select">Revisions</label>
-                <select
-                    id="revisions-select"
-                    value={selectedRevisionId || ""}
-                    onChange={handleSelect}
-                >
-                    {revisions.map((revision) => (
-                        <option key={revision.id} value={revision.id}>
-                            {revision.created}
-                        </option>
-                    ))}
-                </select>
-                <Button
-                    disabled={isBuildDisabled}
-                    onClick={handleBuildClick}
-                >
-                    Build
-                </Button>
+            <div className="flex flex-col gap-2 w-full lg:w-72">
+                <div className="flex gap-2 items-center justify-between">
+                    <label htmlFor="revisions-select">Revisions</label>
+                    <select
+                        id="revisions-select"
+                        value={selectedRevisionId || ""}
+                        onChange={handleSelect}
+                        className="w-48 p-2 overflow-hidden bg-slate-400"
+                    >
+                        {revisions.map((revision) => (
+                            <option key={revision.id} value={revision.id}>
+                                {revision.created}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+                
+                <div className="flex gap-2 items-center justify-between">
+                    <label htmlFor="builders-select">Servers</label>
+                    <select
+                        id="builders-select"
+                        value={selectedServerId || ""}
+                        onChange={handleSelectBuilder}
+                        className="w-48 p-2 bg-slate-400"
+                    >
+                        {augmentedServers.map((server, idx) => (
+                            <option key={idx} value={server.id}>
+                                {server.name}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+                <div className="flex flex-col gap-2">
+                    <label htmlFor="params-textarea">Build parameters</label>
+                    <textarea
+                        id="params-textarea"
+                        rows="4"
+                        value={buildParams}
+                        onChange={handleParamsChange}
+                        placeholder="Optional additional parameters for chosen builder (JSON)"
+                        className="border rounded-md p-2" />
+                </div>
+                <div>
+                    <Button
+                        disabled={isBuildDisabled}
+                        onClick={handleBuildClick}
+                    >
+                        Build
+                    </Button>
+                </div>
             </div>
             {!hasRunningOperations && successfulBuild && successfulBuild.url && (
                 <div>

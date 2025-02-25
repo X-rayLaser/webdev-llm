@@ -40,7 +40,15 @@ class RevisionViewSet(viewsets.GenericViewSet):
 
     @decorators.action(methods=['post'], detail=True, url_path="launch-build")
     def launch_build(self, request, pk=None):
-        ser = BuildLaunchSerializer(data=dict(revision=pk))
+        build_server = request.data.get('build_server')
+        params = request.data.get('params', {})
+        data = dict(revision=pk)
+
+        if build_server or build_server == 0:
+            data['build_server'] = build_server
+        if params:
+            data['params'] = params
+        ser = BuildLaunchSerializer(data=data)
         ser.is_valid(raise_exception=True)
         ser.save()
         return Response({})

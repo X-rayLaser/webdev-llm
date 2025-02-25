@@ -36,6 +36,11 @@ export const fetchRevisions = async (chatId) => {
 }
 
 
+export const fetchServers = async () => {
+    return await fetchDataFromUrl("http://django:8000/api/servers/");
+}
+
+
 export const fetchMessage = async (id) => {
     let data;
     try {

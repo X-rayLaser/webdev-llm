@@ -424,9 +424,12 @@ async function regenerateMessage(chatId, parentMessageid) {
     return result
 }
 
-async function launchBuild(revisionId) {
+async function launchBuild(revisionId, serverId, buildParams) {
     const url = `${baseApiUrl}/revisions/${revisionId}/launch-build/`;
-    const data = {};
+    const data = {
+        build_server: serverId,
+        params: buildParams
+    };
     const result = await sendJsonObject(url, data, "Failed to launch code build");
     return result
 }
