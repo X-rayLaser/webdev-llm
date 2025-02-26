@@ -33,6 +33,7 @@ class CompletionConfig:
     params: dict = None
     chat_id: int = None
     message_id: int = None
+    system_message: str = None
 
     def to_dict(self):
         return dict(self.__dict__)
@@ -93,6 +94,7 @@ def _extract_names_with_llm_fallback(raw_response, config):
     def extract_names(segments):
         decorated_segments = get_named_code_segments(segments, extra_guess=False)
         generated_names = generate_file_names(raw_response, config)
+        print('generated_names', generated_names)
         res = []
 
         for seg in decorated_segments:
@@ -156,7 +158,7 @@ def _generate(config, emitter):
     backend_class = backends[config.backend_name]
     generator = backend_class()
 
-    system_msg = chat.configuration.system_message
+    system_msg = config.system_message or chat.configuration.system_message
     history = message.get_history() if message is not None else []
     messages = prepare_messages(history, system_msg)
 

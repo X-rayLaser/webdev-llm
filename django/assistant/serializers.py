@@ -381,7 +381,7 @@ class ChatSerializer(serializers.HyperlinkedModelSerializer):
 class GenerationMetadataSerializer(serializers.ModelSerializer):
     class Meta:
         model = GenerationMetadata
-        fields = ['id', 'server', 'model_name', 'params', 'response_metadata']
+        fields = ['id', 'server', 'model_name', 'params', 'response_metadata', 'system_message']
 
 
 class GenerationSerializer(serializers.ModelSerializer):
@@ -398,10 +398,11 @@ class GenerationSerializer(serializers.ModelSerializer):
 class NewGenerationTaskSerializer(serializers.ModelSerializer):
     model_name = serializers.CharField(max_length=255, required=False)
     params = serializers.DictField(required=False)
+    system_message = serializers.CharField(max_length=4096, required=False)
 
     class Meta:
         model = Generation
-        fields = ['id', 'model_name', 'params', 'chat', 'message']
+        fields = ['id', 'model_name', 'params', 'chat', 'message', 'system_message']
 
     def validate(self, attrs):
         chat = attrs.get('chat')
@@ -422,6 +423,7 @@ class NewGenerationTaskSerializer(serializers.ModelSerializer):
         chat = validated_data.get("chat")
         message = validated_data.get("message")
         message_id = message.id if message is not None else None
+        system_message = validated_data.get("system_message")
 
         if chat is None:
             root = message.get_root()
@@ -439,12 +441,13 @@ class NewGenerationTaskSerializer(serializers.ModelSerializer):
                                              model_name=model_name,
                                              params=params,
                                              chat_id=chat.id,
-                                             message_id=message_id)
+                                             message_id=message_id,
+                                             system_message=system_message)
         # todo: pass valid socket_session_id parameter
         generate_completion.delay_on_commit(completion_config.to_dict(), 0)
 
         metadata = GenerationMetadata.objects.create(server=server, model_name=model_name, 
-                                                     params=params)
+                                                     params=params, system_message=system_message)
 
         return Generation.objects.create(task_id=job_id, chat=chat, message=message,
                                          generation_metadata=metadata)
@@ -453,6 +456,7 @@ class NewGenerationTaskSerializer(serializers.ModelSerializer):
 class BuildLaunchSerializer(serializers.Serializer):
     revision = serializers.PrimaryKeyRelatedField(queryset=Revision.objects.all())
     build_server = serializers.PrimaryKeyRelatedField(queryset=Server.objects.all(), required=False)
+    # todo: check validation
     params = serializers.JSONField(required=False)
 
     def save(self):

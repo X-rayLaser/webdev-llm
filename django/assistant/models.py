@@ -443,6 +443,7 @@ class GenerationMetadata(models.Model):
     model_name = models.CharField(max_length=255, blank=True, null=True)
     params = models.JSONField(blank=True, null=True)
     response_metadata = models.JSONField(blank=True, null=True)
+    system_message = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return f"GenerationMetadata for {self.server}"

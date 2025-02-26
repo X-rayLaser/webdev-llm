@@ -245,12 +245,17 @@ class MultimediaMessageViewSet(viewsets.ModelViewSet):
 
         last_generation = message.get_last_generation()
 
+        system_message = None
+
         if last_generation:
             metadata = last_generation.generation_metadata
             model_name = metadata.model_name or model_name
             params = metadata.params or params
+            system_message = last_generation.system_message
 
-        data = dict(model_name=model_name, params=params, message=message.id)
+        data = dict(
+            model_name=model_name, params=params, message=message.id, system_message=system_message
+        )
         response_data = start_message_generation(data=data)
         return Response(response_data, status=status.HTTP_201_CREATED)
 

@@ -13,18 +13,28 @@ import { formFactory, makeCreateForm } from "@/app/components/form-factory";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCircleQuestion } from '@fortawesome/free-solid-svg-icons'
 
-const formFields = [...fields, {
-    name: "model_name",
-    component: TextField,
-    id: "generate_message_form_model_name",
-    label: "Model name",
-}, {
-    name: "params",
-    component: TextArea,
-    id: "generate_message_form_params",
-    label: "More params (optional)",
-    placeholder: jsonPlaceholder
-}];
+
+function makeGenerationFormFields(baseFields) {
+    return [...baseFields, {
+        name: "model_name",
+        component: TextField,
+        id: "generate_message_form_model_name",
+        label: "Model name",
+    }, {
+        name: "params",
+        component: TextArea,
+        id: "generate_message_form_params",
+        label: "More params (optional)",
+        placeholder: jsonPlaceholder
+    }, {
+        name: "system_message",
+        component: TextField,
+        id: "generate_message_form_system_message",
+        label: "System message",
+    }];
+}
+
+
 
 function renderForm(formFields, names, errorMessage, submitButton) {
     const presetElements = fields.filter(
@@ -38,6 +48,10 @@ function renderForm(formFields, names, errorMessage, submitButton) {
     return (
         <div>
             <div className="mb-4">{formFields.model_name}</div>
+
+            <div className="mb-4">
+                {formFields.system_message}
+            </div>
             <details>
                 <summary className="mb-4 cursor-pointer">Sampling settings</summary>
                 <div className="mb-4">{presetElements}</div>
@@ -75,11 +89,14 @@ export default function NewMessageForm({ chat, previousMessage, preset, configur
 
     const defaultAction = currentAction === GENERATE ? {...actions[0]} : {...actions[1]};
 
+    const formFields = makeGenerationFormFields(fields);
+
     const Form = formFactory(formFields, renderForm);
     const generateNextjsAction = startMessageGeneration.bind(null, chat.id, previousMessage.id);
 
     const defaults = {
         model_name: configuration.llm_model || "",
+        system_message: configuration.system_message || "",
         ...preset
     };
 
