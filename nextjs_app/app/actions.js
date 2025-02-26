@@ -399,7 +399,7 @@ async function startMessageGeneration(chatId, parentMessageId, prevState, formDa
     const params = {};
     const toDelete = [];
     for (const [name, value] of formData.entries()) {
-        if (name !== 'model_name') {
+        if (name !== 'model_name' && name !== 'system_message') {
             params[name] = value;
             toDelete.push(name);
         }

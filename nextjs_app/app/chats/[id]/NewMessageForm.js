@@ -8,7 +8,7 @@ import { createMultimediaMessage, startMessageGeneration } from "@/app/actions";
 import { ButtonDropdown } from "@/app/components/buttons";
 import { Tooltip } from "@/app/components/tooltips";
 import { fields } from "@/app/configuration/PresetPanel";
-import { TextField, TextArea, jsonPlaceholder } from "@/app/components/common-forms";
+import { TextField, TextArea, jsonPlaceholder, AutoExpandingTextArea } from "@/app/components/common-forms";
 import { formFactory, makeCreateForm } from "@/app/components/form-factory";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCircleQuestion } from '@fortawesome/free-solid-svg-icons'
@@ -28,12 +28,12 @@ function makeGenerationFormFields(baseFields) {
         placeholder: jsonPlaceholder
     }, {
         name: "system_message",
-        component: TextField,
+        component: AutoExpandingTextArea,
         id: "generate_message_form_system_message",
         label: "System message",
+        placeholder: "Override your system message here"
     }];
 }
-
 
 
 function renderForm(formFields, names, errorMessage, submitButton) {
@@ -50,7 +50,10 @@ function renderForm(formFields, names, errorMessage, submitButton) {
             <div className="mb-4">{formFields.model_name}</div>
 
             <div className="mb-4">
-                {formFields.system_message}
+                <label className="mb-2">System message</label>
+                <div>
+                    {formFields.system_message}
+                </div>
             </div>
             <details>
                 <summary className="mb-4 cursor-pointer">Sampling settings</summary>

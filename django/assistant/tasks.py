@@ -158,7 +158,11 @@ def _generate(config, emitter):
     backend_class = backends[config.backend_name]
     generator = backend_class()
 
-    system_msg = config.system_message or chat.configuration.system_message
+    if config.system_message is None:
+        system_msg = chat.configuration.system_message
+    else:
+        system_msg = config.system_message
+
     history = message.get_history() if message is not None else []
     messages = prepare_messages(history, system_msg)
 
