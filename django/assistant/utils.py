@@ -354,12 +354,12 @@ def select_candidate(candidates, segment):
     if not segment.metadata:
         return
 
-    lc_candidates = [c.lower() for c in candidates if c]
+    candidates = [c for c in candidates if c]
 
     language = segment.metadata.get("language")
     if language:
         extensions = lang2extensions.get(language, [])
-        matches = [s for s in reversed(lc_candidates) if any(s.endswith(ext) for ext in extensions)]
+        matches = [s for s in reversed(candidates) if any(s.endswith(ext) for ext in extensions)]
         return matches and matches[0]
 
 

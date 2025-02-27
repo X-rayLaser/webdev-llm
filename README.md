@@ -5,9 +5,12 @@ Simple to use and flexibile self-hosted web-based GUI for running open-weight LL
 
 ## Main features:
 - multimodal (text+vision input) models support
-- previewing generated React components
+- simple IDE for editing generated files
+- viewing file changes
+- previewing generated React components (experimental)
+- easily pluggable custom code builders
 - drawing on canvas
-- multiple branches within one chat
+- conversation branching
 - editable messages (both AI and human ones)
 
 ## Requirements
@@ -15,13 +18,18 @@ Simple to use and flexibile self-hosted web-based GUI for running open-weight LL
 1. Docker
 2. Docker Compose
 
+
+# Warning: not suitable for production
+
+This project is only suitable for running locally. Please, do not run it in production environment.
+
 # Getting started
 
 Clone repository:
 
 ```
-git clone
-cd llm-dev
+git clone https://github.com/X-rayLaser/webdev-llm.git
+cd webdev-llm
 ```
 
 Build it:
@@ -42,13 +50,13 @@ or
 docker compose up
 ```
 
-In the browser, go to [localhost/app/chats](localhost/app/chats)
+In the browser, go to [http://localhost/app/chats](http://localhost/app/chats)
 
 # Configuring
 
 Before you can start chatting with the LLM, you need to configure the app:
 
-In the browser, go to [localhost/app/configuration](localhost/app/configuration)
+In the browser, go to [http://localhost/app/configuration](http://localhost/app/configuration)
 
 ## Pointing the GUI to an LLM inference server
 
@@ -80,17 +88,17 @@ Click the big button in the second panel to do so.
 ## Creating final configuration
 
 Finally, click the button in the lowest panel to create your final configuration.
-Pick an appropriate name for it, choose which LLM server and a preset from the dropdown menus.
+Pick an appropriate name for it, choose which LLM server and a preset to use from the dropdown menus.
 
 # Chatting with a model
 
-In the browser, go to [localhost/app/chats](localhost/app/chats).
+In the browser, go to [http://localhost/app/chats](http://localhost/app/chats).
 
 Start a new chat by choosing a configuration from a dropdown shown in the main form on the page.
 Then, enter your prompt and click the submit button.
 You will be redirected to the chat page.
 
-Unlike typical LLM chat UI, where you send your prompt and get response, this app gives you more control. At each point in conversation you can either write a message yourself (whether it's supposed to be your turn or AI's turn) or use LLM to generate it.
+Unlike typical LLM chat UI, where you send your prompt and get response, you have more control. At each point in conversation you can either write a message yourself (regardless of whether it's supposed to be your turn or AI's turn) or use LLM to generate it.
 
 A few interesting things that you can do:
 - create messages by interleaving images and text in arbitrary order
