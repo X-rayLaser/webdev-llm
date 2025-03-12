@@ -13,7 +13,7 @@ import { PanelItem, DeleteControl, Controls } from '../components/panels';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCopy, faSpinner } from '@fortawesome/free-solid-svg-icons'
 import { fixUrlHost, getHostOrLocalhost, renderMarkdown } from '../utils';
-import DrawingCanvas from './DrawingCanvas';
+import DrawingCanvas from './DrawingCanvasNew';
 
 const textFormFields = [{
     name: "text",
