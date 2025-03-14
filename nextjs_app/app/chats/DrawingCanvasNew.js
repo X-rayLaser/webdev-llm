@@ -1,4 +1,6 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
+import { ButtonGroup } from '../components/buttons';
+
 
 const DrawingCanvas = ({ action, onSuccess }) => {
   const canvasRef = useRef(null);
@@ -333,9 +335,9 @@ const DrawingCanvas = ({ action, onSuccess }) => {
   return (
     <form action={decoratedAction} className="flex flex-col items-center p-4" onSubmit={handleSubmit}>
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-2 mb-2">
+      <ButtonGroup>
         <button
-          className={`px-2 py-1 border ${currentTool === 'free' ? 'bg-blue-500 text-white' : ''}`}
+          className={`px-2 py-1 ${currentTool === 'free' ? 'bg-blue-500 text-white' : ''}`}
           type="button"
           onClick={() => {
             setCurrentTool('free');
@@ -346,7 +348,7 @@ const DrawingCanvas = ({ action, onSuccess }) => {
           Free Draw
         </button>
         <button
-          className={`px-2 py-1 border ${currentTool === 'line' ? 'bg-blue-500 text-white' : ''}`}
+          className={`px-2 py-1 ${currentTool === 'line' ? 'bg-blue-500 text-white' : ''}`}
           type="button"
           onClick={() => {
             setCurrentTool('line');
@@ -357,7 +359,7 @@ const DrawingCanvas = ({ action, onSuccess }) => {
           Line
         </button>
         <button
-          className={`px-2 py-1 border ${currentTool === 'bar' ? 'bg-blue-500 text-white' : ''}`}
+          className={`px-2 py-1 ${currentTool === 'bar' ? 'bg-blue-500 text-white' : ''}`}
           type="button"
           onClick={() => {
             setCurrentTool('bar');
@@ -368,12 +370,12 @@ const DrawingCanvas = ({ action, onSuccess }) => {
           Bar
         </button>
         {currentTool === 'bar' && (
-          <button className="px-2 py-1 border" onClick={toggleBarOrientation} type="button">
+          <button className="px-2 py-1" onClick={toggleBarOrientation} type="button">
             Toggle Bar Orientation
           </button>
         )}
         <button
-          className={`px-2 py-1 border ${currentTool === 'rectangle' ? 'bg-blue-500 text-white' : ''}`}
+          className={`px-2 py-1 ${currentTool === 'rectangle' ? 'bg-blue-500 text-white' : ''}`}
           type="button"
           onClick={() => {
             setCurrentTool('rectangle');
@@ -384,7 +386,7 @@ const DrawingCanvas = ({ action, onSuccess }) => {
           Rectangle
         </button>
         <button
-          className={`px-2 py-1 border ${currentTool === 'square' ? 'bg-blue-500 text-white' : ''}`}
+          className={`px-2 py-1 ${currentTool === 'square' ? 'bg-blue-500 text-white' : ''}`}
           type="button"
           onClick={() => {
             setCurrentTool('square');
@@ -395,7 +397,7 @@ const DrawingCanvas = ({ action, onSuccess }) => {
           Square
         </button>
         <button
-          className={`px-2 py-1 border ${currentTool === 'text' ? 'bg-blue-500 text-white' : ''}`}
+          className={`px-2 py-1 ${currentTool === 'text' ? 'bg-blue-500 text-white' : ''}`}
           type="button"
           onClick={() => {
             setCurrentTool('text');
@@ -406,7 +408,7 @@ const DrawingCanvas = ({ action, onSuccess }) => {
           Text
         </button>
         <button
-          className={`px-2 py-1 border ${currentTool === 'eraser' ? 'bg-blue-500 text-white' : ''}`}
+          className={`px-2 py-1 ${currentTool === 'eraser' ? 'bg-blue-500 text-white' : ''}`}
           type="button"
           onClick={() => {
             setCurrentTool('eraser');
@@ -416,26 +418,26 @@ const DrawingCanvas = ({ action, onSuccess }) => {
         >
           Eraser
         </button>
-        <button className="px-2 py-1 border" type="button" onClick={handleUndo}>
+        <button className="px-2 py-1" type="button" onClick={handleUndo}>
           Undo
         </button>
-        <button className="px-2 py-1 border" type="button" onClick={handleRedo}>
+        <button className="px-2 py-1" type="button" onClick={handleRedo}>
           Redo
         </button>
-        <button className="px-2 py-1 border" type="button" onClick={handleClear}>
+        <button className="px-2 py-1" type="button" onClick={handleClear}>
           Clear
         </button>
-        <button className="px-2 py-1 border" type="button" onClick={handleCancel}>
+        <button className="px-2 py-1" type="button" onClick={handleCancel}>
           Cancel
         </button>
-        <button className="px-2 py-1 border" type="submit">
+        <button className="px-2 py-1" type="submit">
           {isSubmitting ? (
             <span className="animate-spin inline-block w-4 h-4 border-2 rounded-full" />
           ) : (
             'Submit'
           )}
         </button>
-      </div>
+      </ButtonGroup>
       {/* Instructions */}
       <div className="mb-2 text-sm text-gray-600">{instructions}</div>
       {/* Canvas */}

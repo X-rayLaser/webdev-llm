@@ -420,6 +420,34 @@ class SourceFilesNameResolutionTests(unittest.TestCase):
                 "S file named script.js.```\nconsole.log('Hello');```",
                 ["script.js"]
             ),
+            "text_section_only_contains_relative_file_path": (
+                "src/components/script.js```\nconsole.log('Hello');```",
+                ["src/components/script.js"]
+            ),
+            "text_section_only_contains_relative_file_path_starting_with_dot": (
+                "./src/components/script.js```\nconsole.log('Hello');```",
+                ["src/components/script.js"]
+            ),
+            "text_section_only_contains_file_with_double_extension_starting_with_dot": (
+                ".babel.js```\nconsole.log('Hello');```",
+                [".babel.js"]
+            ),
+            "text_section_only_contains_relative_path_of_file_with_double_extension_starting_with_dot": (
+                "src/.babel.js```\nconsole.log('Hello');```",
+                ["src/.babel.js"]
+            ),
+            "text_section_contains_file_name_with_double_extension": (
+                "webpack.config.js```\nconsole.log('Hello');```",
+                ["webpack.config.js"]
+            ),
+            "text_section_contains_file_path_with_double_extension": (
+                "Some text src/webpack.config.js some other text```\nconsole.log('Hello');```",
+                ["src/webpack.config.js"]
+            ),
+            "text_section_contains_file_name_with_underscores_and_dashes": (
+                "this is a file `webpack_files/web-pack.config.js` indeed```\nconsole.log('Hello');```",
+                ["webpack_files/web-pack.config.js"]
+            ),
             "text_section_only_contains_file_name": (
                 "script.js```\nconsole.log('Hello');```",
                 ["script.js"]
@@ -459,6 +487,10 @@ class SourceFilesNameResolutionTests(unittest.TestCase):
             "python_file_name_given_in_a_comment": (
                 "```\n\n\n# comment line with file name 'main.py' in the middle\nsome content```",
                 ["main.py"]
+            ),
+            "path_to_python_file_given_in_a_comment": (
+                "```\n\n\n# comment line with file name './src/test.Main_file.py' in the middle\nsome content```",
+                ["src/test.Main_file.py"]
             ),
             "comment_name_overrides_name_referenced_in_preceding_text_section": (
                 "The name of the file is script.js```\n# comment line with file name main.py in the middle\nsome content```",
