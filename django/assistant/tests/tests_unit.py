@@ -6,7 +6,7 @@ from assistant.models import Chat, MultimediaMessage, Modality, Revision
 from assistant.tests.utils import create_default_chat, create_message, create_text_modality
 from assistant.utils import (
     process_raw_message, prepare_messages, convert_modality, MessageSegment,
-    extract_segments_with_sources
+    extract_segments_with_sources, prepare_build_files
 )
 
 
@@ -317,6 +317,30 @@ class SourceFilesNameResolutionTests(unittest.TestCase):
         self.assertEqual(sources[0]["file_path"], "utils.js")
         self.assertEqual(sources[1]["file_path"], "main.js")
 
+    def test_one_component_imports_the_other_using_relative_path(self):
+        raw_message = "```javascript\nconsole.log```\n```javascript\nimport { x } from './utils/api';```"
+        _, sources = process_raw_message(raw_message)
+
+        self.assertEqual(len(sources), 2)
+        self.assertEqual(sources[0]["file_path"], "utils/api.js")
+        self.assertEqual(sources[1]["file_path"], "main.js")
+
+    def test_one_component_imports_the_other_using_relative_path_no_preceding_dot(self):
+        raw_message = "```javascript\nconsole.log```\n```javascript\nimport { x } from 'utils/network/api';```"
+        _, sources = process_raw_message(raw_message)
+
+        self.assertEqual(len(sources), 2)
+        self.assertEqual(sources[0]["file_path"], "utils/network/api.js")
+        self.assertEqual(sources[1]["file_path"], "main.js")
+
+    def test_one_component_imports_the_other_using_relative_path_with_dashes_and_underscoores(self):
+        raw_message = "```javascript\nimport { x } from 'my_utils/Client-Server';```\n```javascript\nconsole.log```"
+        _, sources = process_raw_message(raw_message)
+
+        self.assertEqual(len(sources), 2)
+        self.assertEqual(sources[0]["file_path"], "main.js")
+        self.assertEqual(sources[1]["file_path"], "my_utils/Client-Server.js")
+
     def test_has_2_js_files_with_library_imports(self):
         raw_message = """
         ```javascript
@@ -543,6 +567,30 @@ class SourceFilesNameResolutionTests(unittest.TestCase):
                 _, sources = extract_segments_with_sources(text)
                 extracted_names = [source["file_path"] for source in sources]
                 self.assertEqual(extracted_names, expected_names)
+
+
+class PrepareBuildFilesTests(unittest.TestCase):
+    def test_one_component_imports_the_other_using_relative_path_with_dashes_and_underscoores(self):
+        raw_message = "```javascript\nimport { x } from 'my_utils/Client-Server';```\n```javascript\nconsole.log```"
+        source_files = [
+            {
+                "file_path": "file1.js",
+                "content": "import { x } from './my_utils/Client-Server';",
+                "language": "javascript"
+            },
+            {
+                "file_path": "file2.js",
+                "content": "console.log;",
+                "language": "javascript"
+            },
+        ]
+        sources = prepare_build_files(source_files)
+
+        self.assertEqual(len(sources), 2)
+        self.assertEqual(sources[0]["file_path"], "main.js")
+        self.assertEqual(sources[0]["content"], "import { x } from './my_utils/Client-Server';")
+        self.assertEqual(sources[1]["file_path"], "my_utils/Client-Server.js")
+        self.assertEqual(sources[1]["content"], "console.log;")
 
 
 class MultimediaMessageMethodTests(APITestCase):

@@ -399,7 +399,7 @@ def make_source(index, file_path, content):
 
 def extract_imports(js_code, exclude=None):
     exclude = exclude or []
-    name_capture = "[\"'](?P<{}>[a-zA-Z0-9]+)[\"'];?$"
+    name_capture = "[\"'](\./)?(?P<{}>[/a-zA-Z0-9_\-]+)[\"'];?$"
 
     import_regex = f"import\s[^'^\"]*from\s+{name_capture.format('name1')}"
     side_effect_import_regex = f"import\s+{name_capture.format('name2')}"
@@ -411,6 +411,7 @@ def extract_imports(js_code, exclude=None):
         return match.group("name1") if match.group("name1") else match.group("name2")
   
     imports = find_all(pattern, js_code, parse_match)
+
     return [name for name in imports if name not in exclude]
 
 
