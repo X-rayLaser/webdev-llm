@@ -373,6 +373,7 @@ def find_files(text):
     pattern = re.compile("(\"|\')?(?P<path>(\./)?[/a-zA-Z0-9_\-]*(\.[a-zA-Z0-9_\-]+)?\.({}))(\"|\')?:?".format(re_ext),
                          flags=re.MULTILINE)
     paths = find_all(pattern, text, lambda match: match.group("path"))
+    paths = [p for p in paths if '//' not in p] # exclude URLs and broken paths
     return [path[2:] if path.startswith('./') else path for path in paths]
 
 

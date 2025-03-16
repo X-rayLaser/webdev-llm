@@ -500,6 +500,11 @@ class SourceFilesNameResolutionTests(unittest.TestCase):
                 "Here is file.py and styles.css. And here is script.js shown below:\n```\nconsole.log('Hello');```",
                 ["script.js"]
             ),
+            "test_section_contains_url": (
+                "Some url 'https://fonts.example.com/css2'\n```\nconsole.log('Hello');```",
+                ["untitled_0.js"]
+            ),
+            # todo: test with fonts.googleapis.com
             "js_file_name_given_in_a_comment": (
                 "```javascript\n//comment line with file name 'script.js' in the middle\nsome content```",
                 ["script.js"]
