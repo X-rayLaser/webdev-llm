@@ -339,7 +339,11 @@ def extract_name_from_comment(segment):
     lines = [line for line in lines if line.strip()]
     comment_openers = ["//", "/*", "#"]
     if lines and any(lines[0].startswith(openner) for openner in comment_openers):
-        candidates = find_files(lines[0])
+        comment_line = lines[0]
+        if comment_line.startswith("//") or comment_line.startswith("/*"):
+            comment_line = comment_line[2:]
+
+        candidates = find_files(comment_line)
         return candidates and candidates[-1]
 
 

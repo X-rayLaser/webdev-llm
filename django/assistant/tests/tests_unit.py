@@ -504,6 +504,14 @@ class SourceFilesNameResolutionTests(unittest.TestCase):
                 "```javascript\n//comment line with file name 'script.js' in the middle\nsome content```",
                 ["script.js"]
             ),
+            "js_file_in_a_comment_no_space_after_comment_opener": (
+                "```javascript\n//script.js in the middle\nsome content```",
+                ["script.js"]
+            ),
+            "js_path_in_a_comment": (
+                "```javascript\n//./src/some_script.js in the middle\nsome content```",
+                ["src/some_script.js"]
+            ),
             "ruby_file_name_given_in_a_comment_with_spaces": (
                 "```javascript\n  //    script.rb in the middle\nsome content```",
                 ["script.rb"]
