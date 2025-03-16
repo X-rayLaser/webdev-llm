@@ -409,7 +409,8 @@ export default function IDE({ chatId, activeRevision, revisions }) {
     // todo: why useCallback
     const loadFiles = useCallback(async (revisionId) => {
         try {
-            const files = await fetchSourceFiles(revisionId);
+            const allFiles = await fetchSourceFiles(revisionId);
+            const files = allFiles.filter(f => !f.hasOwnProperty('snippet'));
             setCurrentFiles(files);
             // Find parent revision: in the revisions array, find the one immediately preceding the current revision.
             const currentIndex = revisions.findIndex((r) => r.id === revisionId);

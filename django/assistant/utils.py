@@ -47,7 +47,43 @@ def process_raw_message(text: str) -> Tuple[List[MessageSegment], List[Dict[str,
 def extract_modalities(text: str, parent=None, extract_names=None) -> List[Modality]:
     segments, sources = extract_segments_with_sources(text, extract_names)
     modalities = [seg.create_modality(parent) for seg in segments]
+    sources = finalize_sources(sources)
     return modalities, sources
+
+
+def finalize_sources(sources):
+    def has_shabang(content):
+        shabangs = ['#!/bin/bash', '#!/bin/sh']
+        lines = content.splitlines()
+        if not lines:
+            return False
+
+        return any(s.strip() == lines[0].strip() for s in shabangs)
+        
+    def is_script(content):
+        if has_shabang(content):
+            return True
+
+        bash_features = ["sudo", "pip", "npm", "apt", "apt-get", "wget", "curl"]
+        for line in content.splitlines():
+            words = line.split(' ')
+            if any(w.strip() in bash_features for w in words):
+                return True
+
+        return False
+
+    decorated_sources = []
+    for src in sources:
+        content = src['content']
+        new_source = dict(src)
+
+        is_untitled_script = is_script(content) and 'untitled' in src['file_path']
+
+        if is_untitled_script and not has_shabang(content):
+            new_source["snippet"] = True
+        decorated_sources.append(new_source)
+
+    return decorated_sources
 
 
 def extract_segments_with_sources(text, extract_names=None):
@@ -514,6 +550,23 @@ def prepare_messages(history, system_message=None):
     if system_message:
         messages = [{ "role": "system", "content": system_message }] + messages
     return messages
+
+
+def get_multimedia_message_text(multimedia_message):
+    dict_entry = convert(multimedia_message)
+    content = dict_entry.get("content")
+    if not content:
+        return ""
+
+    strings = []
+    for entry in content:
+        try:
+            text = entry[entry["type"]]
+            strings.append(text)
+        except KeyError as e:
+            print('Error:', repr(e))
+
+    return '\n'.join(strings)
 
 
 def fix_newlines(text):

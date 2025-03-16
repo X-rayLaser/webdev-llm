@@ -351,7 +351,7 @@ def reduce_source_tree(revision):
         if rev:
             src_tree = updated_tree(src_tree, rev.src_tree)
 
-    return src_tree
+    return [entry for entry in src_tree if 'snippet' not in entry]
 
 
 class Modality(models.Model):
