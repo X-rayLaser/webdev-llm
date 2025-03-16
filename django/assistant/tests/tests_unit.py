@@ -504,7 +504,18 @@ class SourceFilesNameResolutionTests(unittest.TestCase):
                 "Some url 'https://fonts.example.com/css2'\n```\nconsole.log('Hello');```",
                 ["untitled_0.js"]
             ),
-            # todo: test with fonts.googleapis.com
+            "test_section_contains_url_with_subdomain_without_protocol": (
+                "Some url 'fonts.example.com/css2'\n```\nconsole.log('Hello');```",
+                ["untitled_0.js"]
+            ),
+            "test_section_contains_url_without_protocol": (
+                "Some url 'example.com/css2'\n```\nconsole.log('Hello');```",
+                ["untitled_0.js"]
+            ),
+            "test_section_contains_url_with_au_domain": (
+                "Some url 'fonts.example.au/?format'\n```\nconsole.log('Hello');```",
+                ["untitled_0.js"]
+            ),
             "js_file_name_given_in_a_comment": (
                 "```javascript\n//comment line with file name 'script.js' in the middle\nsome content```",
                 ["script.js"]

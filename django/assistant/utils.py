@@ -368,12 +368,23 @@ def select_candidate(candidates, segment):
 
 
 def find_files(text):
+
+    def remove_urls(text):
+        processed_lines = []
+        url_features = ['//', '.com/', 'www', '&', '?', '=']
+        for line in text.splitlines():
+            parts = line.split(' ')
+            filtered_parts = [p for p in parts if not any(f in p for f in url_features)]
+            processed_lines.append(' '.join(filtered_parts))
+        return '\n'.join(processed_lines)
+
+    text = remove_urls(text)
+
     extensions = ["js", "jsx", "ts", "css", "py", "rb", "html", "c\+\+", "c", "cpp", "hpp", "h", "sh", "json"]
     re_ext = "|".join(extensions)
     pattern = re.compile("(\"|\')?(?P<path>(\./)?[/a-zA-Z0-9_\-]*(\.[a-zA-Z0-9_\-]+)?\.({}))(\"|\')?:?".format(re_ext),
                          flags=re.MULTILINE)
     paths = find_all(pattern, text, lambda match: match.group("path"))
-    paths = [p for p in paths if '//' not in p] # exclude URLs and broken paths
     return [path[2:] if path.startswith('./') else path for path in paths]
 
 
