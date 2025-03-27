@@ -429,7 +429,7 @@ function ImageModality({ data, onSuccessfulUpdate, onSuccessfulDelete, showContr
         <div className="rounded-lg">
             <div className="relative w-full">
                 <div className={`px-2 rounded-lg h-96`}>
-                    <img className="h-full mx-auto" src={imageUrl} />
+                    <img className="h-full mx-auto rounded-lg border-2 border-stone-900" src={imageUrl} />
                 </div>
                 <div className="absolute px-2 right-0 top-0">
                     {showControls && (
