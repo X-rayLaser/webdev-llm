@@ -11,7 +11,7 @@ settings_local.py
 \.github/
 nextjs_app/node_modules
 nextjs_app/public
-
+react_builder/node_modules
 package-lock.json
 devcontainer.json
 dependabot.yml

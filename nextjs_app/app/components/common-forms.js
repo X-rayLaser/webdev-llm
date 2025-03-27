@@ -87,7 +87,7 @@ export function AutoExpandingTextAreaField({ extraInputClasses = "", value = "",
 
         setRows(Math.max(lineCount + extraRows, 1));
     };
-    console.log("extraInputClasses", extraInputClasses)
+
     return (
         <textarea
             ref={textareaRef}
@@ -174,6 +174,7 @@ function WrappedField({ name, id="", label="", placeholder="", errors=[], FieldC
         <FieldContainer label={labelField} field={inputField} errors={errors} />
     );
 }
+
 
 export function ImageField({ name, id = "", label = "", onChange, errors }) {
     const fileInputRef = useRef(null);
@@ -267,6 +268,11 @@ export function NumberField(props) {
     let { min=0, max=1, step=0.1, ...rest } = {...props};
     let allProps = { min, max, step, ...rest};
     return <WrappedField type="number" FieldComponent={FlexInputField} FieldContainer={InlineFormField} {...allProps} />
+}
+
+
+export function FileField(props) {
+    return <WrappedField type="file" FieldComponent={FlexInputField} FieldContainer={InlineFormField} {...props} />
 }
 
 
