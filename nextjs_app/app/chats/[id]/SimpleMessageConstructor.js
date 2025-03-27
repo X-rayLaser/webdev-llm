@@ -10,7 +10,7 @@ import { createTextModality, createMixedModality, createImageModality, createMul
     startMessageGeneration 
 } from '@/app/actions';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCog, faPaste } from '@fortawesome/free-solid-svg-icons';
+import { faCog, faPaste, faFileArrowUp, faCamera } from '@fortawesome/free-solid-svg-icons';
 import { OutlineButtonSmall, SubmitButton } from "@/app/components/buttons";
 import { Alert } from "@/app/components/alerts";
 
@@ -113,7 +113,7 @@ function ImageForm({ action, onSuccess, onPaste }) {
                     <img
                         src={preview}
                         alt="Preview"
-                        className="max-h-48 object-cover rounded"
+                        className="max-h-60 object-cover rounded"
                     />
                     <p className="text-sm text-gray-600">Drag a new image to replace</p>
                 </div>
@@ -127,23 +127,31 @@ function ImageForm({ action, onSuccess, onPaste }) {
                 </div>
             </DropZone>
 
-            <div className="flex flex-col gap-2">
-                <FileField
-                    ref={fileInputRef}
-                    name={"image"}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    className="file:hidden cursor-pointer"
-                />
-                <div className="w-36">
+            <div className="flex justify-between">
+                <div className="flex gap-2 justify-center items-center">
+                    <div className="relative rounded-lg hover:bg-sky-800">
+                        <input
+                            ref={fileInputRef}
+                            name={"image"}
+                            type="file"
+                            accept="image/*"
+                            onChange={handleFileChange}
+                            className="absolute h-full w-full opacity-0 z-10 file:hidden cursor-pointer"
+                        />
+                        <OutlineButtonSmall type="button">
+                            <FontAwesomeIcon icon={faFileArrowUp} className="text-2xl text-blue-400" />
+                        </OutlineButtonSmall>
+                    </div>
+                    <div className="">
+                        <OutlineButtonSmall type="button" onClick={handlePasteImage}>
+                            <FontAwesomeIcon icon={faPaste} className="text-2xl text-blue-400" />
+                        </OutlineButtonSmall>
+                    </div>
                     <OutlineButtonSmall type="button" onClick={handlePasteImage}>
-                        Paste image <FontAwesomeIcon icon={faPaste} />
+                            <FontAwesomeIcon icon={faCamera} className="text-2xl text-blue-400" />
                     </OutlineButtonSmall>
                 </div>
-            </div>
 
-            <div className="w-44">
                 <SubmitButton disabled={runningSubmission} text="Submit">
                 {runningSubmission && <span className="ml-2"><FontAwesomeIcon icon={faCog} spin /></span>}
                 </SubmitButton>
