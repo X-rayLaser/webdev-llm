@@ -33,13 +33,11 @@ const Form = formFactory(fields, getTopDownRenderer());
 const imageIsSet = image => (image && image.size > 0) ? true : false
 
 
-function PhotoCamera({ width=480, onPictureTaken, onCancel }) {
+function PhotoCamera({ width=600, onPictureTaken, onCancel, onError }) {
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
     const [height, setHeight] = useState(0);
-    const [error, setError] = useState("");
     const [streaming, setStreaming] = useState(false);
-    const [videoSrc, setVideoSrc]= useState(null);
 
     useEffect(() => {
         function prepare() {
@@ -50,7 +48,7 @@ function PhotoCamera({ width=480, onPictureTaken, onCancel }) {
                 }
             }).catch((err) => {
                 console.error(`An error occurred: ${err}`);
-                setError("Failed to access a camera. Make sure to plug the device and set permissions")
+                onError(err);
             });
     
             if (videoRef.current && canvasRef.current) {
@@ -74,6 +72,11 @@ function PhotoCamera({ width=480, onPictureTaken, onCancel }) {
         }
 
         prepare();
+        return () => {
+            if (videoRef.current) {
+                videoRef.current.play = false;
+            }
+        }
     });
 
     function reset() {
@@ -105,8 +108,6 @@ function PhotoCamera({ width=480, onPictureTaken, onCancel }) {
 
     return (
         <div>
-
-            {error && <Alert text={error} level="danger" />}
             <canvas ref={canvasRef} className="hidden"></canvas>
             <video ref={videoRef} autoPlay />
             <div className="flex gap-2">
@@ -124,6 +125,7 @@ function ImageForm({ action, onSuccess, onPaste }) {
     const [text, setText] = useState("");
     const [preview, setPreview] = useState(null);
     const [streaming, setStreaming] = useState(false);
+    const [cameraError, setCameraError] = useState("");
 
     const initialState = { message: null, errors: {} };
     const [formState, formAction] = useActionState(async function() {
@@ -174,9 +176,19 @@ function ImageForm({ action, onSuccess, onPaste }) {
         }
     }
 
+    function handleCameraClick() {
+        setCameraError("");
+        setStreaming(true);
+    }
+
     function handleTakePicture(blob) {
         onPaste(blob);
         createPreview(blob);
+        setStreaming(false);
+    }
+
+    function handleError(error) {
+        setCameraError(`Failed to access a camera. Make sure to plug the device and set permissions: "${error}"`);
         setStreaming(false);
     }
 
@@ -214,7 +226,12 @@ function ImageForm({ action, onSuccess, onPaste }) {
             )}
 
 
-            {streaming ? <PhotoCamera onCancel={() => setStreaming(false)} onPictureTaken={handleTakePicture} /> : (
+            {streaming ? (
+                <PhotoCamera 
+                    onCancel={() => setStreaming(false)}
+                    onPictureTaken={handleTakePicture}
+                    onError={handleError} />
+            ) : (
                 <DropZone onDrop={handleDrop}>
                     <div className="text-center text-gray-500">
                         <p>Drag and drop an image here</p>
@@ -245,7 +262,7 @@ function ImageForm({ action, onSuccess, onPaste }) {
                                 <FontAwesomeIcon icon={faPaste} className="text-2xl text-blue-400" />
                             </OutlineButtonSmall>
                         </div>
-                        <OutlineButtonSmall type="button" onClick={() => setStreaming(true)}>
+                        <OutlineButtonSmall type="button" onClick={handleCameraClick}>
                             <FontAwesomeIcon icon={faCamera} className="text-2xl text-blue-400" />
                         </OutlineButtonSmall>
                     </div>
@@ -255,6 +272,7 @@ function ImageForm({ action, onSuccess, onPaste }) {
                     </SubmitButton>
                 </div>
             )}
+            {cameraError && <div className="my-4"><Alert text={cameraError} level="danger" /></div>}
         </form>
     )
 }
