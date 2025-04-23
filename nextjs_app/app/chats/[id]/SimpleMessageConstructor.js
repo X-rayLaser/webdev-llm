@@ -39,7 +39,7 @@ function PhotoCamera({ width=600, onPictureTaken, onCancel, onError }) {
     const [height, setHeight] = useState(0);
     const [streaming, setStreaming] = useState(false);
     const [cameras, setCameras] = useState([]);
-    const [cameraId, setCameraId] = useState("");
+    const [facingMode, setFacingMode] = useState("environment");
 
     useEffect(() => {
         function getAllCameras() {
@@ -65,7 +65,7 @@ function PhotoCamera({ width=600, onPictureTaken, onCancel, onError }) {
 
     useEffect(() => {
         activateCamera();
-    }, [cameraId]);
+    }, [facingMode]);
 
     function activateCamera() {
         //if (!cameraId) {
@@ -73,7 +73,7 @@ function PhotoCamera({ width=600, onPictureTaken, onCancel, onError }) {
         //}
         navigator.mediaDevices.getUserMedia({
             video: { 
-                facingMode: 'environment'
+                facingMode
             }, audio: false
         }).then(stream => {
             if (videoRef.current && window) {
@@ -99,7 +99,6 @@ function PhotoCamera({ width=600, onPictureTaken, onCancel, onError }) {
                     canvas.setAttribute("width", width);
                     canvas.setAttribute("height", height);
                     setStreaming(true);
-                    console.log("STREAMING STARTED!")
                 }
             }, false);
         }
@@ -117,11 +116,12 @@ function PhotoCamera({ width=600, onPictureTaken, onCancel, onError }) {
     }
 
     function handleSelectCamera(e) {
-        setCameraId(e.target.value);
+        setFacingMode(e.target.value);
     }
 
     function handleTakePicture(e) {
         if (width && height && videoRef.current && canvasRef.current) {
+            // todo: consider setting width = video.videoWidth, same with height (to get full resolution)
             const canvas = canvasRef.current;
             const video = videoRef.current;
             const context = canvas.getContext("2d");
@@ -142,11 +142,10 @@ function PhotoCamera({ width=600, onPictureTaken, onCancel, onError }) {
             <div className="flex flex-col gap-4 justify-center">
                 {cameras.length > 0 && (
                     <div>
-                        <label classname="mr-2">Select a camera</label>
-                        <select value={cameraId} onChange={handleSelectCamera}>
-                            {cameras.map((cam, idx) => 
-                                <option key={idx} value={cam} className="p-2">Camera #{idx}</option>
-                            )}
+                        <label className="mr-2">Select a camera</label>
+                        <select value={facingMode} onChange={handleSelectCamera}>
+                            <option value="user">Front camera</option>
+                            <option value="environment">Back camera</option>
                         </select>
                     </div>
                 )}
