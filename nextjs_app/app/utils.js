@@ -63,6 +63,62 @@ function capitalize(str) {
 }
 
 
+class WebSocketManager {
+    constructor(hostName, messageListener) {
+        this.hostName = hostName;
+        this.messageListener = messageListener
+        this.listeners = [];
+        this.socket = null;
+    }
+
+    connect() {
+        // try connecting via secure protocal when failing to connect via insecure one
+        // allows to work against HTTP and HTTPS server
+        const insecureWsUrl = `ws://${this.hostName}/ws_chat/`;
+        const secureWsUrl = `wss://${this.hostName}/ws_chat/`;
+        this.socket = new WebSocket(insecureWsUrl);
+
+        const handleWebSocketOpen = (event) => {
+            this.subscribe("message", this.messageListener)
+            this.socket.send(0);
+        }
+
+        const handleWebSocketError = (event) => {
+            if (event.target.url === insecureWsUrl) {
+                this.close();
+                this.socket = new WebSocket(secureWsUrl);
+                this.subscribe("open", handleWebSocketOpen);
+            }
+        }
+
+        this.subscribe("open", handleWebSocketOpen);
+        this.subscribe("error", handleWebSocketError);
+    
+        return () => {
+            this.close();
+        };
+    }
+
+    subscribe(event, handler) {
+        if (this.socket) {
+            this.socket.addEventListener(event, handler);
+            this.listeners.push({ event, handler });
+        }
+    }
+
+    close() {
+        const socket = this.socket;
+        if (socket) {
+            socket.close();
+            this.listeners.forEach(({ event, handler }) => {
+                socket.removeEventListener(event, handler);
+            });
+            this.listeners = [];
+        }
+    }
+}
+
+
 export {
     fetchChats,
     fixUrlHost,
@@ -70,5 +126,6 @@ export {
     getHostNameOrLocalhost,
     renderMarkdown,
     getRandomInt,
-    capitalize
+    capitalize,
+    WebSocketManager
 }

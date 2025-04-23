@@ -1,7 +1,7 @@
 "use client"
 import React, { useEffect, useState } from 'react';
 import { launchBuild } from '@/app/actions';
-import { getHostNameOrLocalhost } from '@/app/utils';
+import { getHostNameOrLocalhost, WebSocketManager } from '@/app/utils';
 import { Button } from '@/app/components/buttons';
 import { fetchDataFromUrl, fetchRevisions, fetchServers, fetchStatesData } from '@/app/data';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -235,6 +235,7 @@ const SitePreviewBox = ({ url }) => {
     );
 }
 
+
 const PreviewComponent = ({ chatId }) => {
     const [servers, setServers] = useState([]);
     const [selectedServerId, setSelectedServerId] = useState(null);
@@ -300,20 +301,17 @@ const PreviewComponent = ({ chatId }) => {
     }, [revisions, selectedRevisionId]);
 
     useEffect(() => {
+        const hostName = getHostNameOrLocalhost(window);
+
         const handleWebSocketMessage = getWebsocketListener(
             selectedRevisionId, setStateData, handleBuildFinished
         );
-        const hostName = getHostNameOrLocalhost(window);
-        const socket = new WebSocket(`ws://${hostName}:9000`);
-        socket.addEventListener("open", (event) => {
-            socket.send(0);
-        });
 
-        socket.addEventListener("message", handleWebSocketMessage);
-    
+        const manager = new WebSocketManager(hostName, handleWebSocketMessage);
+        manager.connect();
+
         return () => {
-            socket.removeEventListener("message", handleWebSocketMessage);
-            socket.close();
+            manager.close();
         };
     }, [selectedRevisionId]);
 

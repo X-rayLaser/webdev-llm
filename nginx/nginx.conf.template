@@ -83,6 +83,13 @@ http {
       proxy_redirect off;
       proxy_pass http://django_server;
     }
+    
+    location /ws_chat/ {
+      proxy_pass http://websocketserver:9000;
+      proxy_http_version 1.1;
+      proxy_set_header Upgrade $http_upgrade;
+      proxy_set_header Connection "upgrade";
+    }
 
     error_page 500 502 503 504 /500.html;
     location = /500.html {

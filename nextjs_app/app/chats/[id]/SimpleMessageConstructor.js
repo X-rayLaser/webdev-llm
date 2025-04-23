@@ -38,46 +38,72 @@ function PhotoCamera({ width=600, onPictureTaken, onCancel, onError }) {
     const canvasRef = useRef(null);
     const [height, setHeight] = useState(0);
     const [streaming, setStreaming] = useState(false);
+    const [cameras, setCameras] = useState([]);
+    const [cameraId, setCameraId] = useState("");
 
     useEffect(() => {
-        function prepare() {
-            navigator.mediaDevices.getUserMedia({ video: true, audio: false }).then(stream => {
-                if (videoRef.current && window) {
-                    videoRef.current.srcObject = stream;
-                    videoRef.current.play = true;
+        function getAllCameras() {
+            if (!navigator.mediaDevices?.enumerateDevices) {
+                console.error("enumerateDevices() not supported.");
+            } else {
+                // List cameras and microphones.
+                navigator.mediaDevices.enumerateDevices().then((devices) => {
+                    let cameras = devices.filter(
+                        device => device.kind === 'videoinput'
+                    ).map(device => device.deviceId);
+                    setCameras(cameras);
+                })
+                .catch((err) => {
+                    console.error(`${err.name}: ${err.message}`);
+                });
+            }
+        }
+
+        getAllCameras();
+        activateCamera();
+    }, []);
+
+    useEffect(() => {
+        activateCamera();
+    }, [cameraId]);
+
+    function activateCamera() {
+        //if (!cameraId) {
+        //    return ;
+        //}
+        navigator.mediaDevices.getUserMedia({
+            video: { 
+                facingMode: 'environment'
+            }, audio: false
+        }).then(stream => {
+            if (videoRef.current && window) {
+                videoRef.current.srcObject = stream;
+                videoRef.current.play = true;
+            }
+        }).catch((err) => {
+            console.error(`An error occurred: ${err}`);
+            onError(err);
+        });
+
+        if (videoRef.current && canvasRef.current) {
+            const video = videoRef.current;
+            const canvas = canvasRef.current;
+
+            video.addEventListener("canplay", ev => {
+                if (!streaming) {
+                    const height = (video.videoHeight / video.videoWidth) * width;
+                    setHeight(height);
+
+                    video.setAttribute("width", width);
+                    video.setAttribute("height", height);
+                    canvas.setAttribute("width", width);
+                    canvas.setAttribute("height", height);
+                    setStreaming(true);
+                    console.log("STREAMING STARTED!")
                 }
-            }).catch((err) => {
-                console.error(`An error occurred: ${err}`);
-                onError(err);
-            });
-    
-            if (videoRef.current && canvasRef.current) {
-                const video = videoRef.current;
-                const canvas = canvasRef.current;
-
-                video.addEventListener("canplay", ev => {
-                    if (!streaming) {
-                        const height = (video.videoHeight / video.videoWidth) * width;
-                        setHeight(height);
-    
-                        video.setAttribute("width", width);
-                        video.setAttribute("height", height);
-                        canvas.setAttribute("width", width);
-                        canvas.setAttribute("height", height);
-                        setStreaming(true);
-                        console.log("STREAMING STARTED!")
-                    }
-                }, false);
-            }
+            }, false);
         }
-
-        prepare();
-        return () => {
-            if (videoRef.current) {
-                videoRef.current.play = false;
-            }
-        }
-    });
+    }
 
     function reset() {
         if (!canvasRef.current) {
@@ -88,6 +114,10 @@ function PhotoCamera({ width=600, onPictureTaken, onCancel, onError }) {
         const context = canvas.getContext("2d");
         context.fillStyle = "#AAA";
         context.fillRect(0, 0, canvas.width, canvas.currentheight);
+    }
+
+    function handleSelectCamera(e) {
+        setCameraId(e.target.value);
     }
 
     function handleTakePicture(e) {
@@ -109,10 +139,22 @@ function PhotoCamera({ width=600, onPictureTaken, onCancel, onError }) {
     return (
         <div>
             <canvas ref={canvasRef} className="hidden"></canvas>
-            <video ref={videoRef} autoPlay />
-            <div className="flex gap-2">
-                <OutlineButtonSmall type="button" onClick={onCancel}>Cancel</OutlineButtonSmall>
-                <OutlineButtonSmall type="button" onClick={handleTakePicture}>Take picture</OutlineButtonSmall>
+            <div className="flex flex-col gap-4 justify-center">
+                {cameras.length > 0 && (
+                    <div>
+                        <label classname="mr-2">Select a camera</label>
+                        <select value={cameraId} onChange={handleSelectCamera}>
+                            {cameras.map((cam, idx) => 
+                                <option key={idx} value={cam} className="p-2">Camera #{idx}</option>
+                            )}
+                        </select>
+                    </div>
+                )}
+                <video ref={videoRef} autoPlay />
+                <div className="flex gap-2">
+                    <OutlineButtonSmall type="button" onClick={onCancel}>Cancel</OutlineButtonSmall>
+                    <OutlineButtonSmall type="button" onClick={handleTakePicture}>Take picture</OutlineButtonSmall>
+                </div>
             </div>
         </div>
     );

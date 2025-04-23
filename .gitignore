@@ -15,3 +15,5 @@ react_builder/node_modules
 package-lock.json
 devcontainer.json
 dependabot.yml
+nginx.local/
+docker-compose.local.yml
