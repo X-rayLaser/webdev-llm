@@ -295,16 +295,16 @@ function ImageForm({ action, onSuccess, onPaste }) {
                                 className="absolute h-full w-full opacity-0 z-10 file:hidden cursor-pointer"
                             />
                             <OutlineButtonSmall type="button">
-                                <FontAwesomeIcon icon={faFileArrowUp} className="text-2xl text-blue-400" />
+                                <FontAwesomeIcon icon={faFileArrowUp} className="text-lg text-blue-400" />
                             </OutlineButtonSmall>
                         </div>
                         <div className="">
                             <OutlineButtonSmall type="button" onClick={handlePasteImage}>
-                                <FontAwesomeIcon icon={faPaste} className="text-2xl text-blue-400" />
+                                <FontAwesomeIcon icon={faPaste} className="text-lg text-blue-400" />
                             </OutlineButtonSmall>
                         </div>
                         <OutlineButtonSmall type="button" onClick={handleCameraClick}>
-                            <FontAwesomeIcon icon={faCamera} className="text-2xl text-blue-400" />
+                            <FontAwesomeIcon icon={faCamera} className="text-lg text-blue-400" />
                         </OutlineButtonSmall>
                     </div>
 

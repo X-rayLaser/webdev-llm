@@ -16,4 +16,4 @@ package-lock.json
 devcontainer.json
 dependabot.yml
 nginx.local/
-docker-compose.local.yml
+docker-compose.override.yml
