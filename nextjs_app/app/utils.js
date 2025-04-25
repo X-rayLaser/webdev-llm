@@ -76,7 +76,11 @@ class WebSocketManager {
         // allows to work against HTTP and HTTPS server
         const insecureWsUrl = `ws://${this.hostName}/ws_chat/`;
         const secureWsUrl = `wss://${this.hostName}/ws_chat/`;
-        this.socket = new WebSocket(insecureWsUrl);
+        try {
+            this.socket = new WebSocket(insecureWsUrl);
+        } catch (err) {
+            this.socket = new WebSocket(secureWsUrl);
+        }
 
         const handleWebSocketOpen = (event) => {
             this.subscribe("message", this.messageListener)
