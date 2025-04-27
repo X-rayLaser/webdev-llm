@@ -5,10 +5,11 @@ from django.conf import settings
 from .models import (
     Configuration, Server, Preset, Build, LinterCheck,
     TestRun, OperationSuite, Thread, Comment, Modality,
-    MultimediaMessage, Revision, Chat, Generation, GenerationMetadata
+    MultimediaMessage, Revision, Chat, Generation, GenerationMetadata,
+    SpeechSample
 )
 from assistant.tasks import generate_completion, launch_operation_suite, CompletionConfig
-from assistant.utils import fix_newlines
+from assistant.utils import fix_newlines, get_multimedia_message_text
 
 class ServerSerializer(serializers.ModelSerializer):
     class Meta:
@@ -301,11 +302,13 @@ class MultimediaMessageSerializer(serializers.ModelSerializer):
     content_ro = ModalitySerializer(source="content", read_only=True)
     revisions = RevisionSerializer(many=True, read_only=True)
     replies = serializers.SerializerMethodField()
+    tts_text = serializers.SerializerMethodField()
 
     class Meta:
         model = MultimediaMessage
         fields = ['id', 'role', 'chat', 'parent', 'active_revision',
-                  'content_ro', 'content', 'revisions', 'replies', 'src_tree', 'child_index']
+                  'content_ro', 'content', 'audio', 'revisions', 'replies', 'src_tree', 
+                  'child_index', 'tts_text']
 
     def __init__(self, *args, **kwargs):
         with_replies = kwargs.pop('with_replies', True)
@@ -316,6 +319,9 @@ class MultimediaMessageSerializer(serializers.ModelSerializer):
     def get_replies(self, obj):
         kwargs = dict(context=self.context) if hasattr(self, "context") else {}
         return MultimediaMessageSerializer(obj.replies.all(), many=True, **kwargs).data
+
+    def get_tts_text(self, obj):
+        return get_multimedia_message_text(obj)
 
     def validate_src_tree(self, data):
         for entry in data:
@@ -467,3 +473,9 @@ class BuildLaunchSerializer(serializers.Serializer):
         launch_operation_suite.delay_on_commit(
             revision.id, socket_session_id=0, builder_id=builder_id, build_params=params
         )
+
+
+class SpeechSampleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SpeechSample
+        fields = ['id', 'text', 'audio']

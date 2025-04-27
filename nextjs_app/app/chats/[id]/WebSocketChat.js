@@ -6,7 +6,9 @@ import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSpinner } from '@fortawesome/free-solid-svg-icons';
 import { renderMarkdown } from "@/app/utils";
-import { getRandomInt, getHostNameOrLocalhost, WebSocketManager } from "@/app/utils";
+import { getRandomInt, getHostNameOrLocalhost, WebSocketManager,
+    captureAndPlaySpeech, BufferringAudioAutoPlayer
+} from "@/app/utils";
 import { Alert } from "@/app/components/alerts";
 
 
@@ -22,6 +24,8 @@ export default function WebSocketChat({
     const [imageGenerationsTable, setImageGenerationsTable] = useState(pictures);
     const [errors, setErrors] = useState([]);
     const router = useRouter();
+
+    const bufferingPlayer = new BufferringAudioAutoPlayer(previousMessage.tts_text);
 
     function socketListener(event) {
         const payload = JSON.parse(event.data);
@@ -51,6 +55,12 @@ export default function WebSocketChat({
         } else if (payload.event_type === "chat_image_generation_ended") {
             setImageGenerationsTable(removeEntryFunction);
             router.refresh();
+        } else if (payload.event_type === 'speech_sample_arrived') {
+            bufferingPlayer.put(payload.data);
+        } else if (payload.event_type === 'end_of_speech') {
+            if (!bufferingPlayer.playing) {
+                bufferingPlayer.playback();
+            }
         } else {
             console.warn("unknown event type ", payload.event_type);
         }

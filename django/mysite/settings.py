@@ -8,6 +8,10 @@ TEXT_TO_IMAGE_BACKEND = "dummy"
 
 LLM_BASED_NAME_EXTRACTION = False
 
+TTS_BACKEND = {
+    "name": "notts"
+}
+
 try:
     from mysite.settings_local import *
 except ImportError:

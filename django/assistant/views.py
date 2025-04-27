@@ -3,6 +3,7 @@ from rest_framework.decorators import api_view
 from rest_framework import viewsets
 from rest_framework import generics, mixins
 from rest_framework import decorators
+from rest_framework.renderers import BaseRenderer
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
@@ -13,7 +14,7 @@ from django.shortcuts import get_object_or_404
 from .models import (
     Configuration, Server, Preset, Build, LinterCheck, TestRun, OperationSuite,
     Comment, Thread, Chat, MultimediaMessage, Modality, Generation, GenerationMetadata,
-    Revision, reduce_source_tree
+    Revision, SpeechSample, reduce_source_tree
 )
 from .serializers import (
     ConfigurationSerializer, ServerSerializer, PresetSerializer,
@@ -21,11 +22,33 @@ from .serializers import (
     ThreadSerializer, ChatSerializer, MultimediaMessageSerializer, ModalitySerializer,
     RevisionSerializer, NewRevisionSerializer, CommentSerializer, ModalitiesOrderingSerializer,
     GenerationSerializer, GenerationMetadataSerializer, NewGenerationTaskSerializer,
-    BuildLaunchSerializer, MakeRevisionSerializer
+    BuildLaunchSerializer, MakeRevisionSerializer, SpeechSampleSerializer
 )
 
 from .tasks import summarize_text, generate_chat_picture
 from .utils import fix_newlines
+
+
+class BinaryRenderer(BaseRenderer):
+    media_type = 'application/octet-stream'
+    format = 'bin'
+    render_style = 'binary'
+    charset = None
+
+    def render(self, data, media_type=None, renderer_context=None):
+        view = renderer_context['view']
+
+        with open(view.get_object().audio.path, 'rb') as f:
+            return f.read()
+
+
+class SpeechSampleViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = SpeechSampleSerializer
+    queryset = SpeechSample.objects.all()
+    renderer_classes = [BinaryRenderer]
+
+    def retrieve(self, request, *args, **kwargs):
+        return super().retrieve(request, *args, **kwargs)
 
 
 class RevisionViewSet(viewsets.GenericViewSet):

@@ -17,3 +17,5 @@ devcontainer.json
 dependabot.yml
 nginx.local/
 docker-compose.override.yml
+django/test_audio_samples
+

@@ -1,5 +1,6 @@
 import re
 import os
+import wave
 from typing import Tuple, List, Dict
 from dataclasses import dataclass
 from collections import namedtuple
@@ -560,6 +561,9 @@ def get_multimedia_message_text(multimedia_message):
 
     strings = []
     for entry in content:
+        if entry["type"] != "text":
+            continue
+
         try:
             text = entry[entry["type"]]
             strings.append(text)
@@ -575,3 +579,34 @@ def fix_newlines(text):
         text = re.sub('\r\n', '\n', text)
         text = re.sub('\n', '\n\n', text)
     return text
+
+
+def join_wavs(samples, result_path):
+    data= []
+    params = None
+
+    for sample in samples:
+        file_field = sample.audio
+        w = wave.open(file_field.path, 'rb')
+        params = w.getparams()
+        data.append(w.readframes(w.getnframes()))
+        w.close()
+
+    with wave.open(result_path, 'wb') as output:
+        output.setparams(params)
+        for row in data:
+            output.writeframes(row)
+
+    with open(result_path, 'rb') as f:
+        res = f.read()
+    
+    os.remove(result_path)
+    return res
+
+
+def get_wave_duration(file_path):
+    with wave.open(file_path, mode="rb") as f:
+        frames = f.getnframes()
+        rate = f.getframerate()
+        duration = frames / rate
+    return duration

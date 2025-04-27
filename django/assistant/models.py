@@ -267,6 +267,8 @@ class MultimediaMessage(models.Model):
                                    related_name='content_message')
 
     child_index = models.IntegerField(default=0)
+    
+    audio = models.FileField(upload_to="audio_samples", blank=True, null=True)
 
     def get_root(self):
         if self.parent is None:
@@ -473,3 +475,15 @@ class Generation(models.Model):
 
     def __str__(self):
         return f"Generation {self.task_id} - Finished: {self.finished}"
+
+
+class SpeechSample(models.Model):
+    text = models.CharField(max_length=1024)
+    audio = models.FileField(upload_to="audio_samples")
+    date_time = models.DateTimeField(auto_now_add=True, blank=True)
+
+    def __str__(self) -> str:
+        return self.text
+
+    def get_absolute_url(self):
+        return reverse('speechsample-detail', args=[self.pk])

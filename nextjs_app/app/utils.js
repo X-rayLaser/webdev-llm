@@ -123,6 +123,139 @@ class WebSocketManager {
 }
 
 
+class BufferringAudioAutoPlayer {
+    constructor(audioText) {
+        this.audioText = audioText;
+        this.pieces = [];
+        this.playing = false;
+        this.bufferSize = null;
+        this.player = new AudioPlaylistPlayer();
+    }
+
+    put(audioPiece) {
+        this.pieces.push(audioPiece);
+        if (!this.bufferSize) {
+            this.calculateBufferSize();
+        }
+
+        if (!this.playing) {
+            this.player.putNoPlay(audioPiece);
+        } else {
+            this.player.put(audioPiece);
+        }
+
+        if (this.bufferSize && this.getTotalChars() > this.bufferSize && !this.playing) {
+            this.playback();
+        }
+    }
+
+    playback() {
+        this.playing = true;
+        this.player.play();
+    }
+
+    calculateBufferSize() {
+        let totalChars = 0;
+        let totalGenerationTimeSecs = 0;
+        let totalDurationSecs = 0;
+        this.pieces.forEach(piece => {
+            totalChars += piece.text.length;
+            totalGenerationTimeSecs += piece.gen_time_seconds;
+            totalDurationSecs += piece.duration;
+        });
+
+        // the calculation account for the audio duration
+        // tao measuring average # of seconds needed to synthesize 1 second of audio
+        let tao = totalGenerationTimeSecs / totalDurationSecs;
+        let N = this.audioText.length;
+        this.bufferSize = N * tao / (tao + 1);
+    }
+
+    getTotalChars() {
+        let totalChars = 0;
+        this.pieces.forEach(piece => {
+            totalChars += piece.text.length;
+        });
+        return totalChars;
+    }
+}
+
+
+class AudioPlaylistPlayer {
+    constructor() {
+        this.items = [];
+        this.playInProgress = false;
+    }
+
+    play() {
+        this.playInProgress = false;
+
+        if (this.items.length === 0) {
+            return;
+        }
+
+        let nextPiece = this.items.shift();
+
+        if (!nextPiece.url) {
+            //discarding items without url
+            this.play();
+            return;
+        }
+
+        this.playInProgress = true;
+        let audio = new Audio(nextPiece.url);
+        audio.addEventListener("ended", event => {
+            this.play();
+        });
+
+        if (audio.readyState === HTMLMediaElement.HAVE_FUTURE_DATA) {
+            audio.play();
+        } else {
+            audio.addEventListener("canplaythrough", event => {
+                audio.play();
+            });
+        }
+    }
+
+    put(item) {
+        this.items.push(item);
+
+        if (!this.playInProgress) {
+            this.play();
+        }
+    }
+
+    putNoPlay(item) {
+        this.items.push(item);
+    }
+}
+
+
+function captureAndPlaySpeech(websocket, bufferingPlayer, messageId) {
+
+    return new Promise((resolve, reject) => {
+        const alistener = msgEvent => {
+            let payload = JSON.parse(msgEvent.data);
+
+            if (payload.event_type === 'end_of_speech') {
+                websocket.removeEventListener("message", alistener);
+                if (!bufferingPlayer.playing) {
+                    bufferingPlayer.playback();
+                }
+
+                resolve(bufferingPlayer);
+            } else if (payload.event_type === 'speech_sample_arrived') {
+                if (payload.data.message_id === messageId) {
+                    bufferingPlayer.put(payload.data);
+                }
+            }
+        };
+
+        websocket.addEventListener('message', alistener);
+    });
+}
+
+
 export {
     fetchChats,
     fixUrlHost,
@@ -131,5 +264,7 @@ export {
     renderMarkdown,
     getRandomInt,
     capitalize,
-    WebSocketManager
+    WebSocketManager,
+    captureAndPlaySpeech,
+    BufferringAudioAutoPlayer
 }

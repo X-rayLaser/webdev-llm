@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 import json
 import uuid
+import time
 import os
 from typing import Dict
 import traceback
@@ -13,13 +14,15 @@ from django.core.files.base import ContentFile
 from assistant.generation_backends import backends, ChatCompletionJob
 from assistant import summary_backends
 from assistant import text2image_backends
+from assistant import tts_backends
 from assistant.models import (
     Chat, MultimediaMessage, Modality, Revision, Generation,
-    OperationSuite, Build, Server, reduce_source_tree
+    OperationSuite, Build, Server, SpeechSample, reduce_source_tree
 )
 from assistant.utils import (
     process_raw_message, extract_modalities, prepare_messages, prepare_build_files,
-    MessageSegment, get_named_code_segments, NamedCodeSegment
+    MessageSegment, get_named_code_segments, NamedCodeSegment, get_multimedia_message_text,
+    get_wave_duration, join_wavs
 )
 from assistant import serializers
 
@@ -176,15 +179,51 @@ def _generate(config, emitter):
     return create_response_message(generator.response, config, role, parent=message, chat=chat)
 
 
+def split_into_sentences(text):
+    def split_by(line, values):
+        res = []
+
+        if not values:
+            return [line]
+
+        for ln in line.split(values[0]):
+            res.extend(split_by(ln, values[1:]))
+
+        return [s.strip() for s in res if s.strip()]
+
+    return split_by(text, "\n.?!")
+
+
+def synthesize_speech(synthesizer, text, voice_id=None):
+    speech_data = synthesizer.synthesize(text, voice_id)
+    if not speech_data:
+        raise NoSpeechSampleError()
+    
+    sample = SpeechSample()
+
+    name = f'tts_{uuid.uuid4().hex}.wav'
+    audio_file = ContentFile(speech_data, name=name)
+    sample.audio = audio_file
+    sample.text = text
+    sample.save()
+    return sample
+
+
+class NoSpeechSampleError(Exception):
+    pass
+
+
 @shared_task
 def generate_completion(completion_config: dict, socket_session_id: int):
     config = CompletionConfig.from_dict(completion_config)
     emitter = RedisEventEmitter(socket_session_id)
 
     errors = None
+    response_message = None
+
     try:
         emitter(event_type="generation_started", data=dict(task_id=config.task_id))
-        _generate(config, emitter)
+        response_message = _generate(config, emitter)
     except Exception as e:
         print(traceback.format_exc())
         errors = ["Unxpected error during message generation"]
@@ -201,6 +240,54 @@ def generate_completion(completion_config: dict, socket_session_id: int):
             "task_id": config.task_id
         }
         emitter(event_type="generation_ended", data=event_data)
+
+    try:
+        backend_name = settings.TTS_BACKEND["name"]
+        backend_conf = settings.TTS_BACKEND.get("kwargs", {})
+        backend_class = tts_backends.backends[backend_name]
+        synthesizer = backend_class(**backend_conf)
+    except KeyError:
+        return
+
+    if response_message:
+        text = get_multimedia_message_text(response_message)
+        sentences = split_into_sentences(text)
+
+        if not sentences:
+            return
+
+        event_data = { "message_id": response_message.id }
+        emitter(event_type="tts_started", data=event_data)
+
+        audio_samples = []
+
+        for sentence in sentences:
+            t0 = time.time()
+            try:
+                sample = synthesize_speech(synthesizer, sentence)
+                audio_samples.append(sample)
+            except Exception as e:
+                traceback.print_exc()
+            else:
+                url = sample.get_absolute_url()
+                sample_id = sample.pk
+                duration = get_wave_duration(sample.audio.path)
+                elapsed = time.time() - t0
+                event_data = dict(
+                    text=sentence, url=url, gen_time_seconds=elapsed,
+                    message_id=response_message.id, id=sample_id, duration=duration
+                )
+                emitter(event_type="speech_sample_arrived", data=event_data)
+
+        if audio_samples:
+            output_name = f'{uuid.uuid4().hex}.wav'
+            output_path = os.path.join(settings.MEDIA_ROOT, output_name)
+            audio_data = join_wavs(audio_samples, output_path)
+            response_message.audio = ContentFile(audio_data, name="tts-audio-file.wav")
+            response_message.save()
+
+        event_data = { "message_id": response_message.id }
+        emitter(event_type="end_of_speech", data=event_data)
 
 
 @shared_task
