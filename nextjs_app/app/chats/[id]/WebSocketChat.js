@@ -25,9 +25,9 @@ export default function WebSocketChat({
     const [errors, setErrors] = useState([]);
     const router = useRouter();
 
-    const bufferingPlayer = new BufferringAudioAutoPlayer(previousMessage.tts_text);
-
     function socketListener(event) {
+        const bufferingPlayer = new BufferringAudioAutoPlayer(previousMessage.tts_text);
+
         const payload = JSON.parse(event.data);
         const task_id = payload.data.task_id;
 

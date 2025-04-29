@@ -1,4 +1,5 @@
 import localFont from "next/font/local";
+import Script from 'next/script';
 import "./globals.css";
 
 import { config } from '@fortawesome/fontawesome-svg-core'
@@ -32,6 +33,11 @@ export default function RootLayout({ children }) {
         <div className="mt-4">
         {children}
         </div>
+
+        <Script
+          src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
+          strategy="lazyOnload"
+        />
       </body>
     </html>
   );

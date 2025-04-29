@@ -42,18 +42,19 @@ class DummyTtsBackend(BaseTtsBackend):
 class RemoteTtsBackend(BaseTtsBackend):
     endpoint = "/tts/"
 
-    voices_endpoint = "/voices/"
+    voices_endpoint = "/samples/"
 
-    def __init__(self, host, port, use_tls=True, proxies=None):
+    def __init__(self, host, port, default_voice, use_tls=True, proxies=None):
         self.host = host
         self.port = port
+        self.default_voice = default_voice
         self.use_tls = use_tls
         self.proxies = proxies or {}
 
     def synthesize(self, text, voice_id=None):
         body = {
             "text": text,
-            "voice_id": voice_id
+            "sample_name": voice_id or self.default_voice
         }
         resp = self.make_request(self.endpoint, requests.post, data=json.dumps(body))
 
