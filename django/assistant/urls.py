@@ -15,6 +15,7 @@ router.register(r'comments', views.CommentViewSet)
 router.register(r'generations', views.GenerationViewSet)
 router.register(r'revisions', views.RevisionViewSet)
 router.register("speech-samples", views.SpeechSampleViewSet)
+router.register(r'resources', views.ResourceViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),

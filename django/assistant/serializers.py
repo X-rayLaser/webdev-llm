@@ -6,7 +6,7 @@ from .models import (
     Configuration, Server, Preset, Build, LinterCheck,
     TestRun, OperationSuite, Thread, Comment, Modality,
     MultimediaMessage, Revision, Chat, Generation, GenerationMetadata,
-    SpeechSample
+    SpeechSample, Resource
 )
 from assistant.tasks import generate_completion, launch_operation_suite, CompletionConfig
 from assistant.utils import fix_newlines, get_multimedia_message_text
@@ -365,6 +365,13 @@ class MultimediaMessageSerializer(serializers.ModelSerializer):
             parent.child_index = parent.replies.count() - 1
             parent.save()
         return message
+
+
+class ResourceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Resource
+        fields = ['id', 'dest_path', 'mime_type', 'description', 'file', 'chat']
+        extra_kwargs = {'chat': {'read_only': True}}
 
 
 class ChatSerializer(serializers.HyperlinkedModelSerializer):

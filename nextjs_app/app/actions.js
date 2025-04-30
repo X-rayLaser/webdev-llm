@@ -271,6 +271,26 @@ async function startNewChat(prevState, formData) {
     return result;
 }
 
+
+const resourceActionSet = new ActionSet({
+    listUrl: `${baseApiUrl}/resources/`,
+    itemName: "resource",
+    updateMethod: "PATCH"
+});
+
+
+async function createResource(prevState, formData) {
+    const result = await resourceActionSet.create(prevState, formData);
+    return result;
+}
+
+
+async function deleteResource(id) {
+    const result = await resourceActionSet.destroy(id);
+    return result;
+}
+
+
 async function deleteChat(id) {
     const deletionActionSet = new ActionSet({
         listUrl: "http://django:8000/api/chats/",
@@ -469,5 +489,6 @@ export {
     regenerateMessage,
     launchBuild,
     fetchSourceFiles,
-    makeRevision
+    makeRevision,
+    createResource, deleteResource
 };

@@ -1,4 +1,5 @@
 import math
+import json
 from rest_framework.decorators import api_view
 from rest_framework import viewsets
 from rest_framework import generics, mixins
@@ -14,7 +15,7 @@ from django.shortcuts import get_object_or_404
 from .models import (
     Configuration, Server, Preset, Build, LinterCheck, TestRun, OperationSuite,
     Comment, Thread, Chat, MultimediaMessage, Modality, Generation, GenerationMetadata,
-    Revision, SpeechSample, reduce_source_tree
+    Revision, SpeechSample, Resource, reduce_source_tree
 )
 from .serializers import (
     ConfigurationSerializer, ServerSerializer, PresetSerializer,
@@ -22,7 +23,7 @@ from .serializers import (
     ThreadSerializer, ChatSerializer, MultimediaMessageSerializer, ModalitySerializer,
     RevisionSerializer, NewRevisionSerializer, CommentSerializer, ModalitiesOrderingSerializer,
     GenerationSerializer, GenerationMetadataSerializer, NewGenerationTaskSerializer,
-    BuildLaunchSerializer, MakeRevisionSerializer, SpeechSampleSerializer
+    BuildLaunchSerializer, MakeRevisionSerializer, SpeechSampleSerializer, ResourceSerializer
 )
 
 from .tasks import summarize_text, generate_chat_picture
@@ -157,6 +158,12 @@ class StandardResultsSetPagination(PageNumberPagination):
         })
 
 
+
+class ResourceViewSet(mixins.CreateModelMixin, mixins.DestroyModelMixin, viewsets.GenericViewSet):
+    queryset = Resource.objects.all()
+    serializer_class = ResourceSerializer
+
+
 class ChatViewSet(viewsets.ModelViewSet):
     queryset = Chat.objects.all()
     serializer_class = ChatSerializer
@@ -182,12 +189,20 @@ class ChatViewSet(viewsets.ModelViewSet):
         prompt = request.data["prompt"]
         prompt = fix_newlines(prompt)
 
+        resources_str = request.data.get("resources", "")
+
         # todo: automatically generate unique name for a chat
         
         serializer.is_valid(raise_exception=True)
         chat = serializer.save()
         modality = Modality.objects.create(modality_type="text", text=prompt)
         message = MultimediaMessage.objects.create(role="user", content=modality, chat=chat)
+
+        if resources_str:
+            resource_ids = json.loads(resources_str)
+            resources = Resource.objects.filter(id__in=resource_ids)
+            chat.resources.add(*resources)
+            chat.save()
 
         backend_name = settings.SUMMARIZATION_BACKEND
         summarize_text.delay_on_commit(

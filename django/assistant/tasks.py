@@ -251,6 +251,22 @@ def generate_completion(completion_config: dict, socket_session_id: int):
 
     if response_message:
         text = get_multimedia_message_text(response_message)
+
+        # todo: more robust extraction of reasoning trace
+        thinking_start = 0
+        thinking_end = 0
+
+        for tag in ['think', 'thinking']:
+            idx = text.find(f'<{tag}>')
+            if idx >= 0:
+                thinking_start = idx
+                thinking_end = text.find(f'</{tag}>')
+                if thinking_end == -1:
+                    thinking_end = 0
+                break
+
+        spoken_text = text[thinking_end:]
+
         sentences = split_into_sentences(text)
 
         if not sentences:

@@ -246,6 +246,19 @@ class Chat(models.Model):
         return self.name
 
 
+class Resource(models.Model):
+    dest_path = models.CharField(max_length=256)  # relative destination path
+    file = models.FileField(upload_to="resources")
+    chat = models.ForeignKey(Chat, on_delete=models.CASCADE, blank=True, null=True,
+                             related_name='resources')
+
+    mime_type = models.CharField(max_length=256, blank=True, null=True)
+    description = models.CharField(max_length=512, blank=True, null=True)
+
+    def __str__(self):
+        return self.dest_path
+
+
 class MultimediaMessage(models.Model):
     ROLE_CHOICES = [
         ('assistant', 'Assistant'),
