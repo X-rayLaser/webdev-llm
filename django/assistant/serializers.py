@@ -462,7 +462,14 @@ You have access to React and standard web technologies.
 
 When not asked to generate code, respond naturally and helpfully."""
 
-        full_system_msg = f"{system_message}\n{additional_prompt}".lstrip()
+        resources_str = ""
+        if chat.resources.exists():
+            resources_str = "You can use the following files using their relative paths:\n<Resources>\n"
+            for res in chat.resources.all():
+                resources_str += f'{res.render()}\n'
+            resources_str += '</Resources>\n'
+
+        full_system_msg = f"{system_message}\n{additional_prompt}\n{resources_str}".lstrip()
 
         completion_config = CompletionConfig(backend_name,
                                              task_id=job_id,

@@ -258,6 +258,15 @@ class Resource(models.Model):
     def __str__(self):
         return self.dest_path
 
+    def render(self):
+        s = f'  Path: {self.dest_path}\n'
+        if self.mime_type:
+            s += f'  Mime type: {self.mime_type}\n'
+        if self.description:
+            s += f'  Description: {self.description}\n'
+        
+        return f'Resource:\n{s}'
+
 
 class MultimediaMessage(models.Model):
     ROLE_CHOICES = [

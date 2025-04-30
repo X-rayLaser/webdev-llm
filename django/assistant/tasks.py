@@ -215,7 +215,10 @@ class NoSpeechSampleError(Exception):
 
 @shared_task
 def generate_completion(completion_config: dict, socket_session_id: int):
+
     config = CompletionConfig.from_dict(completion_config)
+
+    print("full system msg", config.system_message)
     emitter = RedisEventEmitter(socket_session_id)
 
     errors = None
@@ -365,7 +368,10 @@ def launch_operation_suite(revision_id, socket_session_id, builder_id=None, **bu
         "source_tree": prepare_build_files(final_src_tree)
     }
     data.update(build_params)
-    build_servers = message.get_root().chat.configuration.build_servers.all()
+
+    chat = message.get_root().chat
+    resources = chat.resources.all()
+    build_servers = chat.configuration.build_servers.all()
     
     class BuiltInServer:
         url = "http://builder:8888"
@@ -394,7 +400,11 @@ def launch_operation_suite(revision_id, socket_session_id, builder_id=None, **bu
             logs["stderr"] = response_json["stderr"]
             build.logs = logs
 
-            folder_name = save_artifacts(artifacts_root, response_json["artifacts"])
+
+
+            folder_name = save_artifacts_with_resources(
+                artifacts_root, response_json["artifacts"], resources
+            )
             build.url = f'{settings.ARTIFACTS_URL}/{folder_name}/index.html'
             break
         except Exception as e:
@@ -409,14 +419,14 @@ def launch_operation_suite(revision_id, socket_session_id, builder_id=None, **bu
             emitter(event_type="build_finished", data=event_data)
 
 
-def save_artifacts(root_folder: str, artifacts: Dict[str, str]) -> str:
+def save_artifacts_with_resources(root_folder: str, artifacts: Dict[str, str], resources) -> str:
     """
-    Saves each artifact as a file in a subfolder with a random UUID4 name.
+    Saves each artifact as a file in a subfolder with a random UUID4 name. Save resouces as well
 
     Args:
         root_folder (str): The root folder where the subfolder will be created.
         artifacts (Dict[str, str]): A mapping of file names to file content.
-
+        resources: Queryset of Resource objects
     Returns:
         str: The name of the created subfolder.
     """
@@ -434,7 +444,30 @@ def save_artifacts(root_folder: str, artifacts: Dict[str, str]) -> str:
         with open(file_path, "w", encoding="utf-8") as file:
             file.write(file_content)
 
+    for res in resouces:
+        try:
+            save_resource(subfolder_path, res)
+        except Exception:
+            traceback.print_exc()
+
     return subfolder_name
+
+
+def save_resource(root, resource):
+    # todo: validate path
+    dest_path = os.path.normpath(resource.dest_path)
+
+    if not dest_path:
+        print("Ignoring resource: empty path")
+        return
+
+    dir_path = os.path.dirname(dest_path)
+    full_dir_path = os.path.join(root, dir_path)
+
+    if full_dir_path:
+        os.makedirs(full_dir_path, exist_ok=True)
+
+    shutil.copyfile(resource.file.path, dest_path)
 
 
 def post_json(url, data):
