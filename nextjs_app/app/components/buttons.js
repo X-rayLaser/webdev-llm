@@ -155,13 +155,13 @@ export function ButtonDropdown({ actions, defaultAction = null }) {
 }
 
 
-export function DiscardButton({ className, text="Discard", ...props}) {
+export function DiscardButton({ className, text="Discard", children, ...props}) {
   return (
     <button
       className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 disabled:bg-gray-400"
       {...props}
     >
-      {text}
+      {children}
     </button>
   );
 }
