@@ -3,6 +3,9 @@ import json
 import uuid
 import time
 import os
+import io
+import tarfile
+import shutil
 from typing import Dict
 import traceback
 import requests
@@ -362,12 +365,12 @@ def launch_operation_suite(revision_id, socket_session_id, builder_id=None, **bu
     message = revision.message
     suite = OperationSuite.objects.create(revision=revision)
 
-    final_src_tree = reduce_source_tree(revision)
+    final_src_tree = prepare_build_files(reduce_source_tree(revision))
 
-    data = {
-        "source_tree": prepare_build_files(final_src_tree)
-    }
-    data.update(build_params)
+    #data = {
+    #    "source_tree": final_src_tree
+    #}
+    #data.update(build_params)
 
     chat = message.get_root().chat
     resources = chat.resources.all()
@@ -390,10 +393,10 @@ def launch_operation_suite(revision_id, socket_session_id, builder_id=None, **bu
         event_data = dict(build=serializers.BuildSerializer(build).data, revision_id=revision_id)
         emitter(event_type="build_started", data=event_data)
 
-        url = f'{server.url}/build-component/'
+        url = f'{server.url}/build-spa/'
 
         try:
-            response_json = post_json(url, data)
+            response_json = post_tar(url, final_src_tree, resources)
             build.success = response_json["success"]
             logs = {}
             logs["stdout"] = response_json["stdout"]
@@ -401,11 +404,11 @@ def launch_operation_suite(revision_id, socket_session_id, builder_id=None, **bu
             build.logs = logs
 
 
+            build_id = response_json["build_id"]
+            tar_url = f'{server.url}/app_files/{build_id}/'
 
-            folder_name = save_artifacts_with_resources(
-                artifacts_root, response_json["artifacts"], resources
-            )
-            build.url = f'{settings.ARTIFACTS_URL}/{folder_name}/index.html'
+            artifacts_location = download_artifacts(tar_url, artifacts_root)
+            build.url = f'{settings.ARTIFACTS_URL}/{artifacts_location}/index.html'
             break
         except Exception as e:
             print(traceback.format_exc())
@@ -417,6 +420,55 @@ def launch_operation_suite(revision_id, socket_session_id, builder_id=None, **bu
             build.save()
             event_data = dict(build=serializers.BuildSerializer(build).data, revision_id=revision_id)
             emitter(event_type="build_finished", data=event_data)
+
+
+def post_tar(url, source_tree, resources):
+    f = io.BytesIO()
+
+    text_files = []
+    for entry in source_tree:
+        path = entry["file_path"]
+        content = entry["content"].encode("utf-8")
+        text_files.append((path, content))
+
+    res_files = []
+    for res in resources:
+        with open(res.file.path, "rb") as rf:
+            content = rf.read()
+        res_files.append((res.dest_path, content))
+
+    all_files = text_files + res_files
+
+    with tarfile.open(fileobj=f, mode='w') as tar:
+        for path, content in all_files:
+            tarinfo = tarfile.TarInfo(name=path)
+            temp_file = io.BytesIO(content)
+            tarinfo.size = temp_file.getbuffer().nbytes
+            tar.addfile(tarinfo, temp_file)
+
+    f.seek(0)
+    files = {'src': f}
+    response = requests.post(url, files=files)
+
+    if response:
+        return response.json()
+    raise Exception(f'Bad status code: {response.status_code}. Response: {response.json()}')
+
+
+def download_artifacts(url, save_root_dir):
+    # todo: get rid of hardcoded subfolder names
+    artifacts_folder = "artifacts"
+    subfolder_name, subfolder_path = create_unique_subfolder(save_root_dir)
+    full_save_path = os.path.join(subfolder_path, artifacts_folder)
+
+    response = requests.get(url)
+    if response:
+        fileobj = io.BytesIO(response.content)
+        with tarfile.open(fileobj=fileobj, mode="r") as tar:
+            # expects tar to contain "artifacts" folder
+            tar.extractall(path=subfolder_path)
+            return os.path.join(subfolder_name, artifacts_folder)
+    raise Exception(f'Bad status code: {response.status_code}. Response: {response.json()}')
 
 
 def save_artifacts_with_resources(root_folder: str, artifacts: Dict[str, str], resources) -> str:
@@ -431,26 +483,29 @@ def save_artifacts_with_resources(root_folder: str, artifacts: Dict[str, str], r
         str: The name of the created subfolder.
     """
 
-    while True:
-        subfolder_name = str(uuid.uuid4())
-        subfolder_path = os.path.join(root_folder, subfolder_name)
-        if not os.path.exists(subfolder_path):
-            break
-
-    os.makedirs(subfolder_path, exist_ok=True)
+    subfolder_name, subfolder_path = create_unique_subfolder(root_folder)
 
     for file_name, file_content in artifacts.items():
         file_path = os.path.join(subfolder_path, file_name)
         with open(file_path, "w", encoding="utf-8") as file:
             file.write(file_content)
 
-    for res in resouces:
+    for res in resources:
         try:
             save_resource(subfolder_path, res)
         except Exception:
             traceback.print_exc()
 
     return subfolder_name
+
+
+def create_unique_subfolder(root_folder):
+    while True:
+        subfolder_name = str(uuid.uuid4())
+        subfolder_path = os.path.join(root_folder, subfolder_name)
+        if not os.path.exists(subfolder_path):
+            os.makedirs(subfolder_path, exist_ok=True)
+            return subfolder_name, subfolder_path
 
 
 def save_resource(root, resource):
@@ -467,7 +522,9 @@ def save_resource(root, resource):
     if full_dir_path:
         os.makedirs(full_dir_path, exist_ok=True)
 
-    shutil.copyfile(resource.file.path, dest_path)
+    dest_name = os.path.basename(resource.dest_path)
+    full_dest_path = os.path.join(full_dir_path, dest_name)
+    shutil.copyfile(resource.file.path, full_dest_path)
 
 
 def post_json(url, data):
