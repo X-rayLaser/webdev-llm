@@ -258,6 +258,10 @@ class Resource(models.Model):
     def __str__(self):
         return self.dest_path
 
+    def save(self, **kwargs):
+        self.dest_path = f'static/{self.dest_path}'
+        super().save(**kwargs)
+
     def render(self):
         s = f'  Path: {self.dest_path}\n'
         if self.mime_type:
