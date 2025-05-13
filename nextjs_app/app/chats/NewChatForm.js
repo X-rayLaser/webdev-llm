@@ -63,15 +63,20 @@ function generateFields(configs) {
         value: `http://django:8000/api/configs/${config.id}/`
       })
     ) //because of using Hyperlinked serializer
+  }, {
+    name: "zipfile",
+    component: FileField,
+    id: "resource_zipfile_id",
+    label: "Resources zip"
   }];
 }
 
 function renderChatForm(fieldsToRender, names, errorMessage, button) {
   return (
-    <div>
-
+    <div className="flex flex-col gap-2">
       {fieldsToRender.prompt}
-      <div className="mt-2 mb-2 md:flex md:items-center md:gap-4">
+      {fieldsToRender.zipfile}
+      <div className="md:flex md:items-center md:gap-4">
         {fieldsToRender.configuration}
         <div className="mt-2">
           {button}

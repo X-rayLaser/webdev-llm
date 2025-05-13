@@ -388,7 +388,7 @@ class ChatSerializer(serializers.HyperlinkedModelSerializer):
 
     class Meta:
         model = Chat
-        fields = ['id', 'name', 'description', 'configuration', 'image', 'messages', 'created']
+        fields = ['id', 'name', 'description', 'configuration', 'image', 'zipfile', 'messages', 'created']
 
 
 class GenerationMetadataSerializer(serializers.ModelSerializer):
@@ -448,29 +448,6 @@ class NewGenerationTaskSerializer(serializers.ModelSerializer):
 
         job_id = uuid.uuid4().hex
 
-        additional_prompt = """When building in React, remind yourself that you are a 
-highly skilled developer with expertise in React and web development.
-
-When asked to create a React component:
-- Place all custom styles in a `styles.css` file.
-- Provide a typical `index.js` file that imports the component and styles.
-- Since the build environment uses Webpack to generate `index.html` with empty body,
-  `index.js` must create `<div id="root"></div>` explicitly and add it to the DOM`.
-
-Generate clean, well-structured, and standalone code.
-You have access to React and standard web technologies.
-
-When not asked to generate code, respond naturally and helpfully."""
-
-        resources_str = ""
-        if chat.resources.exists():
-            resources_str = "You can use the following files using their relative paths:\n<Resources>\n"
-            for res in chat.resources.all():
-                resources_str += f'{res.render()}\n'
-            resources_str += '</Resources>\n'
-
-        full_system_msg = f"{system_message}\n{additional_prompt}\n{resources_str}".lstrip()
-
         completion_config = CompletionConfig(backend_name,
                                              task_id=job_id,
                                              server_url=server.url,
@@ -478,12 +455,12 @@ When not asked to generate code, respond naturally and helpfully."""
                                              params=params,
                                              chat_id=chat.id,
                                              message_id=message_id,
-                                             system_message=full_system_msg)
+                                             system_message=system_message)
         # todo: pass valid socket_session_id parameter
         generate_completion.delay_on_commit(completion_config.to_dict(), 0)
 
         metadata = GenerationMetadata.objects.create(server=server, model_name=model_name, 
-                                                     params=params, system_message=full_system_msg)
+                                                     params=params, system_message=system_message)
 
         return Generation.objects.create(task_id=job_id, chat=chat, message=message,
                                          generation_metadata=metadata)

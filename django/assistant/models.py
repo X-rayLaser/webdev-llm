@@ -198,6 +198,7 @@ class Chat(models.Model):
     description = models.TextField(blank=True, null=True)
     configuration = models.ForeignKey('Configuration', on_delete=models.CASCADE)
     image = models.ImageField(upload_to="chat_images/", blank=True, null=True)
+    zipfile = models.FileField(upload_to="resources/zipfiles", blank=True, null=True)
     created = models.DateTimeField(auto_now_add=True)
 
     def get_message_ids(self):

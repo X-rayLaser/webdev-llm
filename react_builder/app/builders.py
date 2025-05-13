@@ -49,7 +49,11 @@ class SimpleReactBuilder:
 
     def _prepare_source_dir(self, tar):
         source_dir = os.path.join(self.repo_directory, "source")
+        static_dir = os.path.join(source_dir, "static")
         os.makedirs(source_dir)
+        os.makedirs(static_dir, exist_ok=True)
+        dummy_path = os.path.join(static_dir, "_____dummy.txt")
+        with open(dummy_path, "w") as f: f.write("hello")
 
         index_path = self._get_indexjs(source_dir, tar)
         #todo: exlude config (filter only available in Python 3.12)

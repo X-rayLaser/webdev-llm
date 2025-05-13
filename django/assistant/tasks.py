@@ -5,6 +5,7 @@ import time
 import os
 import io
 import tarfile
+import zipfile
 import shutil
 from typing import Dict
 import traceback
@@ -20,7 +21,7 @@ from assistant import text2image_backends
 from assistant import tts_backends
 from assistant.models import (
     Chat, MultimediaMessage, Modality, Revision, Generation,
-    OperationSuite, Build, Server, SpeechSample, reduce_source_tree
+    OperationSuite, Build, Server, SpeechSample, Resource, reduce_source_tree
 )
 from assistant.utils import (
     process_raw_message, extract_modalities, prepare_messages, prepare_build_files,
@@ -157,6 +158,51 @@ class RedisEventEmitter:
         self.redis_object.publish(self.channel, json.dumps(event))
 
 
+def include_zip_resources(chat):
+    allowed_extensions = ['.jpg', '.jpeg', '.png', '.gif']
+
+    with zipfile.ZipFile(chat.zipfile.path, 'r') as myzip:
+        for fileinfo in myzip.infolist():
+            path = fileinfo.filename
+            _, ext = os.path.splitext(path)
+
+            if fileinfo.is_dir() or ext.lower() not in allowed_extensions:
+                continue
+
+            content = myzip.read(path)
+            file = ContentFile(content, name=path)
+            Resource.objects.create(chat=chat, dest_path=path, file=file)
+    chat.zipfile = None  # prevents repeated extraction
+    chat.save()
+
+
+def patch_system_prompt(chat, system_message):
+    additional_prompt = """When building in React, remind yourself that you are a 
+highly skilled developer with expertise in React and web development.
+
+When asked to create a React component:
+- Place all custom styles in a `styles.css` file.
+- Provide a typical `index.js` file that imports the component and styles.
+- Since the build environment uses Webpack to generate `index.html` with empty body,
+`index.js` must create `<div id="root"></div>` explicitly and add it to the DOM`.
+
+Generate clean, well-structured, and standalone code.
+You have access to React and standard web technologies.
+
+When not asked to generate code, respond naturally and helpfully."""
+    if chat.zipfile:
+        include_zip_resources(chat)
+
+    resources_str = ""
+    if chat.resources.exists():
+        resources_str = "You can use the following files using their relative paths:\n<Resources>\n"
+        for res in chat.resources.all():
+            resources_str += f'{res.render()}\n'
+        resources_str += '</Resources>\n'
+
+    return f"{system_message}\n{additional_prompt}\n{resources_str}".lstrip()
+
+
 def _generate(config, emitter):
     message = config.get_message()
     chat = config.get_chat()
@@ -169,6 +215,11 @@ def _generate(config, emitter):
     else:
         system_msg = config.system_message
 
+    system_msg = patch_system_prompt(chat, system_msg)
+
+    print("using system message")
+    print(system_msg)
+    
     history = message.get_history() if message is not None else []
     messages = prepare_messages(history, system_msg)
 
