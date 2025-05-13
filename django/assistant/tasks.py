@@ -171,6 +171,8 @@ def include_zip_resources(chat):
 
             content = myzip.read(path)
             file = ContentFile(content, name=path)
+
+            # todo: extract extra info from images, resolution, caption, etc.
             Resource.objects.create(chat=chat, dest_path=path, file=file)
     chat.zipfile = None  # prevents repeated extraction
     chat.save()

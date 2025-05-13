@@ -248,6 +248,13 @@ async function startNewChat(prevState, formData) {
             message: "Some fields are incorrect or missing. Please try again"
         });
     }
+    
+    const zipfile = formData.get("zipfile");
+    const zipAttached = (zipfile && zipfile.size > 0) ? true : false;
+    
+    if (!zipAttached) {
+        formData.delete("zipfile");
+    }
 
     formData.append("name", prompt.substring(0, 255));
     const result = await chatActionSet.create(prevState, formData);
