@@ -236,7 +236,7 @@ function VCSContainer({
                 <div className="mt-2">{errorMessage}</div>
 
                 <div className="mt-2 flex justify-end space-x-2">
-                    <DiscardButton onClick={onDiscard} />
+                    <DiscardButton onClick={onDiscard}>Discard</DiscardButton>
                     {submitButton}
                 </div>
             </div>
