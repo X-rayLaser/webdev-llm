@@ -1,4 +1,3 @@
-"use client"
 import WebSocketChat from "./WebSocketChat";
 import IDE from "./SimpleIDE";
 import PillContainer from "@/app/components/PillContainer";

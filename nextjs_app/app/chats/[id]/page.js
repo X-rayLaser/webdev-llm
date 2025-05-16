@@ -1,6 +1,4 @@
 import MessageCard from "./MessageCard";
-import WebSocketChat from "./WebSocketChat";
-import IDE from "./SimpleIDE";
 import Project from "./Project";
 
 function getThread(rootMsg) {

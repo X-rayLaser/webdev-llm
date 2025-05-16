@@ -144,7 +144,7 @@ class BufferringAudioAutoPlayer {
             this.player.put(audioPiece);
         }
 
-        if (this.bufferSize && this.getTotalChars() > this.bufferSize && !this.playing) {
+        if (this.bufferSize && this.pieces.length > 1 && this.getTotalChars() > this.bufferSize && !this.playing) {
             this.playback();
         }
     }
@@ -152,6 +152,10 @@ class BufferringAudioAutoPlayer {
     playback() {
         this.playing = true;
         this.player.play();
+    }
+
+    stop() {
+        this.player.stop();
     }
 
     calculateBufferSize() {
@@ -185,6 +189,7 @@ class AudioPlaylistPlayer {
     constructor() {
         this.items = [];
         this.playInProgress = false;
+        this.audio = null;
     }
 
     play() {
@@ -204,6 +209,7 @@ class AudioPlaylistPlayer {
 
         this.playInProgress = true;
         let audio = new Audio(nextPiece.url);
+        this.audio = audio;
         audio.addEventListener("ended", event => {
             this.play();
         });
@@ -214,6 +220,13 @@ class AudioPlaylistPlayer {
             audio.addEventListener("canplaythrough", event => {
                 audio.play();
             });
+        }
+    }
+
+    stop() {
+        if (this.audio) {
+            this.audio.pause();
+            this.audio.src = "";
         }
     }
 

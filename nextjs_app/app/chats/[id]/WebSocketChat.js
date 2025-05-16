@@ -25,9 +25,9 @@ export default function WebSocketChat({
     const [errors, setErrors] = useState([]);
     const router = useRouter();
 
-    function socketListener(event) {
-        const bufferingPlayer = new BufferringAudioAutoPlayer(previousMessage.tts_text);
+    let bufferingPlayer = new BufferringAudioAutoPlayer(previousMessage.tts_text);
 
+    function socketListener(event) {
         const payload = JSON.parse(event.data);
         const task_id = payload.data.task_id;
 
@@ -68,13 +68,17 @@ export default function WebSocketChat({
 
     useEffect(() => {
         const hostName = getHostNameOrLocalhost(window);
+
         const manager = new WebSocketManager(hostName, socketListener);
         manager.connect();
 
         return () => {
             manager.close();
+            bufferingPlayer.stop();
+            bufferingPlayer = new BufferringAudioAutoPlayer(previousMessage.tts_text);
+            
         };
-    }, []);
+    }, [socketListener]);
 
     const messagesInProgress = Object.entries(messageGenerationsTable).map(
         ([task_id, text], idx) => <GeneratingMessage key={idx} task_id={task_id} text={text} />
