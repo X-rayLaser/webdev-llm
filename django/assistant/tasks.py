@@ -4,6 +4,7 @@ import uuid
 import time
 import os
 import io
+import re
 import tarfile
 import zipfile
 import shutil
@@ -325,8 +326,10 @@ def generate_completion(completion_config: dict, socket_session_id: int):
                 break
 
         spoken_text = text[thinking_end:]
+        # todo: more robust text cleaning
+        cleaned_text = re.sub("[^a-zA-Z\s!\?\.']", '', spoken_text).strip()
 
-        sentences = split_into_sentences(text)
+        sentences = split_into_sentences(cleaned_text)
 
         if not sentences:
             return

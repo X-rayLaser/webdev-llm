@@ -78,7 +78,7 @@ export default function WebSocketChat({
             bufferingPlayer = new BufferringAudioAutoPlayer(previousMessage.tts_text);
             
         };
-    }, [socketListener]);
+    }, []);
 
     const messagesInProgress = Object.entries(messageGenerationsTable).map(
         ([task_id, text], idx) => <GeneratingMessage key={idx} task_id={task_id} text={text} />
