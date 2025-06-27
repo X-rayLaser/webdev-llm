@@ -12,6 +12,10 @@ TTS_BACKEND = {
     "name": "notts"
 }
 
+RAG_BACKEND = {
+    "name": "norag"
+}
+
 try:
     from mysite.settings_local import *
 except ImportError:

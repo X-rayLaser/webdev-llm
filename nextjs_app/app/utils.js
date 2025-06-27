@@ -144,7 +144,7 @@ class BufferringAudioAutoPlayer {
             this.player.put(audioPiece);
         }
 
-        if (this.bufferSize && this.pieces.length > 1 && this.getTotalChars() > this.bufferSize && !this.playing) {
+        if (this.bufferSize && this.pieces.length > 2 && this.getTotalChars() > this.bufferSize && !this.playing) {
             this.playback();
         }
     }

@@ -20,6 +20,7 @@ from assistant.generation_backends import backends, ChatCompletionJob
 from assistant import summary_backends
 from assistant import text2image_backends
 from assistant import tts_backends
+from assistant import rag_backends
 from assistant.models import (
     Chat, MultimediaMessage, Modality, Revision, Generation,
     OperationSuite, Build, Server, SpeechSample, Resource, reduce_source_tree
@@ -206,6 +207,21 @@ When not asked to generate code, respond naturally and helpfully."""
     return f"{system_message}\n{additional_prompt}\n{resources_str}".lstrip()
 
 
+def patch_messages(messages):
+    rag_backend_cls = rag_backends.backends[settings.RAG_BACKEND['name']]
+    rag_kwargs = settings.RAG_BACKEND.get('kwargs', {})
+    rag_backend = rag_backend_cls(**rag_kwargs)
+
+    *prefix, last_msg = messages
+    text_prompt = '\n'.join([d['text'] for d in last_msg['content'] if d['type'] == 'text'])
+
+    docs_text = rag_backend.retrieve_for(text_prompt)
+
+    if docs_text:
+        last_msg['content'] = [{'type': 'text', 'text': docs_text}] + last_msg['content']
+    return prefix + [last_msg]
+
+
 def _generate(config, emitter):
     message = config.get_message()
     chat = config.get_chat()
@@ -225,6 +241,7 @@ def _generate(config, emitter):
     
     history = message.get_history() if message is not None else []
     messages = prepare_messages(history, system_msg)
+    messages = patch_messages(messages)
 
     job = ChatCompletionJob(model=config.model_name, base_url=config.server_url,
                             messages=messages, params=config.params)
