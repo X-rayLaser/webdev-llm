@@ -55,7 +55,7 @@ export default function MessageCard({ message, generationConfig }) {
         )},
     ];
     return (
-        <div>
+        <div className="border-2 border-sky-700">
             <RawMessage message={currentMessage} generationConfig={generationConfig} />
             {message.parent && <Footer message={message} />}
         </div>
@@ -111,7 +111,7 @@ export function RawMessage({ message, generationConfig }) {
 
     return (
         <div className="rounded-t">
-            <div className="bg-slate-50">
+            <div className="bg-slate-200">
                 {editMode ? (
                     <AdvancedMessageConstructor
                         formAction={formAction}
@@ -171,7 +171,7 @@ function Footer({ message }) {
     }
 
     return (
-        <div className="bg-gray-50 px-4 py-2 flex justify-between items-center text-sky-900 border">
+        <div className="bg-slate-200 px-4 py-2 flex justify-between items-center text-sky-800 border-t border-stone-400">
             {inProgress && (
                 <span>
                     <FontAwesomeIcon icon={faSpinner} spin size="lg" />

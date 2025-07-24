@@ -238,8 +238,9 @@ class ChatViewSet(viewsets.ModelViewSet):
         chat = self.get_object()
 
         chat_messages = self.get_all_messages(chat)
-        ids = chat_messages.values_list('id', flat=True)
 
+        ids = list(chat_messages.values_list('id', flat=True))
+    
         result_queryset = Generation.objects.filter(message__id__in=ids) | Generation.objects.filter(chat=chat)
 
         status_filter = self.request.query_params.get('status')
