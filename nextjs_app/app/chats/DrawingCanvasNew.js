@@ -1,5 +1,19 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { ButtonGroup } from '../components/buttons';
+import { ButtonGroup, ButtonDropdown, GroupButton, CancelButton, SubmitButton } from '../components/buttons';
+import { capitalize } from '@/app/utils';
+
+const ToolsDropdown = ({ options, value, onSelect }) => {
+  const makeAction = useCallback((actionName, instruction) => ({
+    name: actionName,
+    label: capitalize(actionName),
+    onSelect: () => onSelect(actionName, instruction)
+  }));
+
+  const actions = options.map(opt => makeAction(opt));
+
+  const defaultAction = actions.filter(action => action.name === value)[0];
+  return <ButtonDropdown actions={actions} defaultAction={defaultAction} />;
+}
 
 
 const DrawingCanvas = ({ action, onSuccess }) => {
@@ -332,114 +346,61 @@ const DrawingCanvas = ({ action, onSuccess }) => {
     setInstructions(`Bar tool: now set to ${barOrientation === 'horizontal' ? 'vertical' : 'horizontal'}. Click to place.`);
   };
 
+  const instructionMap = {
+    'free': 'Free Draw: click to start drawing.',
+    'line': 'Line: click to set first endpoint.',
+    'bar': 'Bar: click to place a bar. Use toggle to change orientation.',
+    'rectangle': 'Rectangle: click to set first corner.',
+    'square': 'Square: click to set first corner.',
+    'text': 'Text: click to place text.',
+    'eraser': 'Eraser: click to erase.'
+  };
+
+  const drawAction = useCallback(newTool => {
+    const newInstructions = instructionMap[newTool];
+    setCurrentTool(newTool);
+    resetDrawing();
+    setInstructions(newInstructions);
+  });
+
+  const toolOptions = Object.keys(instructionMap);
+
   return (
-    <form action={decoratedAction} className="flex flex-col items-center p-4" onSubmit={handleSubmit}>
+    <form action={decoratedAction} className="flex flex-col items-center p-2 gap-4" onSubmit={handleSubmit}>
       {/* Toolbar */}
-      <ButtonGroup>
-        <button
-          className={`px-2 py-1 ${currentTool === 'free' ? 'bg-blue-500 text-white' : ''}`}
-          type="button"
-          onClick={() => {
-            setCurrentTool('free');
-            resetDrawing();
-            setInstructions('Free Draw: click to start drawing.');
-          }}
-        >
-          Free Draw
-        </button>
-        <button
-          className={`px-2 py-1 ${currentTool === 'line' ? 'bg-blue-500 text-white' : ''}`}
-          type="button"
-          onClick={() => {
-            setCurrentTool('line');
-            resetDrawing();
-            setInstructions('Line: click to set first endpoint.');
-          }}
-        >
-          Line
-        </button>
-        <button
-          className={`px-2 py-1 ${currentTool === 'bar' ? 'bg-blue-500 text-white' : ''}`}
-          type="button"
-          onClick={() => {
-            setCurrentTool('bar');
-            resetDrawing();
-            setInstructions(`Bar: click to place a ${barOrientation} bar. Use toggle to change orientation.`);
-          }}
-        >
-          Bar
-        </button>
-        {currentTool === 'bar' && (
-          <button className="px-2 py-1" onClick={toggleBarOrientation} type="button">
-            Toggle Bar Orientation
-          </button>
-        )}
-        <button
-          className={`px-2 py-1 ${currentTool === 'rectangle' ? 'bg-blue-500 text-white' : ''}`}
-          type="button"
-          onClick={() => {
-            setCurrentTool('rectangle');
-            resetDrawing();
-            setInstructions('Rectangle: click to set first corner.');
-          }}
-        >
-          Rectangle
-        </button>
-        <button
-          className={`px-2 py-1 ${currentTool === 'square' ? 'bg-blue-500 text-white' : ''}`}
-          type="button"
-          onClick={() => {
-            setCurrentTool('square');
-            resetDrawing();
-            setInstructions('Square: click to set first corner.');
-          }}
-        >
-          Square
-        </button>
-        <button
-          className={`px-2 py-1 ${currentTool === 'text' ? 'bg-blue-500 text-white' : ''}`}
-          type="button"
-          onClick={() => {
-            setCurrentTool('text');
-            resetDrawing();
-            setInstructions('Text: click to place text.');
-          }}
-        >
-          Text
-        </button>
-        <button
-          className={`px-2 py-1 ${currentTool === 'eraser' ? 'bg-blue-500 text-white' : ''}`}
-          type="button"
-          onClick={() => {
-            setCurrentTool('eraser');
-            resetDrawing();
-            setInstructions('Eraser: click to erase.');
-          }}
-        >
-          Eraser
-        </button>
-        <button className="px-2 py-1" type="button" onClick={handleUndo}>
-          Undo
-        </button>
-        <button className="px-2 py-1" type="button" onClick={handleRedo}>
-          Redo
-        </button>
-        <button className="px-2 py-1" type="button" onClick={handleClear}>
-          Clear
-        </button>
-        <button className="px-2 py-1" type="button" onClick={handleCancel}>
-          Cancel
-        </button>
-        <button className="px-2 py-1" type="submit">
+
+      <div className="flex gap-2 items-center">
+        <span>Tools: </span>
+        <ToolsDropdown options={toolOptions} onSelect={drawAction} value={currentTool} />
+        <ButtonGroup>
+          {currentTool === 'bar' && (
+            <GroupButton onClick={toggleBarOrientation} type="button">
+              {barOrientation === 'horizontal' ? 'Horizontal' : 'Vertical' }
+            </GroupButton>
+          )}
+          
+          <GroupButton type="button" onClick={handleUndo}>
+            Undo
+          </GroupButton>
+          <GroupButton type="button" onClick={handleRedo}>
+            Redo
+          </GroupButton>
+          <GroupButton type="button" onClick={handleClear}>
+            Clear
+          </GroupButton>
+          <GroupButton type="button" onClick={handleCancel}>Cancel</GroupButton>
+        </ButtonGroup>
+
+        <SubmitButton text="Submit">
           {isSubmitting ? (
             <span className="animate-spin inline-block w-4 h-4 border-2 rounded-full" />
           ) : (
-            'Submit'
+            ''
           )}
-        </button>
-      </ButtonGroup>
+        </SubmitButton>
+      </div>
       {/* Instructions */}
-      <div className="mb-2 text-sm text-gray-600">{instructions}</div>
+      <div className="text-sm text-gray-600">{instructions}</div>
       {/* Canvas */}
       <canvas
         ref={canvasRef}

@@ -248,7 +248,7 @@ export default function AdvancedMessageConstructor({ formAction, rootModality=nu
                     </div>
                 </Modal>
 
-                <Modal show={mode === DRAW_ON_CANVAS} onClose={() => setMode(null)}>
+                <Modal title="Make a sketch" show={mode === DRAW_ON_CANVAS} onClose={() => setMode(null)}>
                     <div className="p-6">
                         <DrawingCanvas
                             action={createActionFactory(createImageModality)}

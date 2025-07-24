@@ -23,6 +23,16 @@ export function Button({ className="", children, ...otherProps }) {
   );
 }
 
+export function GroupButton({ className="", children, ...otherProps }) {
+  return (
+    <button className="bg-blue-400 px-5 py-2 text-white hover:bg-blue-900 disabled:bg-gray-500"
+        {...otherProps}
+    >
+      {children}
+    </button>
+  );
+}
+
 export function SubmitButton({ text="Submit", children, disabled=false, ...otherProps }) {
     return (
         <button className="bg-blue-700 px-10 py-2 rounded-md text-white hover:bg-blue-900 disabled:bg-gray-500"
@@ -93,8 +103,7 @@ export function FixedSizeOutlineButton({ className, children, width, ...rest }) 
 
 export function ButtonGroup({ children }) {
     return (
-        <div className="[&>*:first-child]:rounded-l-md [&>*:last-child]:rounded-r-md *:border-cyan-950 *:border-2
-                      [&>*:nth-child(odd)]:border-r-0">
+        <div className="[&>*:first-child]:rounded-l-md [&>*:last-child]:rounded-r-md *:border-cyan-950 *:border">
             {children}
         </div>
     );
@@ -127,6 +136,7 @@ export function ButtonDropdown({ actions, defaultAction = null }) {
         className={`flex justify-between items-center px-4 py-2 bg-blue-500 text-white w-48
           ${isOpen ? "rounded-t" : "rounded"} transition-all`}
         onClick={() => setIsOpen(!isOpen)}
+        type="button"
       >
         {selectedAction ? selectedAction.label : "Select Action"}
         <span className="ml-2">&#9662;</span> {/* Down Arrow */}
@@ -144,6 +154,7 @@ export function ButtonDropdown({ actions, defaultAction = null }) {
                 setIsOpen(false); // Close the dropdown
                 action.onSelect(); // Trigger the action
               }}
+              type="button"
             >
               {action.label}
             </button>
