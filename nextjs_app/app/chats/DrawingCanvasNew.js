@@ -1,5 +1,7 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { ButtonGroup, ButtonDropdown, GroupButton, CancelButton, SubmitButton } from '../components/buttons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faRotateLeft, faRotateRight, faEraser } from '@fortawesome/free-solid-svg-icons';
+import { ButtonGroup, ButtonDropdown, GroupButton, Button, Switch, SubmitButton } from '../components/buttons';
 import { capitalize } from '@/app/utils';
 
 const ToolsDropdown = ({ options, value, onSelect }) => {
@@ -366,30 +368,12 @@ const DrawingCanvas = ({ action, onSuccess }) => {
   const toolOptions = Object.keys(instructionMap);
 
   return (
-    <form action={decoratedAction} className="flex flex-col items-center p-2 gap-4" onSubmit={handleSubmit}>
+    <form action={decoratedAction} className="flex flex-col items-center p-2 gap-2" onSubmit={handleSubmit}>
       {/* Toolbar */}
 
       <div className="flex gap-2 items-center">
         <span>Tools: </span>
         <ToolsDropdown options={toolOptions} onSelect={drawAction} value={currentTool} />
-        <ButtonGroup>
-          {currentTool === 'bar' && (
-            <GroupButton onClick={toggleBarOrientation} type="button">
-              {barOrientation === 'horizontal' ? 'Horizontal' : 'Vertical' }
-            </GroupButton>
-          )}
-          
-          <GroupButton type="button" onClick={handleUndo}>
-            Undo
-          </GroupButton>
-          <GroupButton type="button" onClick={handleRedo}>
-            Redo
-          </GroupButton>
-          <GroupButton type="button" onClick={handleClear}>
-            Clear
-          </GroupButton>
-          <GroupButton type="button" onClick={handleCancel}>Cancel</GroupButton>
-        </ButtonGroup>
 
         <SubmitButton text="Submit">
           {isSubmitting ? (
@@ -399,6 +383,24 @@ const DrawingCanvas = ({ action, onSuccess }) => {
           )}
         </SubmitButton>
       </div>
+      {currentTool === 'bar' && (
+          <div className="flex gap-2 items-center">
+            <Switch isOn={barOrientation === 'horizontal'} onText='Horizontal' offText='Vertical' onClick={toggleBarOrientation} type="button" />
+            <span>{barOrientation === 'horizontal' ? 'Horizontal' : 'Vertical'}</span>
+          </div>
+      )}
+      <ButtonGroup>
+        <GroupButton type="button" onClick={handleUndo}>
+          <FontAwesomeIcon icon={faRotateLeft} /> Undo
+        </GroupButton>
+        <GroupButton type="button" onClick={handleRedo}>
+          <FontAwesomeIcon icon={faRotateRight} /> Redo
+        </GroupButton>
+        <GroupButton type="button" onClick={handleClear}>
+          <FontAwesomeIcon icon={faEraser} /> Clear
+        </GroupButton>
+        <GroupButton type="button" onClick={handleCancel}>Cancel</GroupButton>
+      </ButtonGroup>
       {/* Instructions */}
       <div className="text-sm text-gray-600">{instructions}</div>
       {/* Canvas */}

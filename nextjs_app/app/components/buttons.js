@@ -25,7 +25,7 @@ export function Button({ className="", children, ...otherProps }) {
 
 export function GroupButton({ className="", children, ...otherProps }) {
   return (
-    <button className="bg-blue-400 px-5 py-2 text-white hover:bg-blue-900 disabled:bg-gray-500"
+    <button className="bg-blue-400 px-1 py-1 text-white hover:bg-blue-900 disabled:bg-gray-500"
         {...otherProps}
     >
       {children}
@@ -103,7 +103,8 @@ export function FixedSizeOutlineButton({ className, children, width, ...rest }) 
 
 export function ButtonGroup({ children }) {
     return (
-        <div className="[&>*:first-child]:rounded-l-md [&>*:last-child]:rounded-r-md *:border-cyan-950 *:border">
+        <div className="[&>*:first-child]:rounded-l-md [&>*:last-child]:rounded-r-md *:border-cyan-950 *:border-r 
+            *:border-t *:border-b [&>*:first-child]:border-l">
             {children}
         </div>
     );
@@ -184,6 +185,20 @@ export function CommitButton({ className, text="Commit", ...props}) {
       {...props}
     >
       {text}
+    </button>
+  );
+}
+
+export function Switch({ isOn, onText="", offText="", ...props }) {
+  return (
+    <button 
+      className={`p-0 w-24 rounded-full border-2
+                  ${isOn ? 'bg-indigo-600 border-indigo-800 hover:bg-indigo-700' : 'bg-gray-200 hover:bg-gray-300 border-gray-400'}`} 
+      type="button"
+      {...props}
+    >
+      <div className={`size-6 rounded-full ${isOn ? 'bg-indigo-800 float-right' : 'bg-gray-400'}`}></div>
+
     </button>
   );
 }
