@@ -43,7 +43,7 @@ class ConfigurationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Configuration
         fields = [
-            'id', 'name', 'llm_model', 'description', 'system_message', 'preset', 'llm_server',
+            'id', 'name', 'llm_model', 'description', 'system_message', 'coder_system_message', 'preset', 'llm_server',
             'build_servers', 'lint_servers', 'test_servers', 'interaction_servers',
             'autorun', 'max_iterations'
         ]
@@ -386,9 +386,15 @@ class ChatSerializer(serializers.HyperlinkedModelSerializer):
         read_only=True
     )
 
+    effective_system_message = serializers.SerializerMethodField()
+
+    def get_effective_system_message(self, obj):
+        return obj.get_system_message()
+
     class Meta:
         model = Chat
-        fields = ['id', 'name', 'description', 'configuration', 'image', 'zipfile', 'messages', 'created']
+        fields = ['id', 'name', 'description', 'configuration', 'image', 'zipfile', 'messages', 
+                  'coding_mode', 'effective_system_message', 'created']
 
 
 class GenerationMetadataSerializer(serializers.ModelSerializer):

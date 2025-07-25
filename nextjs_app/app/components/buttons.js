@@ -189,7 +189,7 @@ export function CommitButton({ className, text="Commit", ...props}) {
   );
 }
 
-export function Switch({ isOn, onText="", offText="", ...props }) {
+export function Switch({ isOn, ...props }) {
   return (
     <button 
       className={`p-0 w-24 rounded-full border-2

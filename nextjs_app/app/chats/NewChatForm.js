@@ -1,6 +1,7 @@
 "use client"
 import React, { useState } from "react";
-import { SelectField, AutoExpandingTextArea, TextField, FileField, AutoExpandingTextAreaField } from "../components/common-forms";
+import { SelectField, AutoExpandingTextArea, TextField, FileField, 
+  AutoExpandingTextAreaField, SwitchField } from "../components/common-forms";
 import { formFactory, makeCreateForm } from "../components/form-factory";
 import { getTopDownRenderer } from "../components/fieldset-renderers";
 import { createResource, deleteResource, startNewChat } from "../actions";
@@ -68,6 +69,12 @@ function generateFields(configs) {
     component: FileField,
     id: "resource_zipfile_id",
     label: "Resources zip"
+  }, {
+    name: "coding_mode",
+    component: SwitchField,
+    id: "chat_coding_mode",
+    label: "Coding mode",
+    type: "checkbox"
   }];
 }
 
@@ -78,9 +85,10 @@ function renderChatForm(fieldsToRender, names, errorMessage, button) {
       {fieldsToRender.zipfile}
       <div className="md:flex md:items-center md:gap-4">
         {fieldsToRender.configuration}
-        <div className="mt-2">
-          {button}
-        </div>
+      </div>
+      {fieldsToRender.coding_mode}
+      <div className="mt-2">
+        {button}
       </div>
       {errorMessage}
     </div>

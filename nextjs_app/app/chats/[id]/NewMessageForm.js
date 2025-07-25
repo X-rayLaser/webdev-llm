@@ -99,7 +99,7 @@ export default function NewMessageForm({ chat, previousMessage, preset, configur
 
     const defaults = {
         model_name: configuration.llm_model || "",
-        system_message: configuration.system_message || "",
+        system_message: chat.effective_system_message || "",
         ...preset
     };
 

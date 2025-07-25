@@ -40,6 +40,13 @@ function generateFields(servers, presets) {
         placeholder: "Enter the system message",
       },
       {
+        name: "coder_system_message",
+        component: TextArea,
+        id: "create_configuration_coder_system_message",
+        label: "Coder's System Message",
+        placeholder: "Create the system message template used in coding mode. {resources} will be replaced with a resources/assets uploaded for development.",
+      },
+      {
         name: "preset",
         component: SelectField,
         id: "create_configuration_preset",
@@ -93,6 +100,7 @@ export function ConfigItem({ config, editForm }) {
     max_iterations,
     description,
     system_message,
+    coder_system_message
   } = config;
 
   const itemHeader = <ItemHeader title={config.name} icon={faScrewdriverWrench} />
@@ -126,6 +134,12 @@ export function ConfigItem({ config, editForm }) {
         <div className="mt-4">
           <strong>System Message:</strong>
           <p className="mt-1">{system_message}</p>
+        </div>
+      )}
+      {coder_system_message && (
+        <div className="mt-4">
+          <strong>Coder's System Message:</strong>
+          <p className="mt-1">{coder_system_message}</p>
         </div>
       )}
       </Expandable>

@@ -180,33 +180,6 @@ def include_zip_resources(chat):
     chat.save()
 
 
-def patch_system_prompt(chat, system_message):
-    additional_prompt = """When building in React, remind yourself that you are a 
-highly skilled developer with expertise in React and web development.
-
-When asked to create a React component:
-- Place all custom styles in a `styles.css` file.
-- Provide a typical `index.js` file that imports the component and styles.
-- Since the build environment uses Webpack to generate `index.html` with empty body,
-`index.js` must create `<div id="root"></div>` explicitly and add it to the DOM`.
-
-Generate clean, well-structured, and standalone code.
-You have access to React and standard web technologies.
-
-When not asked to generate code, respond naturally and helpfully."""
-    if chat.zipfile:
-        include_zip_resources(chat)
-
-    resources_str = ""
-    if chat.resources.exists():
-        resources_str = "You can use the following files using their relative paths:\n<Resources>\n"
-        for res in chat.resources.all():
-            resources_str += f'{res.render()}\n'
-        resources_str += '</Resources>\n'
-
-    return f"{system_message}\n{additional_prompt}\n{resources_str}".lstrip()
-
-
 def patch_messages(messages):
     rag_backend_cls = rag_backends.backends[settings.RAG_BACKEND['name']]
     rag_kwargs = settings.RAG_BACKEND.get('kwargs', {})
@@ -229,12 +202,12 @@ def _generate(config, emitter):
     backend_class = backends[config.backend_name]
     generator = backend_class()
 
+    # use system message override regardless of coding_mode value if it's set
+    # otherwise use system message for conversation mode and coder system message for coding mode
     if config.system_message is None:
-        system_msg = chat.configuration.system_message
+        system_msg = chat.get_system_message()
     else:
         system_msg = config.system_message
-
-    system_msg = patch_system_prompt(chat, system_msg)
 
     print("using system message")
     print(system_msg)

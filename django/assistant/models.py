@@ -38,6 +38,7 @@ class Configuration(models.Model):
     llm_model = models.CharField(max_length=255, blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     system_message = models.TextField(blank=True, null=True)
+    coder_system_message = models.TextField(blank=True, null=True)
     
     preset = models.ForeignKey('Preset', on_delete=models.CASCADE)
     llm_server = models.ForeignKey('Server', on_delete=models.CASCADE, related_name='llm_configs')
@@ -199,7 +200,34 @@ class Chat(models.Model):
     configuration = models.ForeignKey('Configuration', on_delete=models.CASCADE)
     image = models.ImageField(upload_to="chat_images/", blank=True, null=True)
     zipfile = models.FileField(upload_to="resources/zipfiles", blank=True, null=True)
+    coding_mode = models.BooleanField(default=False)
     created = models.DateTimeField(auto_now_add=True)
+
+    def get_system_message(self):
+        default_coder_prompt = """You are a highly skilled web-developer with expertise in React.
+
+When asked to create a React component:
+- Place all custom styles in a `styles.css` file.
+- Provide a typical `index.js` file that imports the component and styles.
+- Since the build environment uses Webpack to generate `index.html` with empty body,
+`index.js` must create `<div id="root"></div>` explicitly and add it to the DOM`.
+
+Generate clean, well-structured, and standalone code.
+You have access to React and standard web technologies.
+{resources}
+"""
+        if self.coding_mode:
+            msg_template = self.configuration.coder_system_message or default_coder_prompt
+            resources_str = ""
+            if self.resources.exists():
+                title = "You can use the following files using their relative paths:"
+                res_body = '\n'.join(res.render() for res in self.resources.all())
+                resources_str = f'{title}\n<Resources>\n{res_body}\n</Resources>\n'
+            msg = msg_template.format(resources=resources_str).lstrip()
+        else:
+            msg = self.configuration.system_message
+
+        return msg
 
     def get_message_ids(self):
         root_msg = self.messages.first()

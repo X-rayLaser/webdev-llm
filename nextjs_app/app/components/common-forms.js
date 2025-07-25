@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Alert } from './alerts';
 import { capitalize } from "../utils";
+import { Switch } from "./buttons";
 
 function FlexInputField(props) {
     let { extraInputClasses, ...other} = props;
@@ -293,6 +294,26 @@ function CheckBox({ extraInputClasses, checked, ...props }) {
     return <input type="checkbox" className={className} checked={checked} {...props} />
 }
 
+function SwitchCheck({ extraInputClasses, checked, onChange, ...props }) {
+    const className = `${extraInputClasses}`;
+    const inputRef = useRef(null);
+    
+    const handleCheck = () => {
+        if (inputRef.current) {
+            const target = inputRef.current;
+            target.checked = !checked;
+            onChange({ target });
+        }
+    };
+    return (
+        <div className={className}>
+            <input ref={inputRef} type="checkbox" onChange={onChange} checked={checked} {...props} className="hidden" />
+            <Switch isOn={checked} onClick={() => handleCheck()} />
+        </div>
+    );
+}
+
+
 function CheckBoxFieldRow({ label, field, errors=[] }) {
     const extraLabelClasses = errors.length > 0 ? "text-red-600" : "";
     return (
@@ -310,6 +331,18 @@ function CheckBoxFieldRow({ label, field, errors=[] }) {
 
 export function CheckboxField(props) {
     return <WrappedField FieldComponent={CheckBox} FieldContainer={CheckBoxFieldRow} {...props} />
+}
+
+
+export function SwitchField({ label, ...props }) {
+    return (
+        <div className="flex items-center">
+            <div className="basis-28 shrink-0 grow-0 font-semibold">{label}</div>
+            <div className="ml-2">
+                <SwitchCheck {...props} />
+            </div>
+        </div>
+    );
 }
 
 
