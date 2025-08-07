@@ -138,7 +138,7 @@ export function ConfigItem({ config, editForm }) {
       )}
       {coder_system_message && (
         <div className="mt-4">
-          <strong>Coder's System Message:</strong>
+          <strong>Coder System Message:</strong>
           <p className="mt-1">{coder_system_message}</p>
         </div>
       )}
