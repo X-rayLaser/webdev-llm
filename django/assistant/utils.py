@@ -581,6 +581,25 @@ def fix_newlines(text):
     return text
 
 
+def split_thinking(text):
+    thinking_start = 0
+    thinking_end = 0
+
+    for tag_name in ['think', 'thinking', 'thoughts', 'cot']:
+        tag = f'<{tag}>'
+        idx = text.lower().find(tag)
+        if idx >= 0:
+            thinking_start = idx + len(tag)
+            thinking_end = text.find(f'</{tag}>')
+            if thinking_end == -1:
+                thinking_end = 0
+            break
+
+    thinking_text = text[thinking_start:thinking_end]
+    spoken_text = text[thinking_end:]
+    return thinking_text, spoken_text
+
+
 def join_wavs(samples, result_path):
     data= []
     params = None
