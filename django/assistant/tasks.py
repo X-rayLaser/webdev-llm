@@ -228,14 +228,15 @@ def _generate(config, emitter):
     buffer = ""
     for token in generator.generate(job):
         buffer += token
+
+        emitter(event_type="token_arrived", data=dict(token=token, task_id=config.task_id))
+        
         if ThinkingDetector.detect_thinking_start(buffer):
             emitter(event_type="thinking_started", data=dict(task_id=config.task_id))
             buffer = ""
-        elif ThinkingDetector.detect_thinking_ended(buffer):
+        elif ThinkingDetector.detect_thinking_end(buffer):
             emitter(event_type="thinking_ended", data=dict(task_id=config.task_id))
             buffer = ""
-
-        emitter(event_type="token_arrived", data=dict(token=token, task_id=config.task_id))
 
     role = "user" if len(history) % 2 == 0 else "assistant"
     return create_response_message(generator.response, config, role, parent=message, chat=chat)

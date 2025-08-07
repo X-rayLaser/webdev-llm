@@ -10,12 +10,13 @@ import { getRandomInt, getHostNameOrLocalhost, WebSocketManager,
     captureAndPlaySpeech, BufferringAudioAutoPlayer
 } from "@/app/utils";
 import { Alert } from "@/app/components/alerts";
+import { CotPanel } from "../CotPanel";
 
 
 export default function WebSocketChat({
         chat, messages, previousMessage, currentPreset, configuration, operations 
 }) {
-    const messageTexts = buildOperationsTable(operations, "message");
+    const messageTexts = buildTextGenerationTable(operations, "message");
     const titles = buildOperationsTable(operations, "chat_title");
     const pictures = buildOperationsTable(operations, "chat_picture");
 
@@ -23,6 +24,11 @@ export default function WebSocketChat({
     const [titleGenerationsTable, setTitleGenerationsTable] = useState(titles);
     const [imageGenerationsTable, setImageGenerationsTable] = useState(pictures);
     const [errors, setErrors] = useState([]);
+
+    // mappings task_id -> index
+    const [thinkingStartId, setThinkingStartId] = useState({});
+    const [thinkingEndId, setThinkingEndId] = useState({});
+
     const router = useRouter();
 
     let bufferingPlayer = new BufferringAudioAutoPlayer(previousMessage.tts_text);
@@ -36,7 +42,7 @@ export default function WebSocketChat({
 
         if (payload.event_type === "generation_started") {
             setErrors([]);
-            setMessageGenerationsTable(createEntryFuncion);
+            setMessageGenerationsTable(prevTable => createTextGenerationEntry(prevTable, task_id));
         } else if (payload.event_type === "token_arrived") {
             setMessageGenerationsTable(
                 prevTable => incrementTableValue(prevTable, task_id, payload.data.token)
@@ -45,6 +51,27 @@ export default function WebSocketChat({
             setMessageGenerationsTable(removeEntryFunction);
             setErrors(payload.data.generation.errors);
             router.refresh();
+        } else if (payload.event_type === "thinking_started") {
+            console.log("thinking_started!")
+            setMessageGenerationsTable(prevTable => {
+                const tableCopy ={ ...prevTable };
+                // typically, thinking precedes the spoken part
+                tableCopy[task_id].thinkingStartId = 0;
+
+                console.log("thinking_started!", tableCopy)
+                return tableCopy;
+            });
+        } else if (payload.event_type === "thinking_ended") {
+            console.log("thinking_ended!")
+            setMessageGenerationsTable(prevTable => {
+                const tableCopy = { ...prevTable };
+                let msg = prevTable[task_id].text || "";
+                tableCopy[task_id] = {
+                    ...tableCopy[task_id],
+                    thinkingEndId: msg.length
+                };
+                return tableCopy;
+            });
         } else if (payload.event_type === "chat_title_generation_started") {
             setTitleGenerationsTable(createEntryFuncion);
         } else if (payload.event_type === "chat_title_generation_ended") {
@@ -81,7 +108,16 @@ export default function WebSocketChat({
     }, []);
 
     const messagesInProgress = Object.entries(messageGenerationsTable).map(
-        ([task_id, text], idx) => <GeneratingMessage key={idx} task_id={task_id} text={text} />
+        ([task_id, entry], idx) => {
+            let text = entry.text;
+            text = text || "";
+            const startId = entry.thinkingStartId || 0;
+            const endId = entry.thinkingEndId || text.length;
+
+            const thoughts = text.substring(startId, endId);
+            const spokenText = text.substring(endId, text.length);
+            return <GeneratingMessage key={idx} task_id={task_id} thoughts={thoughts} spokenText={spokenText} />;
+        }
     );
 
     const inProgress = messagesInProgress.length > 0;
@@ -113,6 +149,7 @@ export default function WebSocketChat({
                     />
                 </div>
             )}
+            
             {inProgress && (
                 <div className="mt-4 mb-4 flex flex-col gap-4">{messagesInProgress}</div>
             )}
@@ -131,21 +168,26 @@ function LoadingMessage({ text }) {
     );
 }
 
-function GeneratingMessage({ task_id, text }) {
+function GeneratingMessage({ task_id, thoughts, spokenText }) {
     let innerHtml = {
-        __html: renderMarkdown(text)
+        __html: renderMarkdown(spokenText)
     };
 
-    const roundingClass = text ? "rounded-t-lg" : "rounded-lg";
+    const roundingClass = thoughts || spokenText ? "rounded-t-lg" : "rounded-lg";
     return (
         <div className="rounded-lg shadow-lg">
             <h4 className={`border-2 border-indigo-900 p-4 font-semibold text-lg bg-indigo-600 text-white ${roundingClass}`}>
                 <FontAwesomeIcon icon={faSpinner} spin />
                 <span className="ml-2">Generating a message...</span>
             </h4>
-            {text && (
-                <div className="border-x-2 border-b-2 border-indigo-900 p-4 leading-loose text-lg bg-blue-100 rounded-b-lg">
-                    <div dangerouslySetInnerHTML={innerHtml} />
+            {(thoughts || spokenText) && (
+                <div className="border-x-2 border-b-2 border-indigo-900 p-4 bg-blue-100 rounded-b-lg">
+                    {thoughts && <div className="mb-2"><CotPanel title="Thinking..." text={thoughts} /></div>}
+                    {spokenText && (
+                        <div className="leading-loose text-lg">
+                            <div dangerouslySetInnerHTML={innerHtml} />
+                        </div>
+                    )}
                 </div>
             )}
         </div>
@@ -162,6 +204,31 @@ function buildOperationsTable(operations, generationType) {
     return res;
 }
 
+function buildTextGenerationTable(operations, generationType) {
+    const ops = operations.filter(op => op.generation_type === generationType);
+
+    const res = {};
+    for (let msg of ops) {
+        res[msg.task_id] = {
+            text: "",
+            thinkingStartId: 0,
+            thinkingEndId: 0
+        };
+    }
+    return res;
+}
+
+function createTextGenerationEntry(table, key) {
+    const tableCopy = { ...table };
+    tableCopy[key] = {
+        text: "",
+        thinkingStartId: 0,
+        thinkingEndId: 0
+    };
+    return tableCopy;
+}
+
+
 function createTableEntry(table, key) {
     const tableCopy = { ...table };
     tableCopy[key] = "";
@@ -170,8 +237,12 @@ function createTableEntry(table, key) {
 
 function incrementTableValue(table, key, newValue) {
     const tableCopy = { ...table };
-    const currentValue = tableCopy[key] || "";
-    tableCopy[key] = currentValue + newValue;
+    const { text="" } = {...tableCopy[key]};
+
+    tableCopy[key] = {
+        ...tableCopy[key],
+        text: text + newValue
+    };
     return tableCopy;
 }
 

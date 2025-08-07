@@ -584,35 +584,43 @@ def fix_newlines(text):
 class ThinkingDetector:
     candidate_tags = ['think', 'thinking', 'thoughts', 'cot', 'reason', 'reasoning']
 
+    @classmethod
     def split_thinking(cls, text):
         thinking_start = 0
         thinking_end = 0
 
         for tag_name in cls.candidate_tags:
-            tag = f'<{tag}>'
+            tag = f'<{tag_name}>'
+            close_tag = f'</{tag_name}>'
             idx = cls.find_tag(text, tag)
             if idx >= 0:
-                thinking_start = idx + len(tag)
-                thinking_end = text.find(f'</{tag}>')
+                thinking_start = idx
+                thinking_end = text.find(close_tag)
                 if thinking_end == -1:
                     thinking_end = 0
+                else:
+                    thinking_end += len(close_tag)
                 break
 
         thinking_text = text[thinking_start:thinking_end]
         spoken_text = text[thinking_end:]
         return thinking_text, spoken_text
 
+    @classmethod
     def detect_thinking_start(cls, text):
         tags = [f'<{tag_name}>' for tag_name in cls.candidate_tags]
         return any(cls.contains_tag(text, tag) for tag in tags)
 
+    @classmethod
     def detect_thinking_end(cls, text):
         tags = [f'</{tag_name}>' for tag_name in cls.candidate_tags]
         return any(cls.contains_tag(text, tag) for tag in tags)
 
+    @classmethod
     def find_tag(cls, text, tag):
         return text.lower().find(tag)
 
+    @classmethod
     def contains_tag(cls, text, tag):
         return cls.find_tag(text, tag) >= 0
 
