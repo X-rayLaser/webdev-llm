@@ -303,12 +303,13 @@ class MultimediaMessageSerializer(serializers.ModelSerializer):
     revisions = RevisionSerializer(many=True, read_only=True)
     replies = serializers.SerializerMethodField()
     tts_text = serializers.SerializerMethodField()
+    thoughts = serializers.ReadOnlyField()
 
     class Meta:
         model = MultimediaMessage
         fields = ['id', 'role', 'chat', 'parent', 'active_revision',
                   'content_ro', 'content', 'audio', 'revisions', 'replies', 'src_tree', 
-                  'child_index', 'tts_text']
+                  'child_index', 'tts_text', 'thoughts']
 
     def __init__(self, *args, **kwargs):
         with_replies = kwargs.pop('with_replies', True)

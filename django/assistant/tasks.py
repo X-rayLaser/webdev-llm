@@ -28,7 +28,7 @@ from assistant.models import (
 from assistant.utils import (
     process_raw_message, extract_modalities, prepare_messages, prepare_build_files,
     MessageSegment, get_named_code_segments, NamedCodeSegment, get_multimedia_message_text,
-    get_wave_duration, join_wavs, split_thinking
+    get_wave_duration, join_wavs, ThinkingDetector
 )
 from assistant import serializers
 
@@ -121,17 +121,23 @@ def _extract_names_with_llm_fallback(raw_response, config):
 
 
 def create_response_message(raw_response, config, role, parent=None, chat=None):
+    thinking_part, spoken_part = ThinkingDetector.split_thinking(raw_response)
+
     mixture = Modality.objects.create(modality_type="mixture")
     # todo: extract image modalities
 
     if settings.LLM_BASED_NAME_EXTRACTION:
-        extract_fn = _extract_names_with_llm_fallback(raw_response, config)
+        extract_fn = _extract_names_with_llm_fallback(spoken_part, config)
     else:
         extract_fn = get_named_code_segments
 
-    modalities, sources = extract_modalities(raw_response, parent=mixture, extract_names=extract_fn)
+    modalities, sources = extract_modalities(spoken_part, parent=mixture, extract_names=extract_fn)
 
     new_message = MultimediaMessage(role=role, content=mixture)
+
+    if thinking_part:
+        new_message.thoughts = thinking_part
+
     if parent is not None:
         parent.child_index = parent.replies.count()
         parent.save()
@@ -219,7 +225,16 @@ def _generate(config, emitter):
     job = ChatCompletionJob(model=config.model_name, base_url=config.server_url,
                             messages=messages, params=config.params)
 
+    buffer = ""
     for token in generator.generate(job):
+        buffer += token
+        if ThinkingDetector.detect_thinking_start(buffer):
+            emitter(event_type="thinking_started", data=dict(task_id=config.task_id))
+            buffer = ""
+        elif ThinkingDetector.detect_thinking_ended(buffer):
+            emitter(event_type="thinking_ended", data=dict(task_id=config.task_id))
+            buffer = ""
+
         emitter(event_type="token_arrived", data=dict(token=token, task_id=config.task_id))
 
     role = "user" if len(history) % 2 == 0 else "assistant"
@@ -263,11 +278,8 @@ class NoSpeechSampleError(Exception):
 def generate_speech(response_message, synthesizer, emitter):
     text = get_multimedia_message_text(response_message)
 
-    # todo: more robust extraction of reasoning trace
-    thinking_text, spoken_text = split_thinking(text)
-
     # todo: more robust text cleaning
-    cleaned_text = re.sub("[^a-zA-Z\s!\?\.']", '', spoken_text).strip()
+    cleaned_text = re.sub("[^a-zA-Z\s!\?\.']", '', text).strip()
     sentences = split_into_sentences(cleaned_text)
 
     if not sentences:

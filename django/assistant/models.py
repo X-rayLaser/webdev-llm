@@ -325,6 +325,8 @@ class MultimediaMessage(models.Model):
     
     audio = models.FileField(upload_to="audio_samples", blank=True, null=True)
 
+    thoughts = models.TextField(blank=True, null=True)
+
     def get_root(self):
         if self.parent is None:
             return self

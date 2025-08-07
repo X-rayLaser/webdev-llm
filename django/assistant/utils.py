@@ -581,23 +581,40 @@ def fix_newlines(text):
     return text
 
 
-def split_thinking(text):
-    thinking_start = 0
-    thinking_end = 0
+class ThinkingDetector:
+    candidate_tags = ['think', 'thinking', 'thoughts', 'cot', 'reason', 'reasoning']
 
-    for tag_name in ['think', 'thinking', 'thoughts', 'cot']:
-        tag = f'<{tag}>'
-        idx = text.lower().find(tag)
-        if idx >= 0:
-            thinking_start = idx + len(tag)
-            thinking_end = text.find(f'</{tag}>')
-            if thinking_end == -1:
-                thinking_end = 0
-            break
+    def split_thinking(cls, text):
+        thinking_start = 0
+        thinking_end = 0
 
-    thinking_text = text[thinking_start:thinking_end]
-    spoken_text = text[thinking_end:]
-    return thinking_text, spoken_text
+        for tag_name in cls.candidate_tags:
+            tag = f'<{tag}>'
+            idx = cls.find_tag(text, tag)
+            if idx >= 0:
+                thinking_start = idx + len(tag)
+                thinking_end = text.find(f'</{tag}>')
+                if thinking_end == -1:
+                    thinking_end = 0
+                break
+
+        thinking_text = text[thinking_start:thinking_end]
+        spoken_text = text[thinking_end:]
+        return thinking_text, spoken_text
+
+    def detect_thinking_start(cls, text):
+        tags = [f'<{tag_name}>' for tag_name in cls.candidate_tags]
+        return any(cls.contains_tag(text, tag) for tag in tags)
+
+    def detect_thinking_end(cls, text):
+        tags = [f'</{tag_name}>' for tag_name in cls.candidate_tags]
+        return any(cls.contains_tag(text, tag) for tag in tags)
+
+    def find_tag(cls, text, tag):
+        return text.lower().find(tag)
+
+    def contains_tag(cls, text, tag):
+        return cls.find_tag(text, tag) >= 0
 
 
 def join_wavs(samples, result_path):
