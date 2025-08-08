@@ -125,7 +125,7 @@ export function RawMessage({ message, generationConfig }) {
                     />
                 ) : (
                     <div>
-                        {message.thoughts && (<div className="p-4 mb-2">
+                        {message.thoughts && (<div className="px-4 pt-4">
                             <CotPanel text={message.thoughts} />
                         </div>)}
                         <ModalityViewer modalityObject={decoratedModality} showControls={false} />
