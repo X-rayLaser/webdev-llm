@@ -157,8 +157,6 @@ export default function WebSocketChat({
     );
 }
 
-
-
 function LoadingMessage({ text }) {
     return (
         <div className="bg-sky-800 border-2 text-white font-semibold border-sky-900 rounded-sm shadow-lg p-2 mb-2 w-80">

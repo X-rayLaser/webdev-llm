@@ -13,7 +13,7 @@ function ExpandableWell({ title, children, defaultOpen = false }) {
                 onClick={() => setIsOpen(!isOpen)}
                 className={`w-full flex items-center justify-between px-4 py-2 text-left text-gray-800
                     ${isOpen ? 'rounded-t-2xl' : 'rounded-2xl'} 
-                    transition bg-gray-300 hover:bg-gray-400`}
+                    transition bg-gray-400 hover:bg-gray-500`}
             >
                 <span className="font-bold text-lg">{title}</span>
                 <FontAwesomeIcon
@@ -23,8 +23,8 @@ function ExpandableWell({ title, children, defaultOpen = false }) {
             </button>
 
             <div
-                className={`transition-all duration-300 ease-in-out bg-white text-gray-700 ${isOpen
-                        ? 'max-h-[1000px] opacity-100 border-t border-gray-400 px-4 py-4'
+                className={`transition-all duration-300 ease-in-out bg-slate-300 text-gray-900 text-justify text-lg tracking-wide font-mono ${isOpen
+                        ? 'max-h-[4000px] opacity-100 px-4 py-4'
                         : 'max-h-0 opacity-0 px-4'
                     }`}
             >
@@ -36,7 +36,12 @@ function ExpandableWell({ title, children, defaultOpen = false }) {
 
 
 export function CotPanel({ title="Thoughts", text }) {
+    if (text) {
+        text = text.split('\n\n').map((text, idx) => <p key={idx}>{text}</p>);
+    }
     return (
-        <ExpandableWell title={title}>{text}</ExpandableWell>
+        <ExpandableWell title={title}>
+            <div className="flex flex-col gap-4">{text}</div>
+        </ExpandableWell>
     );
 }
