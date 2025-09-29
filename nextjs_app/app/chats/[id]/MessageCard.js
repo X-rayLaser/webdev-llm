@@ -177,6 +177,13 @@ function Footer({ message }) {
         }).finally(() => setInProgress(false));
     }
 
+    let author;
+    if (message.role === "assistant" && message.metadata && message.metadata.model_name) {
+        author = message.metadata.model_name;
+    } else {
+        author = capitalize(message.role);
+    }
+
     return (
         <div className="bg-slate-200 px-4 py-2 flex justify-between items-center text-sky-800 border-t border-stone-400">
             {inProgress && (
@@ -189,7 +196,7 @@ function Footer({ message }) {
                     <div>
                         <span className="font-bold text-lg mr-4">
                             <FontAwesomeIcon icon={message.role === "user" ? faUserTie : faRobot} />
-                            <span className="ml-2">{capitalize(message.role)}</span>
+                            <span className="ml-2">{author}</span>
                         </span>
                     </div>
                 </div>

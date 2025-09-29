@@ -293,6 +293,13 @@ class ModalitiesOrderingSerializer(serializers.Serializer):
             modality.save(update_fields=["order"])
 
 
+
+class GenerationMetadataSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GenerationMetadata
+        fields = ['id', 'server', 'model_name', 'params', 'response_metadata', 'system_message']
+
+
 # todo: validate child_index
 class MultimediaMessageSerializer(serializers.ModelSerializer):
     src_tree = serializers.ListField(
@@ -304,18 +311,37 @@ class MultimediaMessageSerializer(serializers.ModelSerializer):
     replies = serializers.SerializerMethodField()
     tts_text = serializers.SerializerMethodField()
     thoughts = serializers.ReadOnlyField()
+    metadata = serializers.SerializerMethodField()
 
     class Meta:
         model = MultimediaMessage
         fields = ['id', 'role', 'chat', 'parent', 'active_revision',
                   'content_ro', 'content', 'audio', 'revisions', 'replies', 'src_tree', 
-                  'child_index', 'tts_text', 'thoughts']
+                  'child_index', 'tts_text', 'thoughts', 'metadata']
 
     def __init__(self, *args, **kwargs):
         with_replies = kwargs.pop('with_replies', True)
         super().__init__(*args, **kwargs)
         if not with_replies:
             self.fields.pop('replies')
+
+    def get_metadata(self, obj):
+        if obj.role != 'assistant':
+            return None
+        
+        parent = obj.parent
+        child_id = parent.child_index or 0
+
+        generations = parent.generations.all()
+        if child_id >= len(generations):
+            return None
+        
+        gen = generations[child_id]
+        meta = gen.generation_metadata
+        if not meta:
+            return None
+
+        return GenerationMetadataSerializer(meta).data
 
     def get_replies(self, obj):
         kwargs = dict(context=self.context) if hasattr(self, "context") else {}
@@ -396,12 +422,6 @@ class ChatSerializer(serializers.HyperlinkedModelSerializer):
         model = Chat
         fields = ['id', 'name', 'description', 'configuration', 'image', 'zipfile', 'messages', 
                   'coding_mode', 'effective_system_message', 'created']
-
-
-class GenerationMetadataSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = GenerationMetadata
-        fields = ['id', 'server', 'model_name', 'params', 'response_metadata', 'system_message']
 
 
 class GenerationSerializer(serializers.ModelSerializer):

@@ -25,10 +25,6 @@ export default function WebSocketChat({
     const [imageGenerationsTable, setImageGenerationsTable] = useState(pictures);
     const [errors, setErrors] = useState([]);
 
-    // mappings task_id -> index
-    const [thinkingStartId, setThinkingStartId] = useState({});
-    const [thinkingEndId, setThinkingEndId] = useState({});
-
     const router = useRouter();
 
     let bufferingPlayer = new BufferringAudioAutoPlayer(previousMessage.tts_text);
@@ -109,10 +105,16 @@ export default function WebSocketChat({
 
     const messagesInProgress = Object.entries(messageGenerationsTable).map(
         ([task_id, entry], idx) => {
-            let text = entry.text;
-            text = text || "";
-            const startId = entry.thinkingStartId || 0;
-            const endId = entry.thinkingEndId || text.length;
+            let text = entry.text || "";
+            let startId = entry.thinkingStartId;
+            let endId = entry.thinkingEndId;
+
+            if (startId === null) {
+                startId = 0;
+                endId = 0;
+            } else if (endId === null) {
+                endId = text.length;
+            }
 
             const thoughts = text.substring(startId, endId);
             const spokenText = text.substring(endId, text.length);
@@ -209,8 +211,8 @@ function buildTextGenerationTable(operations, generationType) {
     for (let msg of ops) {
         res[msg.task_id] = {
             text: "",
-            thinkingStartId: 0,
-            thinkingEndId: 0
+            thinkingStartId: null,
+            thinkingEndId: null
         };
     }
     return res;
@@ -220,8 +222,8 @@ function createTextGenerationEntry(table, key) {
     const tableCopy = { ...table };
     tableCopy[key] = {
         text: "",
-        thinkingStartId: 0,
-        thinkingEndId: 0
+        thinkingStartId: null,
+        thinkingEndId: null
     };
     return tableCopy;
 }

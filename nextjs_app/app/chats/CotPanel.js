@@ -24,7 +24,7 @@ function ExpandableWell({ title, children, defaultOpen = false }) {
 
             <div
                 className={`transition-all duration-300 ease-in-out bg-slate-300 text-gray-900 text-justify text-lg tracking-wide font-mono ${isOpen
-                        ? 'max-h-[4000px] opacity-100 px-4 py-4'
+                        ? 'max-h-[10000px] opacity-100 px-4 py-4'
                         : 'max-h-0 opacity-0 px-4'
                     }`}
             >
