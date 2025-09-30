@@ -256,19 +256,16 @@ function createTableEntry(table, key) {
 
 function incrementTableValue(table, key, newValue) {
     const tableCopy = { ...table };
-    const { text="", tokenCount=0 } = {...tableCopy[key]};
+    const { text="", tokenCount=0, initialClock } = {...tableCopy[key]};
 
     tableCopy[key] = {
         ...tableCopy[key],
-        text: text + newValue
+        text: text + newValue,
+        tokenCount: text === "" ? 0 : tokenCount + 1,
+        // ignore time passed till first token
+        initialClock: text === "" ? new Date() : initialClock
     };
 
-    if (tokenCount === 0) {
-        // ignore time passed till first token
-        tableCopy[key].initialClock = new Date();
-    } else {
-        tableCopy[key].tokenCount = tokenCount + 1;
-    }
     return tableCopy;
 }
 
