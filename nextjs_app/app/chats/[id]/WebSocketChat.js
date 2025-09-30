@@ -34,7 +34,7 @@ export default function WebSocketChat({
         const task_id = payload.data.task_id;
 
         const createEntryFuncion = prevTable => createTableEntry(prevTable, task_id);
-        const removeEntryFunction = prevTable => removeTableEntry(prevTable, task_id)
+        const removeEntryFunction = prevTable => removeTableEntry(prevTable, task_id);
 
         if (payload.event_type === "generation_started") {
             setErrors([]);
@@ -108,6 +108,9 @@ export default function WebSocketChat({
             let text = entry.text || "";
             let startId = entry.thinkingStartId;
             let endId = entry.thinkingEndId;
+            let initialClock = entry.initialClock;
+            let tokenCount = entry.tokenCount;
+            let elapsedSeconds = (new Date() - initialClock) / 1000;
 
             if (startId === null) {
                 startId = 0;
@@ -118,7 +121,19 @@ export default function WebSocketChat({
 
             const thoughts = text.substring(startId, endId);
             const spokenText = text.substring(endId, text.length);
-            return <GeneratingMessage key={idx} task_id={task_id} thoughts={thoughts} spokenText={spokenText} />;
+            const genSpeed = Math.round(tokenCount / elapsedSeconds);
+
+            if (tokenCount === 0) {
+                return (
+                    <div key={idx} className="shadow-lg">
+                        <h4 className={`border-2 border-sky-900 p-4 font-semibold text-lg bg-sky-600 text-white rounded-lg`}>
+                            <FontAwesomeIcon icon={faSpinner} spin />
+                            <span className="ml-2">Preparing...</span>
+                        </h4>
+                    </div>
+                );
+            }
+            return <GeneratingMessage key={idx} task_id={task_id} thoughts={thoughts} spokenText={spokenText} speed={genSpeed} />;
         }
     );
 
@@ -168,7 +183,7 @@ function LoadingMessage({ text }) {
     );
 }
 
-function GeneratingMessage({ task_id, thoughts, spokenText }) {
+function GeneratingMessage({ task_id, thoughts, spokenText, speed }) {
     let innerHtml = {
         __html: renderMarkdown(spokenText)
     };
@@ -178,7 +193,7 @@ function GeneratingMessage({ task_id, thoughts, spokenText }) {
         <div className="rounded-lg shadow-lg">
             <h4 className={`border-2 border-indigo-900 p-4 font-semibold text-lg bg-indigo-600 text-white ${roundingClass}`}>
                 <FontAwesomeIcon icon={faSpinner} spin />
-                <span className="ml-2">Generating a message...</span>
+                <span className="ml-2">Generating a message at {speed} t/s</span>
             </h4>
             {(thoughts || spokenText) && (
                 <div className="border-x-2 border-b-2 border-indigo-900 p-4 bg-blue-100 rounded-b-lg">
@@ -212,7 +227,9 @@ function buildTextGenerationTable(operations, generationType) {
         res[msg.task_id] = {
             text: "",
             thinkingStartId: null,
-            thinkingEndId: null
+            thinkingEndId: null,
+            initialClock: new Date(),
+            tokenCount: 0
         };
     }
     return res;
@@ -223,7 +240,9 @@ function createTextGenerationEntry(table, key) {
     tableCopy[key] = {
         text: "",
         thinkingStartId: null,
-        thinkingEndId: null
+        thinkingEndId: null,
+        initialClock: new Date(),
+        tokenCount: 0
     };
     return tableCopy;
 }
@@ -237,12 +256,19 @@ function createTableEntry(table, key) {
 
 function incrementTableValue(table, key, newValue) {
     const tableCopy = { ...table };
-    const { text="" } = {...tableCopy[key]};
+    const { text="", tokenCount=0 } = {...tableCopy[key]};
 
     tableCopy[key] = {
         ...tableCopy[key],
         text: text + newValue
     };
+
+    if (tokenCount === 0) {
+        // ignore time passed till first token
+        tableCopy[key].initialClock = new Date();
+    } else {
+        tableCopy[key].tokenCount = tokenCount + 1;
+    }
     return tableCopy;
 }
 
