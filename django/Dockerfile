@@ -4,7 +4,7 @@ RUN groupadd --gid 1000 user && useradd -m --gid user --uid 1000 user
 
 ENV PATH="$PATH:/home/user/.local/bin"
 
-RUN apt-get update -y && apt-get install build-essential python3.11-venv -y
+RUN apt-get update -y && apt-get install build-essential -y
 
 COPY . /django
 
