@@ -19,7 +19,9 @@ async def handler(websocket):
         
         while True:
             message = await pubsub.get_message(ignore_subscribe_messages=True)
+
             if not message:
+                await asyncio.sleep(0.1)
                 continue
 
             payload = message["data"].decode()

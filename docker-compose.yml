@@ -36,7 +36,7 @@ services:
     depends_on:
       - redis
       - websocketserver
-    entrypoint: /home/user/venv/bin/celery -A mysite worker -l INFO
+    entrypoint: /home/user/venv/bin/celery -A mysite worker -l INFO --concurrency=1
 
   websocketserver:
     build:
