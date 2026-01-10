@@ -73,7 +73,7 @@ services:
       - ./nextjs_app:/home/node/nextjs_app
     ports:
       - "3000:3000"
-    command: "npx next start"
+    command: "./entrypoint.sh"
 
   nginx:
     image: nginx

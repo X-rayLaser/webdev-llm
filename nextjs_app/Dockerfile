@@ -8,7 +8,7 @@ RUN chown -R node: .
 
 USER node
 
-RUN npm install
+RUN npm install --ignore-scripts
 
 RUN npx next build
 
