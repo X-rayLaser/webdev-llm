@@ -78,7 +78,9 @@ class CompletionBackendAdapter(ResponsesBackend):
             final_thoughts = ThinkingDetector.strip_tags(buffer)
             thoughts += final_thoughts
 
-            yield self.event_factory.reasoning_text_delta(item_factory.item_id, final_thoughts)
+            if final_thoughts:
+                yield self.event_factory.reasoning_text_delta(item_factory.item_id, final_thoughts)
+
             yield self.event_factory.reasoning_text_done(item_factory.item_id, thoughts)
             yield self.event_factory.content_part_done(
                 item_factory.item_id, 0, part_type="reasoning_text", text=thoughts
@@ -100,7 +102,9 @@ class CompletionBackendAdapter(ResponsesBackend):
                 item_factory = ResponseItemFactory(item_type="message")
                 yield self.event_factory.output_item_added(item_factory)
                 yield self.event_factory.content_part_added(item_factory.item_id, 0, part_type="output_text")
-                yield self.event_factory.output_text_delta(item_factory.item_id, 0, leftover)
+
+                if leftover:
+                    yield self.event_factory.output_text_delta(item_factory.item_id, 0, leftover)
 
             text += token
             yield self.event_factory.output_text_delta(item_factory.item_id, 0, token)
