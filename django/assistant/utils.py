@@ -624,6 +624,24 @@ class ThinkingDetector:
     def contains_tag(cls, text, tag):
         return cls.find_tag(text, tag) >= 0
 
+    @classmethod
+    def strip_tags(cls, text):
+        """Remove all known thinking tags from the text."""
+        for tag_name in cls.candidate_tags:
+            open_tag = f'<{tag_name}>'
+            close_tag = f'</{tag_name}>'
+            text = re.sub(re.escape(open_tag), '', text, flags=re.IGNORECASE)
+            text = re.sub(re.escape(close_tag), '', text, flags=re.IGNORECASE)
+        return text
+
+    @classmethod
+    def max_open_tag_len(cls):
+        """Return the length of the longest open tag among candidate_tags."""
+        tags = [f'<{tag_name}>' for tag_name in cls.candidate_tags]
+        if not tags:
+            return 0
+        return max(len(tag) for tag in tags)
+
 
 def join_wavs(samples, result_path):
     data= []

@@ -17,7 +17,7 @@ class ChatCompletionJob:
     params: Dict[str, Any] = None
 
 
-class Backend(ABC):
+class CompletionBackend(ABC):
     def __init__(self):
         self.response = ""
 
@@ -26,7 +26,192 @@ class Backend(ABC):
         pass
 
 
-class DummyBackend(Backend):
+class ResponsesBackend(ABC):
+    @abstractmethod
+    def generate(self, job: ChatCompletionJob):
+        pass
+
+
+class CompletionBackendAdapter(ResponsesBackend):
+    def __init__(self, backend: CompletionBackend) -> None:
+        super().__init__()
+
+        self.seq_num = 0
+        self.backend = backend
+        self.response = []
+
+    def generate(self, job: ChatCompletionJob):
+        from assistant.utils import ThinkingDetector
+
+        self.seq_num = 0
+
+        generator = self.backend.generate(job)
+
+        buffer = next(
+            yield_bufferred(generator, ThinkingDetector.max_open_tag_len())
+        )
+
+        text = ""
+        thoughts = ""
+        leftover = ""
+
+        if ThinkingDetector.detect_thinking_start(buffer):
+            initial_thoughts = ThinkingDetector.strip_tags(buffer)
+
+            item_factory = ResponseItemFactory(item_type="reasoning")
+
+            thoughts += initial_thoughts
+
+            yield from self.notify_reasoning_started(item_factory, initial_thoughts)
+
+            for buffer in yield_bufferred(generator, ThinkingDetector.max_open_tag_len() + 1):
+                if ThinkingDetector.detect_thinking_end(buffer):
+
+                    leftover = ThinkingDetector.get_text_after_tag(buffer)
+                    yield from self.notify_reasoning_ended(item_factory, thoughts, buffer)
+
+                    text += leftover
+                    break
+
+                yield self.make_event(
+                    "response.reasoning_text.delta",
+                    item_id=item_factory.item_id,
+                    content_index=0,
+                    delta=buffer
+                )
+
+        item_factory = None
+
+        for token in generator:
+            if not item_factory:
+                item_factory = ResponseItemFactory(item_type="message")
+                yield self.make_event(
+                    "response.output_item.added", 
+                    item=item_factory.make_initial_item()
+                )
+
+                yield self.make_event(
+                    "response.output_text.delta",
+                    item_id=item_factory.item_id,
+                    content_index=0,
+                    delta=leftover,
+                )
+
+            text += token
+            yield self.make_event(
+                "response.output_text.delta",
+                item_id=item_factory.item_id,
+                content_index=0,
+                delta=token,
+            )
+        
+        yield self.make_event(
+            "response.output_text.done",
+            item_id=item_factory.item_id,
+            content_index=0,
+            text=text
+        )
+
+        complete_item = item_factory.make_complete_item("output_text", text)
+        yield self.make_event(
+            "response.output_item.done",
+            item=complete_item
+        )
+
+        self.response.append(complete_item)
+
+    def notify_reasoning_started(self, item_factory, initial_thoughts):
+        yield self.make_event(
+            "response.output_item.added", 
+            item=item_factory.make_initial_item()
+        )
+
+        yield self.make_event(
+            "response.reasoning_text.delta",
+            item_id=item_factory.item_id,
+            content_index=0,
+            delta=initial_thoughts
+        )
+
+    def notify_reasoning_ended(self, item_factory, thoughts, buffer):
+        from assistant.utils import ThinkingDetector
+
+        final_thoughts = ThinkingDetector.strip_tags(buffer)
+    
+        yield self.make_event(
+            "response.reasoning_text.delta",
+            item_id=item_factory.item_id,
+            content_index=0,
+            delta=final_thoughts
+        )
+
+        yield self.make_event(
+            "response.reasoning_text.done",
+            item_id=item_factory.item_id,
+            content_index=0,
+            text=thoughts + final_thoughts
+        )
+
+        complete_item = item_factory.make_complete_item("reasoning", thoughts + final_thoughts)
+
+        yield self.make_event(
+            "response.output_item.done",
+            item=complete_item
+        )
+
+        self.response.append(complete_item)
+
+    def make_event(self, event_type, **kwargs):
+        self.seq_num += 1
+
+        return {
+            "type": event_type,
+            "output_index": len(self.response),
+            "sequence_number": self.seq_num,
+            **kwargs
+        }
+
+
+class ResponseItemFactory:
+    def __init__(self, item_type="message"):
+        self.item_id = 323
+        self.item_type = item_type
+
+    def make_item(self, status, content):
+        return {
+            "id": self.item_id,
+            "status": status,
+            "type": self.item_type,
+            "role": "assistant",
+            "content": content
+        }
+
+    def make_initial_item(self):
+        return self.make_item("in_progress", [])
+
+    def make_complete_item(self, content_type, text):
+        content = [{
+            "type": content_type,
+            "text": text,
+            "annotations": []
+        }]
+        return self.make_item("complete", content)
+
+
+def yield_bufferred(gen, bufsize):
+    buffer = ""
+    for s in gen:
+        buffer += s
+        if len(buffer) >= bufsize:
+            ret = buffer
+            buffer = ""
+            yield ret
+
+    if buffer:
+        yield buffer
+
+
+class DummyBackend(CompletionBackend):
     tokens = ["The", "quick", "brown", "fox", "jumps", "over", "the", "lazy", "dog", "."]
     separator = " "
     def generate(self, job: ChatCompletionJob):
@@ -45,7 +230,7 @@ class DummyCoderBackend(DummyBackend):
     separator = ""
 
 
-class OpenAICompatibleBackend(Backend):
+class OpenAICompatibleBackend(CompletionBackend):
 
     def generate(self, job: ChatCompletionJob):
         http_client = self.get_http_client()
