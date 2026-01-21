@@ -65,6 +65,7 @@ class CompletionBackendAdapter(ResponsesBackend):
         thoughts = initial_thoughts
 
         yield self.event_factory.output_item_added(item_factory)
+        yield self.event_factory.content_part_added(item_factory.item_id, 0, part_type="reasoning_text")
         yield self.event_factory.reasoning_text_delta(item_factory.item_id, initial_thoughts)
 
         leftover = ""
@@ -79,6 +80,9 @@ class CompletionBackendAdapter(ResponsesBackend):
 
             yield self.event_factory.reasoning_text_delta(item_factory.item_id, final_thoughts)
             yield self.event_factory.reasoning_text_done(item_factory.item_id, thoughts)
+            yield self.event_factory.content_part_done(
+                item_factory.item_id, 0, part_type="reasoning_text", text=thoughts
+            )
 
             complete_item = item_factory.make_complete_item("reasoning", thoughts)
             yield self.event_factory.output_item_done(complete_item)
@@ -95,12 +99,17 @@ class CompletionBackendAdapter(ResponsesBackend):
             if not item_factory:
                 item_factory = ResponseItemFactory(item_type="message")
                 yield self.event_factory.output_item_added(item_factory)
+                yield self.event_factory.content_part_added(item_factory.item_id, 0, part_type="output_text")
                 yield self.event_factory.output_text_delta(item_factory.item_id, 0, leftover)
 
             text += token
             yield self.event_factory.output_text_delta(item_factory.item_id, 0, token)
         
         yield self.event_factory.output_text_done(item_factory.item_id, text)
+
+        yield self.event_factory.content_part_done(
+            item_factory.item_id, 0, part_type="output_text", text=text
+        )
 
         complete_item = item_factory.make_complete_item("output_text", text)
         yield self.event_factory.output_item_done(complete_item)
@@ -111,11 +120,39 @@ class CompletionBackendAdapter(ResponsesBackend):
 class EventFactory:
     def __init__(self):
         self.seq_num = 0
+        self.output_index = 0
 
     def output_item_added(self, item_factory):
-        return self.make_event(
+        event = self.make_event(
             "response.output_item.added",
             item=item_factory.make_initial_item()
+        )
+
+        self.output_index += 1
+        return event
+
+    def content_part_added(self, item_id, content_index, part_type):
+        return self.make_event(
+            "response.content_part.added",
+            item_id=item_id,
+            content_index=content_index,
+            part={
+                "type": part_type,
+                "text": "",
+                "annotations": []
+            }
+        )
+
+    def content_part_done(self, item_id, content_index, part_type, text):
+        return self.make_event(
+            "response.content_part.done",
+            item_id=item_id,
+            content_index=content_index,
+            part={
+                "type": part_type,
+                "text": text,
+                "annotations": []
+            }
         )
 
     def reasoning_text_delta(self, item_id, delta):
@@ -161,7 +198,7 @@ class EventFactory:
 
         return {
             "type": event_type,
-            "output_index": len(self.response),
+            "output_index": self.output_index,
             "sequence_number": self.seq_num,
             **kwargs
         }
