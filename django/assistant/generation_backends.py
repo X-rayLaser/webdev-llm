@@ -36,130 +36,125 @@ class CompletionBackendAdapter(ResponsesBackend):
     def __init__(self, backend: CompletionBackend) -> None:
         super().__init__()
 
-        self.seq_num = 0
+        self.event_factory = None
         self.backend = backend
         self.response = []
 
     def generate(self, job: ChatCompletionJob):
         from assistant.utils import ThinkingDetector
 
-        self.seq_num = 0
-
+        self.event_factory = EventFactory()
         generator = self.backend.generate(job)
 
         buffer = next(
             yield_bufferred(generator, ThinkingDetector.max_open_tag_len())
         )
 
-        text = ""
-        thoughts = ""
-        leftover = ""
+        leftover = buffer
 
         if ThinkingDetector.detect_thinking_start(buffer):
-            initial_thoughts = ThinkingDetector.strip_tags(buffer)
+            leftover = yield from self.get_reasoning_events(generator, buffer)
+        
+        yield from self.get_text_output_events(generator, leftover)
 
-            item_factory = ResponseItemFactory(item_type="reasoning")
+    def get_reasoning_events(self, generator, buffer):
+        from assistant.utils import ThinkingDetector
 
-            thoughts += initial_thoughts
+        initial_thoughts = ThinkingDetector.strip_tags(buffer)
+        item_factory = ResponseItemFactory(item_type="reasoning")
+        thoughts = initial_thoughts
 
-            yield from self.notify_reasoning_started(item_factory, initial_thoughts)
+        yield self.event_factory.output_item_added(item_factory)
+        yield self.event_factory.reasoning_text_delta(item_factory.item_id, initial_thoughts)
 
-            for buffer in yield_bufferred(generator, ThinkingDetector.max_open_tag_len() + 1):
-                if ThinkingDetector.detect_thinking_end(buffer):
+        leftover = ""
+        for buffer in yield_bufferred(generator, ThinkingDetector.max_open_tag_len() + 1):
+            if not ThinkingDetector.detect_thinking_end(buffer):
+                yield self.event_factory.reasoning_text_delta(item_factory.item_id, buffer)
+                continue
 
-                    leftover = ThinkingDetector.get_text_after_tag(buffer)
-                    yield from self.notify_reasoning_ended(item_factory, thoughts, buffer)
+            leftover = ThinkingDetector.get_text_after_tag(buffer)
+            final_thoughts = ThinkingDetector.strip_tags(buffer)
+            thoughts += final_thoughts
 
-                    text += leftover
-                    break
+            yield self.event_factory.reasoning_text_delta(item_factory.item_id, final_thoughts)
+            yield self.event_factory.reasoning_text_done(item_factory.item_id, thoughts)
 
-                yield self.make_event(
-                    "response.reasoning_text.delta",
-                    item_id=item_factory.item_id,
-                    content_index=0,
-                    delta=buffer
-                )
+            complete_item = item_factory.make_complete_item("reasoning", thoughts)
+            yield self.event_factory.output_item_done(complete_item)
+            self.response.append(complete_item)
+            break
 
+        return leftover
+
+    def get_text_output_events(self, generator, leftover):
         item_factory = None
+        text = leftover
 
         for token in generator:
             if not item_factory:
                 item_factory = ResponseItemFactory(item_type="message")
-                yield self.make_event(
-                    "response.output_item.added", 
-                    item=item_factory.make_initial_item()
-                )
-
-                yield self.make_event(
-                    "response.output_text.delta",
-                    item_id=item_factory.item_id,
-                    content_index=0,
-                    delta=leftover,
-                )
+                yield self.event_factory.output_item_added(item_factory)
+                yield self.event_factory.output_text_delta(item_factory.item_id, 0, leftover)
 
             text += token
-            yield self.make_event(
-                "response.output_text.delta",
-                item_id=item_factory.item_id,
-                content_index=0,
-                delta=token,
-            )
+            yield self.event_factory.output_text_delta(item_factory.item_id, 0, token)
         
-        yield self.make_event(
-            "response.output_text.done",
-            item_id=item_factory.item_id,
+        yield self.event_factory.output_text_done(item_factory.item_id, text)
+
+        complete_item = item_factory.make_complete_item("output_text", text)
+        yield self.event_factory.output_item_done(complete_item)
+
+        self.response.append(complete_item)
+
+
+class EventFactory:
+    def __init__(self):
+        self.seq_num = 0
+
+    def output_item_added(self, item_factory):
+        return self.make_event(
+            "response.output_item.added",
+            item=item_factory.make_initial_item()
+        )
+
+    def reasoning_text_delta(self, item_id, delta):
+        return self.make_event(
+            "response.reasoning_text.delta",
+            item_id=item_id,
+            content_index=0,
+            delta=delta
+        )
+
+    def reasoning_text_done(self, item_id, text):
+        return self.make_event(
+            "response.reasoning_text.done",
+            item_id=item_id,
             content_index=0,
             text=text
         )
 
-        complete_item = item_factory.make_complete_item("output_text", text)
-        yield self.make_event(
+    def output_text_delta(self, item_id, content_index, delta):
+        return self.make_event(
+            "response.output_text.delta",
+            item_id=item_id,
+            content_index=content_index,
+            delta=delta,
+        )
+
+    def output_text_done(self, item_id, text):
+        return self.make_event(
+            "response.output_text.done",
+            item_id=item_id,
+            content_index=0,
+            text=text
+        )
+
+    def output_item_done(self, complete_item):
+        return self.make_event(
             "response.output_item.done",
             item=complete_item
         )
-
-        self.response.append(complete_item)
-
-    def notify_reasoning_started(self, item_factory, initial_thoughts):
-        yield self.make_event(
-            "response.output_item.added", 
-            item=item_factory.make_initial_item()
-        )
-
-        yield self.make_event(
-            "response.reasoning_text.delta",
-            item_id=item_factory.item_id,
-            content_index=0,
-            delta=initial_thoughts
-        )
-
-    def notify_reasoning_ended(self, item_factory, thoughts, buffer):
-        from assistant.utils import ThinkingDetector
-
-        final_thoughts = ThinkingDetector.strip_tags(buffer)
-    
-        yield self.make_event(
-            "response.reasoning_text.delta",
-            item_id=item_factory.item_id,
-            content_index=0,
-            delta=final_thoughts
-        )
-
-        yield self.make_event(
-            "response.reasoning_text.done",
-            item_id=item_factory.item_id,
-            content_index=0,
-            text=thoughts + final_thoughts
-        )
-
-        complete_item = item_factory.make_complete_item("reasoning", thoughts + final_thoughts)
-
-        yield self.make_event(
-            "response.output_item.done",
-            item=complete_item
-        )
-
-        self.response.append(complete_item)
 
     def make_event(self, event_type, **kwargs):
         self.seq_num += 1
