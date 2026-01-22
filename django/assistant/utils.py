@@ -642,6 +642,22 @@ class ThinkingDetector:
             return 0
         return max(len(tag) for tag in tags)
 
+    @classmethod
+    def get_text_after_tag(cls, text):
+        """
+        Find the first closing tag from candidate_tags in text,
+        and remove all text before (and including) that tag.
+        Returns the remaining text (after the closing tag), or the original text if not found.
+        """
+        for tag_name in cls.candidate_tags:
+            close_tag = f"</{tag_name}>"
+            idx = text.lower().find(close_tag)
+            if idx != -1:
+                # Position after the closing tag
+                end_idx = idx + len(close_tag)
+                return text[end_idx:]
+        return text
+
 
 def join_wavs(samples, result_path):
     data= []

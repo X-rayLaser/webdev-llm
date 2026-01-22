@@ -7,6 +7,7 @@ import httpx
 import openai
 from openai import DefaultHttpxClient
 
+from assistant.utils import ThinkingDetector
 
 
 @dataclass
@@ -41,8 +42,6 @@ class CompletionBackendAdapter(ResponsesBackend):
         self.response = []
 
     def generate(self, job: ChatCompletionJob):
-        from assistant.utils import ThinkingDetector
-
         self.event_factory = EventFactory()
         generator = self.backend.generate(job)
 
@@ -58,8 +57,6 @@ class CompletionBackendAdapter(ResponsesBackend):
         yield from self.get_text_output_events(generator, leftover)
 
     def get_reasoning_events(self, generator, buffer):
-        from assistant.utils import ThinkingDetector
-
         initial_thoughts = ThinkingDetector.strip_tags(buffer)
         item_factory = ResponseItemFactory(item_type="reasoning")
         thoughts = initial_thoughts
@@ -132,7 +129,6 @@ class EventFactory:
             item=item_factory.make_initial_item()
         )
 
-        self.output_index += 1
         return event
 
     def content_part_added(self, item_id, content_index, part_type):
@@ -192,10 +188,12 @@ class EventFactory:
         )
 
     def output_item_done(self, complete_item):
-        return self.make_event(
+        event = self.make_event(
             "response.output_item.done",
             item=complete_item
         )
+        self.output_index += 1
+        return event
 
     def make_event(self, event_type, **kwargs):
         self.seq_num += 1
