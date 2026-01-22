@@ -660,6 +660,19 @@ class ThinkingDetector:
                 return text[end_idx:]
         return text
 
+    @classmethod
+    def get_text_before_closing_tag(cls, text):
+        """
+        Return the text before the first detected closing tag from candidate_tags.
+        If no closing tag is found, return the original text.
+        """
+        for tag_name in cls.candidate_tags:
+            close_tag = f"</{tag_name}>"
+            idx = cls.find_tag(text, close_tag)
+            if idx != -1:
+                return text[:idx]
+        return text
+
 
 def join_wavs(samples, result_path):
     data= []

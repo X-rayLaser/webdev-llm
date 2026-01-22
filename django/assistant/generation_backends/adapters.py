@@ -15,9 +15,11 @@ class CompletionBackendAdapter(ResponsesBackend):
         generator = self.backend.generate(job)
 
         try:
+            bufsize = ThinkingDetector.max_open_tag_len()
             buffer = next(
-                yield_bufferred(generator, ThinkingDetector.max_open_tag_len())
+                yield_bufferred(generator, bufsize)
             )
+
         except StopIteration:
             return
 
@@ -38,14 +40,22 @@ class CompletionBackendAdapter(ResponsesBackend):
         yield self.event_factory.reasoning_text_delta(item_factory.item_id, initial_thoughts)
 
         leftover = ""
-        for buffer in yield_bufferred(generator, ThinkingDetector.max_open_tag_len() + 1):
-            if not ThinkingDetector.detect_thinking_end(buffer):
+        bufsize = (ThinkingDetector.max_open_tag_len() + 1)
+        prev_buffer = buffer
+        for buffer in yield_bufferred(generator, bufsize):
+            concat = prev_buffer + buffer
+            
+            if not ThinkingDetector.detect_thinking_end(concat):
+                thoughts += buffer
+                prev_buffer = buffer
                 yield self.event_factory.reasoning_text_delta(item_factory.item_id, buffer)
                 continue
 
             leftover = ThinkingDetector.get_text_after_tag(buffer)
-            final_thoughts = ThinkingDetector.strip_tags(buffer)
-            thoughts += final_thoughts
+            final_thoughts = buffer
+    
+            thoughts += buffer
+            thoughts = ThinkingDetector.get_text_before_closing_tag(thoughts)
 
             if final_thoughts:
                 yield self.event_factory.reasoning_text_delta(item_factory.item_id, final_thoughts)
@@ -58,7 +68,6 @@ class CompletionBackendAdapter(ResponsesBackend):
             complete_item = item_factory.make_complete_item("reasoning_text", thoughts)
             yield self.event_factory.output_item_done(complete_item)
             self.response.append(complete_item)
-            print("thinking end", self.response)
             break
 
         return leftover
@@ -80,7 +89,6 @@ class CompletionBackendAdapter(ResponsesBackend):
             yield self.event_factory.output_text_delta(item_factory.item_id, 0, token)
         
         if not item_factory and not leftover:
-            print("none quit")
             return
         
         if not item_factory:
@@ -100,8 +108,6 @@ class CompletionBackendAdapter(ResponsesBackend):
         yield self.event_factory.output_item_done(complete_item)
 
         self.response.append(complete_item)
-
-        print("text end", self.response)
 
 
 class EventFactory:
