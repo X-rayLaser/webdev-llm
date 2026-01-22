@@ -330,6 +330,10 @@ class MultimediaMessageSerializer(serializers.ModelSerializer):
             return None
         
         parent = obj.parent
+
+        if parent is None:
+            return None
+
         child_id = parent.child_index or 0
 
         generations = parent.generations.all()

@@ -566,7 +566,9 @@ def get_multimedia_message_text(multimedia_message):
 
         try:
             text = entry[entry["type"]]
-            strings.append(text)
+            
+            if text:
+                strings.append(text)
         except KeyError as e:
             print('Error:', repr(e))
 
