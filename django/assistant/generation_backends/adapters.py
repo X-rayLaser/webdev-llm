@@ -1,36 +1,5 @@
-from typing import List, Dict, Any
-import time
-import os
-from dataclasses import dataclass
-from abc import ABC, abstractmethod
-import httpx
-import openai
-from openai import DefaultHttpxClient
-
 from assistant.utils import ThinkingDetector
-
-
-@dataclass
-class ChatCompletionJob:
-    model: str
-    base_url: str
-    messages: List[Dict[str, Any]]
-    params: Dict[str, Any] = None
-
-
-class CompletionBackend(ABC):
-    def __init__(self):
-        self.response = ""
-
-    @abstractmethod
-    def generate(self, job: ChatCompletionJob):
-        pass
-
-
-class ResponsesBackend(ABC):
-    @abstractmethod
-    def generate(self, job: ChatCompletionJob):
-        pass
+from .base import ResponsesBackend, CompletionBackend, ChatCompletionJob
 
 
 class CompletionBackendAdapter(ResponsesBackend):
@@ -45,9 +14,12 @@ class CompletionBackendAdapter(ResponsesBackend):
         self.event_factory = EventFactory()
         generator = self.backend.generate(job)
 
-        buffer = next(
-            yield_bufferred(generator, ThinkingDetector.max_open_tag_len())
-        )
+        try:
+            buffer = next(
+                yield_bufferred(generator, ThinkingDetector.max_open_tag_len())
+            )
+        except StopIteration:
+            return
 
         leftover = buffer
 
@@ -83,9 +55,10 @@ class CompletionBackendAdapter(ResponsesBackend):
                 item_factory.item_id, 0, part_type="reasoning_text", text=thoughts
             )
 
-            complete_item = item_factory.make_complete_item("reasoning", thoughts)
+            complete_item = item_factory.make_complete_item("reasoning_text", thoughts)
             yield self.event_factory.output_item_done(complete_item)
             self.response.append(complete_item)
+            print("thinking end", self.response)
             break
 
         return leftover
@@ -106,6 +79,17 @@ class CompletionBackendAdapter(ResponsesBackend):
             text += token
             yield self.event_factory.output_text_delta(item_factory.item_id, 0, token)
         
+        if not item_factory and not leftover:
+            print("none quit")
+            return
+        
+        if not item_factory:
+            item_factory = ResponseItemFactory(item_type="message")
+            yield self.event_factory.output_item_added(item_factory)
+            yield self.event_factory.content_part_added(item_factory.item_id, 0, part_type="output_text")
+
+            yield self.event_factory.output_text_delta(item_factory.item_id, 0, leftover)
+
         yield self.event_factory.output_text_done(item_factory.item_id, text)
 
         yield self.event_factory.content_part_done(
@@ -116,6 +100,8 @@ class CompletionBackendAdapter(ResponsesBackend):
         yield self.event_factory.output_item_done(complete_item)
 
         self.response.append(complete_item)
+
+        print("text end", self.response)
 
 
 class EventFactory:
@@ -243,84 +229,3 @@ def yield_bufferred(gen, bufsize):
 
     if buffer:
         yield buffer
-
-
-class DummyBackend(CompletionBackend):
-    tokens = ["The", "quick", "brown", "fox", "jumps", "over", "the", "lazy", "dog", "."]
-    separator = " "
-    def generate(self, job: ChatCompletionJob):
-        for token in self.tokens:
-            sleep_secs = 0.5
-            time.sleep(sleep_secs)
-            chunk = token + self.separator
-            self.response += chunk
-            yield chunk
-
-
-class DummyCoderBackend(DummyBackend):
-    tokens = ["```", "javascript", "\n",
-              "console", ".", "log", "(", "'", "hello, ", "world", "'", ")",
-              "```"]
-    separator = ""
-
-
-class OpenAICompatibleBackend(CompletionBackend):
-
-    def generate(self, job: ChatCompletionJob):
-        http_client = self.get_http_client()
-
-        timeout = 30 * 60 # 30 minutes
-
-        params = self.prepare_params(job)
-
-        client = openai.OpenAI(
-            base_url=f"{job.base_url}/v1",
-            api_key="sk-no-key-required",
-            timeout=timeout,
-            http_client=http_client
-        )
-
-        stream = client.chat.completions.create(
-            model=job.model,
-            messages=job.messages,
-            stream=True,
-            extra_body={"cache_prompt": True},
-            **params
-        )
-
-        for chunk in stream:
-            chunk_text = chunk.choices[0].delta.content or ""
-            self.response += chunk_text
-            yield chunk_text
-
-    def get_http_client(self):
-        http_proxy = os.environ.get("http_proxy_url")
-        https_proxy = os.environ.get("https_proxy_url", http_proxy)
-
-        if http_proxy or https_proxy:
-            proxies = {
-                "http://": httpx.HTTPTransport(proxy=http_proxy),
-                "https://": httpx.HTTPTransport(proxy=https_proxy),
-            }
-        else:
-            proxies = None
-
-        http_client = DefaultHttpxClient(mounts=proxies)
-        
-        return http_client
-
-    def prepare_params(self, job: ChatCompletionJob):
-        mapping = {
-            "temperature": "temperature",
-            "top_p": "top_p",
-            "repeat_penalty": "frequency_penalty",
-            "n_predict": "max_tokens"
-        }
-        return {mapping[name]:value for name, value in job.params.items() if name in mapping}
-
-
-backends = {
-    "dummy": DummyBackend,
-    "dummy_coder": DummyCoderBackend,
-    "openai_compatible": OpenAICompatibleBackend
-}
