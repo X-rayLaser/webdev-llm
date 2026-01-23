@@ -116,25 +116,27 @@ class OpenAICompatibleResponsesBackend(OpenaiHelperMixin, ResponsesBackend):
             for event in stream:
                 item = event.item
                 if event.type == "response.output_item.done":
-                    self.response.append(event.item)
+                    self.response.append(item)
 
                 if event.type == "response.output_item.done" and item.type == "function_call":
-                    func_name = item.name
-                    func_args = json.loads(item.arguments)
-
-                    result = 32 # call function and get result
-                    self.response.append({
-                        "type": "function_call_output",
-                        "call_id": item.call_id,
-                        "output": str(result)
-                    })
-
+                    self.process_function_call(item)
                     got_func = True
 
                 yield event
             
             if not got_func:
                 break
+
+    def process_function_call(self, item):
+        func_name = item.name
+        func_args = json.loads(item.arguments)
+
+        result = 32 # call function and get result
+        self.response.append({
+            "type": "function_call_output",
+            "call_id": item.call_id,
+            "output": str(result)
+        })
 
 
 backends = {
