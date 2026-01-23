@@ -1,5 +1,5 @@
 "use client"
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useReducer } from "react";
 import NewMessageForm from "./NewMessageForm";
 import { RunningOperationsList } from "./running_ops";
 import { useRouter } from "next/navigation";
@@ -16,11 +16,12 @@ import { CotPanel } from "../CotPanel";
 export default function WebSocketChat({
         chat, messages, previousMessage, currentPreset, configuration, operations 
 }) {
-    const messageTexts = buildTextGenerationTable(operations, "message");
+    const initialMessages = buildTextGenerationTable(operations, "message");
     const titles = buildOperationsTable(operations, "chat_title");
     const pictures = buildOperationsTable(operations, "chat_picture");
 
-    const [messageGenerationsTable, setMessageGenerationsTable] = useState(messageTexts);
+    const [messageGenerationsTable, dispatch] = useReducer(messageGenerationsReducer, initialMessages);
+
     const [titleGenerationsTable, setTitleGenerationsTable] = useState(titles);
     const [imageGenerationsTable, setImageGenerationsTable] = useState(pictures);
     const [errors, setErrors] = useState([]);
@@ -38,36 +39,19 @@ export default function WebSocketChat({
 
         if (payload.event_type === "generation_started") {
             setErrors([]);
-            setMessageGenerationsTable(prevTable => createTextGenerationEntry(prevTable, task_id));
+            dispatch({ type: "generation_started", task_id });
         } else if (payload.event_type === "token_arrived") {
-            setMessageGenerationsTable(
-                prevTable => incrementTableValue(prevTable, task_id, payload.data.token)
-            );
+            dispatch({ type: "token_arrived", task_id, token: payload.data.token });
         } else if (payload.event_type === "generation_ended") {
-            setMessageGenerationsTable(removeEntryFunction);
+            dispatch({ type: "generation_ended", task_id });
             setErrors(payload.data.generation.errors);
             router.refresh();
         } else if (payload.event_type === "thinking_started") {
             console.log("thinking_started!")
-            setMessageGenerationsTable(prevTable => {
-                const tableCopy ={ ...prevTable };
-                // typically, thinking precedes the spoken part
-                tableCopy[task_id].thinkingStartId = 0;
-
-                console.log("thinking_started!", tableCopy)
-                return tableCopy;
-            });
+            dispatch({ type: "thinking_started", task_id });
         } else if (payload.event_type === "thinking_ended") {
             console.log("thinking_ended!")
-            setMessageGenerationsTable(prevTable => {
-                const tableCopy = { ...prevTable };
-                let msg = prevTable[task_id].text || "";
-                tableCopy[task_id] = {
-                    ...tableCopy[task_id],
-                    thinkingEndId: msg.length
-                };
-                return tableCopy;
-            });
+            dispatch({ type: "thinking_ended", task_id });
         } else if (payload.event_type === "chat_title_generation_started") {
             setTitleGenerationsTable(createEntryFuncion);
         } else if (payload.event_type === "chat_title_generation_ended") {
@@ -207,6 +191,34 @@ function GeneratingMessage({ task_id, thoughts, spokenText, speed }) {
             )}
         </div>
     );
+}
+
+function messageGenerationsReducer(prevMessages, action) {
+    const tableCopy = { ...prevMessages };
+    const task_id = action.task_id;
+    switch (action.type) {
+        case "generation_started":
+            return createTextGenerationEntry(prevMessages, task_id);
+        case "token_arrived":
+            return incrementTableValue(prevMessages, action.task_id, action.token);
+        case "generation_ended":
+            return removeTableEntry(prevMessages, action.task_id);
+        case "thinking_started":
+            // typically, thinking precedes the spoken part
+            tableCopy[task_id].thinkingStartId = 0;
+
+            console.log("thinking_started!", tableCopy)
+            return tableCopy;
+        case "thinking_ended":
+            let msg = prevMessages[task_id].text || "";
+            tableCopy[task_id] = {
+                ...tableCopy[task_id],
+                thinkingEndId: msg.length
+            };
+            return tableCopy;
+        default:
+            return prevMessages;
+    }
 }
 
 function buildOperationsTable(operations, generationType) {
