@@ -40,18 +40,12 @@ export default function WebSocketChat({
         if (payload.event_type === "generation_started") {
             setErrors([]);
             dispatch({ type: "generation_started", task_id });
-        } else if (payload.event_type === "token_arrived") {
-            dispatch({ type: "token_arrived", task_id, token: payload.data.token });
+        } else if (payload.event_type === "response_event") {
+            dispatch({ type: "response_event", task_id, sse_event: payload.data.sse_event });
         } else if (payload.event_type === "generation_ended") {
             dispatch({ type: "generation_ended", task_id });
             setErrors(payload.data.generation.errors);
             router.refresh();
-        } else if (payload.event_type === "thinking_started") {
-            console.log("thinking_started!")
-            dispatch({ type: "thinking_started", task_id });
-        } else if (payload.event_type === "thinking_ended") {
-            console.log("thinking_ended!")
-            dispatch({ type: "thinking_ended", task_id });
         } else if (payload.event_type === "chat_title_generation_started") {
             setTitleGenerationsTable(createEntryFuncion);
         } else if (payload.event_type === "chat_title_generation_ended") {
@@ -88,37 +82,7 @@ export default function WebSocketChat({
     }, []);
 
     const messagesInProgress = Object.entries(messageGenerationsTable).map(
-        ([task_id, entry], idx) => {
-            let text = entry.text || "";
-            let startId = entry.thinkingStartId;
-            let endId = entry.thinkingEndId;
-            let initialClock = entry.initialClock;
-            let tokenCount = entry.tokenCount;
-            let elapsedSeconds = (new Date() - initialClock) / 1000;
-
-            if (startId === null) {
-                startId = 0;
-                endId = 0;
-            } else if (endId === null) {
-                endId = text.length;
-            }
-
-            const thoughts = text.substring(startId, endId);
-            const spokenText = text.substring(endId, text.length);
-            const genSpeed = Math.round(tokenCount / elapsedSeconds);
-
-            if (tokenCount === 0) {
-                return (
-                    <div key={idx} className="shadow-lg">
-                        <h4 className={`border-2 border-sky-900 p-4 font-semibold text-lg bg-sky-600 text-white rounded-lg`}>
-                            <FontAwesomeIcon icon={faSpinner} spin />
-                            <span className="ml-2">Preparing...</span>
-                        </h4>
-                    </div>
-                );
-            }
-            return <GeneratingMessage key={idx} task_id={task_id} thoughts={thoughts} spokenText={spokenText} speed={genSpeed} />;
-        }
+        ([task_id, entry]) => <MessagePreview key={task_id} task_id={task_id} entry={entry} />
     );
 
     const inProgress = messagesInProgress.length > 0;
@@ -165,6 +129,38 @@ function LoadingMessage({ text }) {
             <span className="ml-2">{text}</span>
         </div>
     );
+}
+
+function MessagePreview({ task_id, entry }) {
+    let text = entry.text || "";
+    let startId = entry.thinkingStartId;
+    let endId = entry.thinkingEndId;
+    let initialClock = entry.initialClock;
+    let tokenCount = entry.tokenCount;
+    let elapsedSeconds = (new Date() - initialClock) / 1000;
+
+    if (startId === null) {
+        startId = 0;
+        endId = 0;
+    } else if (endId === null) {
+        endId = text.length;
+    }
+
+    const thoughts = text.substring(startId, endId);
+    const spokenText = text.substring(endId, text.length);
+    const genSpeed = Math.round(tokenCount / elapsedSeconds);
+
+    if (tokenCount === 0) {
+        return (
+            <div className="shadow-lg">
+                <h4 className={`border-2 border-sky-900 p-4 font-semibold text-lg bg-sky-600 text-white rounded-lg`}>
+                    <FontAwesomeIcon icon={faSpinner} spin />
+                    <span className="ml-2">Preparing...</span>
+                </h4>
+            </div>
+        );
+    }
+    return <GeneratingMessage task_id={task_id} thoughts={thoughts} spokenText={spokenText} speed={genSpeed} />;
 }
 
 function GeneratingMessage({ task_id, thoughts, spokenText, speed }) {
