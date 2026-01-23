@@ -16,7 +16,7 @@ from celery import shared_task
 import redis
 from django.conf import settings
 from django.core.files.base import ContentFile
-from assistant.generation_backends import backends, ChatCompletionJob
+from assistant.generation_backends import backends, ChatCompletionJob, prepare_backend
 from assistant import summary_backends
 from assistant import text2image_backends
 from assistant import tts_backends
@@ -120,8 +120,25 @@ def _extract_names_with_llm_fallback(raw_response, config):
     return extract_names
 
 
-def create_response_message(raw_response, config, role, parent=None, chat=None):
-    thinking_part, spoken_part = ThinkingDetector.split_thinking(raw_response)
+def create_response_message(response_items, config, role, parent=None, chat=None):
+    # todo: redesign this to create modalities for each item based on its type (reasoning, message, func, etc.)
+
+    def get_content_text(content, field="text"):
+        if isinstance(content, list):
+            return "".join(str(part.get(field, "")) for part in content)
+        else:
+            return str(content)
+
+    thinking_part = ""
+    spoken_part = ""
+    
+    for item in response_items:
+        content = item.get("content", "")
+
+        if item.get("type") == "reasoning":
+            thinking_part += get_content_text(content, field="reasoning_text")
+        elif item.get("type") == "message":
+            spoken_part += get_content_text(content, field="text")
 
     mixture = Modality.objects.create(modality_type="mixture")
     # todo: extract image modalities
@@ -206,7 +223,7 @@ def _generate(config, emitter):
     chat = config.get_chat()
 
     backend_class = backends[config.backend_name]
-    generator = backend_class()
+    generator = prepare_backend(backend_class())
 
     # use system message override regardless of coding_mode value if it's set
     # otherwise use system message for conversation mode and coder system message for coding mode
@@ -225,18 +242,10 @@ def _generate(config, emitter):
     job = ChatCompletionJob(model=config.model_name, base_url=config.server_url,
                             messages=messages, params=config.params)
 
-    buffer = ""
-    for token in generator.generate(job):
-        buffer += token
-
-        emitter(event_type="token_arrived", data=dict(token=token, task_id=config.task_id))
-        
-        if ThinkingDetector.detect_thinking_start(buffer):
-            emitter(event_type="thinking_started", data=dict(task_id=config.task_id))
-            buffer = ""
-        elif ThinkingDetector.detect_thinking_end(buffer):
-            emitter(event_type="thinking_ended", data=dict(task_id=config.task_id))
-            buffer = ""
+    for event in generator.generate(job):
+        # todo: serialize event to dict
+        event_dict = event.model_dump(mode="json")
+        emitter(event_type="response_event", data=dict(response_event=event_dict, task_id=config.task_id))
 
     role = "user" if len(history) % 2 == 0 else "assistant"
     return create_response_message(generator.response, config, role, parent=message, chat=chat)

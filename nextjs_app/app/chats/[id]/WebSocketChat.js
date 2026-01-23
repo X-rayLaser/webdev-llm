@@ -41,7 +41,7 @@ export default function WebSocketChat({
             setErrors([]);
             dispatch({ type: "generation_started", task_id });
         } else if (payload.event_type === "response_event") {
-            dispatch({ type: "response_event", task_id, sse_event: payload.data.sse_event });
+            dispatch({ type: "response_event", task_id, response_event: payload.data.response_event });
         } else if (payload.event_type === "generation_ended") {
             dispatch({ type: "generation_ended", task_id });
             setErrors(payload.data.generation.errors);
@@ -132,22 +132,11 @@ function LoadingMessage({ text }) {
 }
 
 function MessagePreview({ task_id, entry }) {
-    let text = entry.text || "";
-    let startId = entry.thinkingStartId;
-    let endId = entry.thinkingEndId;
+    let items = entry.items;
     let initialClock = entry.initialClock;
     let tokenCount = entry.tokenCount;
     let elapsedSeconds = (new Date() - initialClock) / 1000;
 
-    if (startId === null) {
-        startId = 0;
-        endId = 0;
-    } else if (endId === null) {
-        endId = text.length;
-    }
-
-    const thoughts = text.substring(startId, endId);
-    const spokenText = text.substring(endId, text.length);
     const genSpeed = Math.round(tokenCount / elapsedSeconds);
 
     if (tokenCount === 0) {
@@ -160,60 +149,78 @@ function MessagePreview({ task_id, entry }) {
             </div>
         );
     }
-    return <GeneratingMessage task_id={task_id} thoughts={thoughts} spokenText={spokenText} speed={genSpeed} />;
+    return <GeneratingMessage task_id={task_id} items={items} speed={genSpeed} />;
 }
 
-function GeneratingMessage({ task_id, thoughts, spokenText, speed }) {
-    let innerHtml = {
-        __html: renderMarkdown(spokenText)
-    };
+function GeneratingMessage({ task_id, items, speed }) {
 
-    const roundingClass = thoughts || spokenText ? "rounded-t-lg" : "rounded-lg";
+    const roundingClass = items.length > 0 ? "rounded-t-lg" : "rounded-lg";
     return (
         <div className="rounded-lg shadow-lg">
             <h4 className={`border-2 border-indigo-900 p-4 font-semibold text-lg bg-indigo-600 text-white ${roundingClass}`}>
                 <FontAwesomeIcon icon={faSpinner} spin />
                 <span className="ml-2">Generating a message at {speed} t/s</span>
             </h4>
-            {(thoughts || spokenText) && (
-                <div className="border-x-2 border-b-2 border-indigo-900 p-4 bg-blue-100 rounded-b-lg">
-                    {thoughts && <div className="mb-2"><CotPanel title="Thinking..." text={thoughts} /></div>}
-                    {spokenText && (
-                        <div className="leading-loose text-lg">
-                            <div dangerouslySetInnerHTML={innerHtml} />
-                        </div>
-                    )}
+            {items && items.length > 0 && (
+                <div className="border-x-2 border-b-2 border-indigo-900 p-4 bg-blue-50 rounded-b-lg">
+                    {items.map((item, idx) => {
+                        if (item.type === "reasoning") {
+                            return <ReasoningItem key={idx} item={item} />;
+                        }
+                        if (item.type === "message") {
+                            return <TextItem key={idx} item={item} />;
+                        }
+                        // fallback for unknown types
+                        return null;
+                    })}
                 </div>
             )}
         </div>
     );
 }
 
-function messageGenerationsReducer(prevMessages, action) {
-    const tableCopy = { ...prevMessages };
+
+
+function TextItem({ item }) {
+    let content = item.content;
+    if (Array.isArray(content)) {
+        content = content.join("");
+    }
+    return (
+        <div className="leading-loose text-lg">
+            <div dangerouslySetInnerHTML={{
+                __html: renderMarkdown(content)
+            }} />
+        </div>
+    )
+}
+
+function ReasoningItem({ item }) {
+    let content = item.content;
+    if (Array.isArray(content)) {
+        content = content.join("");
+    }
+
+    return (
+        <div className="mb-2">
+            <CotPanel title="Thinking..." text={content} />
+        </div>
+    );
+}
+
+
+function messageGenerationsReducer(prevGenerations, action) {
+    const tableCopy = { ...prevGenerations };
     const task_id = action.task_id;
     switch (action.type) {
         case "generation_started":
-            return createTextGenerationEntry(prevMessages, task_id);
-        case "token_arrived":
-            return incrementTableValue(prevMessages, action.task_id, action.token);
+            return createTextGenerationEntry(prevGenerations, task_id);
         case "generation_ended":
-            return removeTableEntry(prevMessages, action.task_id);
-        case "thinking_started":
-            // typically, thinking precedes the spoken part
-            tableCopy[task_id].thinkingStartId = 0;
-
-            console.log("thinking_started!", tableCopy)
-            return tableCopy;
-        case "thinking_ended":
-            let msg = prevMessages[task_id].text || "";
-            tableCopy[task_id] = {
-                ...tableCopy[task_id],
-                thinkingEndId: msg.length
-            };
-            return tableCopy;
+            return removeTableEntry(prevGenerations, action.task_id);
+        case "response_event":
+            return processResponseEvent(prevGenerations, action.task_id, action.response_event);
         default:
-            return prevMessages;
+            return prevGenerations;
     }
 }
 
@@ -233,9 +240,7 @@ function buildTextGenerationTable(operations, generationType) {
     const res = {};
     for (let msg of ops) {
         res[msg.task_id] = {
-            text: "",
-            thinkingStartId: null,
-            thinkingEndId: null,
+            items: [],
             initialClock: new Date(),
             tokenCount: 0
         };
@@ -246,9 +251,7 @@ function buildTextGenerationTable(operations, generationType) {
 function createTextGenerationEntry(table, key) {
     const tableCopy = { ...table };
     tableCopy[key] = {
-        text: "",
-        thinkingStartId: null,
-        thinkingEndId: null,
+        items: [],
         initialClock: new Date(),
         tokenCount: 0
     };
@@ -281,4 +284,72 @@ function removeTableEntry(table, key) {
     const tableCopy = { ...table };
     delete tableCopy[key];
     return tableCopy;
+}
+
+function processResponseEvent(prevGenerations, task_id, sse_event) {
+    console.log('sse event', sse_event)
+    const newGenerations = { ...prevGenerations };
+    const entry = { ...(newGenerations[task_id] || { items: [], initialClock: new Date(), tokenCount: 0 }) };
+    let isChanged = false;
+
+    switch (sse_event.type) {
+        case "response.output_item.added": {
+            const newItem = { ...sse_event.item };
+            entry.items = [...entry.items, newItem];
+            isChanged = true;
+            break;
+        }
+        case "response.content_part.added": {
+            // todo: watch out for content_index (may not necessarily be appended to the end)
+            const { output_index, content_index } = sse_event;
+            if (entry.items[output_index]) {
+                const origItem = { ...entry.items[output_index] };
+
+                if (origItem.type === "function_call") {
+                    return prevGenerations;
+                }
+
+                if (!origItem.content) origItem.content = [];
+                // we just initialize newlly added part to empty string
+                origItem.content = [...origItem.content, ""];
+                entry.items = [
+                    ...entry.items.slice(0, output_index),
+                    origItem,
+                    ...entry.items.slice(output_index + 1)
+                ];
+                isChanged = true;
+            }
+            break;
+        }
+        case "response.output_text.delta": {
+            const { output_index, content_index, delta } = sse_event;
+            let index = typeof output_index === "number" ? output_index : entry.items.length - 1;
+            if (index >= 0 && entry.items[index]) {
+                const origItem = { ...entry.items[index] };
+
+                entry.items = [
+                    ...entry.items.slice(0, index),
+                    {   ...origItem,
+                        content: [
+                            ...origItem.content.slice(0, content_index),
+                            origItem.content[content_index] + delta || "",
+                            ...origItem.content.slice(content_index + 1),
+                        ]
+                    },
+                    ...entry.items.slice(index + 1)
+                ];
+                entry.tokenCount = entry.tokenCount + 1;
+                isChanged = true;
+            }
+            break;
+        }
+        default:
+            return prevGenerations;
+    }
+
+    if (isChanged) {
+        newGenerations[task_id] = entry;
+        return newGenerations;
+    }
+    return prevGenerations;
 }

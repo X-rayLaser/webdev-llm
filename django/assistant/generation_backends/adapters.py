@@ -1,3 +1,4 @@
+from collections import UserDict
 from assistant.utils import ThinkingDetector
 from .base import ResponsesBackend, CompletionBackend, ChatCompletionJob
 
@@ -110,6 +111,46 @@ class CompletionBackendAdapter(ResponsesBackend):
         self.response.append(complete_item)
 
 
+class DataDict(UserDict):
+    """
+    A convenience dictionary supporting both key-based (`dict['foo']`)
+    and attribute-based (`dict.foo`) access.
+    """
+    def __getattr__(self, name):
+        try:
+            return self.data[name]
+        except KeyError:
+            raise AttributeError(f"'DataDict' object has no attribute '{name}'")
+    
+    def __setattr__(self, name, value):
+        if name == "data":
+            super().__setattr__(name, value)
+        else:
+            self.data[name] = value
+    
+    def __delattr__(self, name):
+        try:
+            del self.data[name]
+        except KeyError:
+            raise AttributeError(f"'DataDict' object has no attribute '{name}'")
+
+    def model_dump(self, **kwargs):
+        """Recursively convert DataDict to a plain dict."""
+        def convert(val):
+            if isinstance(val, DataDict):
+                return val.model_dump()
+            elif isinstance(val, dict):
+                return {k: convert(v) for k, v in val.items()}
+            elif isinstance(val, list):
+                return [convert(item) for item in val]
+            elif isinstance(val, tuple):
+                return [convert(item) for item in val]
+            else:
+                return val
+
+        return {k: convert(v) for k, v in self.data.items()}
+
+
 class EventFactory:
     def __init__(self):
         self.seq_num = 0
@@ -190,12 +231,12 @@ class EventFactory:
     def make_event(self, event_type, **kwargs):
         self.seq_num += 1
 
-        return {
+        return DataDict({
             "type": event_type,
             "output_index": self.output_index,
             "sequence_number": self.seq_num,
             **kwargs
-        }
+        })
 
 
 class ResponseItemFactory:
@@ -204,23 +245,23 @@ class ResponseItemFactory:
         self.item_type = item_type
 
     def make_item(self, status, content):
-        return {
+        return DataDict({
             "id": self.item_id,
             "status": status,
             "type": self.item_type,
             "role": "assistant",
             "content": content
-        }
+        })
 
     def make_initial_item(self):
         return self.make_item("in_progress", [])
 
     def make_complete_item(self, content_type, text):
-        content = [{
+        content = [DataDict({
             "type": content_type,
             "text": text,
             "annotations": []
-        }]
+        })]
         return self.make_item("complete", content)
 
 

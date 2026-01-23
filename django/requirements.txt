@@ -1,8 +1,9 @@
 Django
 djangorestframework
 Pillow
-httpx[socks]==0.27.2
-openai==1.55.3
+httpx[socks]
+openai>=2.0.0
 celery[redis]
 websockets
 requests
+mcp[cli]

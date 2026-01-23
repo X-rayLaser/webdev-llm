@@ -122,6 +122,7 @@ class OpenAICompatibleResponsesBackend(OpenaiHelperMixin, ResponsesBackend):
                     self.process_function_call(item)
                     got_func = True
 
+                print('event', event, 'type', type(event))
                 yield event
             
             if not got_func:
@@ -137,6 +138,12 @@ class OpenAICompatibleResponsesBackend(OpenaiHelperMixin, ResponsesBackend):
             "call_id": item.call_id,
             "output": str(result)
         })
+
+
+def prepare_backend(backend):
+    if isinstance(backend, CompletionBackend):
+        return CompletionBackendAdapter(backend)
+    return backend
 
 
 backends = {
