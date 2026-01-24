@@ -437,7 +437,7 @@ function processFunctionCall(entry, sse_event) {
     const origItem = findItem(entry, sse_event);
 
     if (origItem && origItem.type === "function_call") {
-        entry.item.arguments = sse_event.item.arguments;
+        origItem.arguments = sse_event.item.arguments;
         return true;
     }
     return false;

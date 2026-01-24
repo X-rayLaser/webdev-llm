@@ -6,7 +6,7 @@ import openai
 from openai import DefaultHttpxClient
 from .base import CompletionBackend, ChatCompletionJob, ResponsesBackend
 from .adapters import CompletionBackendAdapter
-
+from .adapters import DataDict
 
 class DummyBackend(CompletionBackend):
     tokens = ["The", "quick", "brown", "fox", "jumps", "over", "the", "lazy", "dog", "."]
@@ -102,7 +102,8 @@ class OpenAICompatibleResponsesBackend(OpenaiHelperMixin, ResponsesBackend):
 
         self.response = []
 
-        messages = [self.adapt_message(msg) for msg in job.messages]
+
+        messages = self.prepare_oai_messages(job.messages)
 
         counter = 0
 
@@ -135,10 +136,10 @@ class OpenAICompatibleResponsesBackend(OpenaiHelperMixin, ResponsesBackend):
                     got_func = True
                     func_result_event = {
                         "type": "response.custom_type.function_call_result",
-                        "output_index": item.output_index,
+                        "output_index": event.output_index,
                         "item": result_item
                     }
-                    yield func_result_event
+                    yield DataDict(func_result_event)
 
 
             if not got_func:
@@ -148,6 +149,7 @@ class OpenAICompatibleResponsesBackend(OpenaiHelperMixin, ResponsesBackend):
         items = []
         for msg in messages:
             items.extend(self.get_items(msg))
+        return items
 
     def get_items(self, msg):
         role = msg["role"]
@@ -200,12 +202,12 @@ class OpenAICompatibleResponsesBackend(OpenaiHelperMixin, ResponsesBackend):
         time.sleep(5)
 
         result = 42 # call function and get result
-
-        return {
+ 
+        return DataDict({
             "type": "function_call_output",
             "call_id": item.call_id,
             "output": str(result)
-        }
+        })
 
 
 def prepare_backend(backend):
