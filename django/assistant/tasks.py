@@ -125,7 +125,7 @@ def create_response_message(response_items, config, role, parent=None, chat=None
 
     def get_content_text(content, field="text"):
         if isinstance(content, list):
-            return "".join(str(part.get(field, "")) for part in content)
+            return "".join(str(getattr(part, field, "")) for part in content)
         else:
             return str(content)
 
@@ -133,11 +133,11 @@ def create_response_message(response_items, config, role, parent=None, chat=None
     spoken_part = ""
     
     for item in response_items:
-        content = item.get("content", "")
+        content = item.content or ""
 
-        if item.get("type") == "reasoning":
+        if item.type == "reasoning":
             thinking_part += get_content_text(content, field="reasoning_text")
-        elif item.get("type") == "message":
+        elif item.type == "message":
             spoken_part += get_content_text(content, field="text")
 
     mixture = Modality.objects.create(modality_type="mixture")
