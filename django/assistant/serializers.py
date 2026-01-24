@@ -201,7 +201,7 @@ class ModalitySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Modality
-        fields = ['id', 'modality_type', 'text', 'image', 'file_path', 
+        fields = ['id', 'modality_type', 'text', 'image', 'file_path', 'oai_item',
                   'mixed_modality', 'mixture', 'layout', 'order']
 
     def get_mixture(self, obj):
@@ -234,6 +234,8 @@ class ModalitySerializer(serializers.ModelSerializer):
                 allowed_fields = set(["image", "order"])
             elif modality_type == "code":
                 raise serializers.ValidationError("Code modality cannot be directly updated")
+            elif modality_type == "oai_item":
+                allowed_fields = set(["oai_item", "order"])
             elif modality_type == "mixture":
                 allowed_fields = set(["layout"])
             else:

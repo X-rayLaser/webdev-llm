@@ -325,6 +325,7 @@ class MultimediaMessage(models.Model):
     
     audio = models.FileField(upload_to="audio_samples", blank=True, null=True)
 
+    # deprecated field
     thoughts = models.TextField(blank=True, null=True)
 
     def get_root(self):
@@ -418,6 +419,7 @@ class Modality(models.Model):
         TEXT = 'text', _('Text')
         IMAGE = 'image', _('Image')
         CODE = 'code', _('Code')
+        OPEN_AI_RESPONSE_ITEM = 'oai_item', _('Open AI Response Item')
         MIXTURE = 'mixture', _('Mixture')
 
     modality_type = models.CharField(max_length=10, choices=ModalityType.choices)
@@ -425,6 +427,8 @@ class Modality(models.Model):
     image = models.ImageField(upload_to='message_images/', blank=True, null=True)
     file_path = models.CharField(max_length=255, blank=True, null=True)
 
+    oai_item = models.JSONField(blank=True, null=True)
+    
     mixed_modality = models.ForeignKey('self', on_delete=models.SET_NULL, related_name='mixture',
                                        blank=True, null=True)
     layout = models.JSONField(blank=True, null=True)
@@ -455,6 +459,10 @@ class Modality(models.Model):
             return mod_copy
         if modality_type == "code":
             return Modality(modality_type="code", file_path=self.file_path, order=self.order)
+        
+        if modality_type == "oai_item":
+            return Modality(modality_type="oai_item", oai_item=self.oai_item, order=self.order)
+
         if modality_type == "mixture":
             mod_copy = Modality.objects.create(
                 modality_type="mixture", layout=self.layout, order=self.order

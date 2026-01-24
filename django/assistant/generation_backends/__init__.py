@@ -144,37 +144,52 @@ class OpenAICompatibleResponsesBackend(OpenaiHelperMixin, ResponsesBackend):
             if not got_func:
                 break
 
-    def adapt_message(self, message):
-        """
-        Adapt the converted message for downstream consumption by assigning input/output text types.
-        """
-        role = message.get("role")
-        content = message.get("content") or []
-        new_content = []
+    def prepare_oai_messages(self, messages):
+        items = []
+        for msg in messages:
+            items.extend(self.get_items(msg))
+
+    def get_items(self, msg):
+        role = msg["role"]
+
         if role in ["user", "system"]:
-            for entry in content:
-                new_entry = dict(entry)
-                new_entry["type"] = "input_text"
-                new_content.append(new_entry)
-        elif role == "assistant":
-            for entry in content:
-                new_entry = dict(entry)
-                new_entry["type"] = "output_text"
-                new_content.append(new_entry)
+            return [self.make_user_item(msg)]
+
+        return [self.make_non_user_item(entry, role) for entry in msg["content"]]
+
+    def make_user_item(self, msg):
+        content = []
+        for entry in msg.get("content", []):
+            if entry["type"] == "text":
+                content.append({
+                    "text": entry.get("text", ""),
+                    "type": "input_text"
+                })
+            elif entry["type"] == "image_url":
+                content.append({
+                    "image_url": entry.get("image_url", ""),
+                    "type": "input_image",
+                    "detail": "auto"
+                })
+
+        return {
+            "role": msg["role"],
+            "type": "message",
+            "content": content
+        }
+
+    def make_non_user_item(self, entry, role=None):
+        if entry["type"] == "text":
+            return {
+                "type": "message",
+                "role": role,
+                "content": [{
+                    "text": entry.get("text", ""),
+                    "type": "output_text" if role == "assistant" else "input_text"
+                }]
+            }
         else:
-            new_content = [dict(entry) for entry in content]
-
-        if role == "assistant":
-            import uuid
-
-            return dict(
-                id=str(uuid.uuid4()),
-                status="completed",
-                type="message",
-                role=role,
-                content=new_content
-            )
-        return dict(role=role, content=new_content)
+            return dict(entry)
 
     def process_function_call(self, item):
         func_name = item.name
@@ -185,7 +200,7 @@ class OpenAICompatibleResponsesBackend(OpenaiHelperMixin, ResponsesBackend):
         time.sleep(5)
 
         result = 42 # call function and get result
-        
+
         return {
             "type": "function_call_output",
             "call_id": item.call_id,

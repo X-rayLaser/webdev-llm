@@ -530,6 +530,8 @@ def convert_modality(message, modality):
         code = entries[0]["content"]
 
         content = [{ "type": "text", "text": f"```\n{code}\n```" }]
+    elif modality.modality_type == "oai_item":
+        content = [modality.oai_item]
     elif modality.modality_type == "mixture":
         content = []
         for child in modality.mixture.all():

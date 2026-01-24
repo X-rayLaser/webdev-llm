@@ -121,39 +121,33 @@ def _extract_names_with_llm_fallback(raw_response, config):
 
 
 def create_response_message(response_items, config, role, parent=None, chat=None):
-    # todo: redesign this to create modalities for each item based on its type (reasoning, message, func, etc.)
-
     def get_content_text(content, field="text"):
         if isinstance(content, list):
             return "".join(str(getattr(part, field, "")) for part in content)
         else:
             return str(content)
 
-    thinking_part = ""
-    spoken_part = ""
-    
-    for item in response_items:
-        content = item.content or ""
-
-        if item.type == "reasoning":
-            thinking_part += get_content_text(content, field="reasoning_text")
-        elif item.type == "message":
-            spoken_part += get_content_text(content, field="text")
-
     mixture = Modality.objects.create(modality_type="mixture")
+
     # todo: extract image modalities
 
-    if settings.LLM_BASED_NAME_EXTRACTION:
-        extract_fn = _extract_names_with_llm_fallback(spoken_part, config)
-    else:
-        extract_fn = get_named_code_segments
+    for item in response_items:
+        if item.type == "message":
+            spoken_part = get_content_text(item.content, field="text")
 
-    modalities, sources = extract_modalities(spoken_part, parent=mixture, extract_names=extract_fn)
+            if settings.LLM_BASED_NAME_EXTRACTION:
+                extract_fn = _extract_names_with_llm_fallback(spoken_part, config)
+            else:
+                extract_fn = get_named_code_segments
+            modalities, sources = extract_modalities(spoken_part, parent=mixture, extract_names=extract_fn)
+        else:
+            modality = Modality.objects.create(
+                modality_type="oai_item",
+                oai_item=item.model_dump(mode="json"),
+                mixed_modality=mixture
+            )
 
     new_message = MultimediaMessage(role=role, content=mixture)
-
-    if thinking_part:
-        new_message.thoughts = thinking_part
 
     if parent is not None:
         parent.child_index = parent.replies.count()
