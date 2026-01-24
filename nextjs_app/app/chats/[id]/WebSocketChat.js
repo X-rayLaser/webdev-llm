@@ -155,21 +155,45 @@ function MessagePreview({ task_id, entry }) {
 function GeneratingMessage({ task_id, items, speed }) {
 
     const roundingClass = items.length > 0 ? "rounded-t-lg" : "rounded-lg";
+
+    // Removes function_call items that have corresponding function_call_output items
+    function removeCompletedFunctionCalls(items) {
+        const outputCallIds = new Set(
+            items
+                .filter(item => item.type === "function_call_output" && item.call_id)
+                .map(item => item.call_id)
+        );
+        return items.filter(item => {
+            if (item.type === "function_call" && item.call_id && outputCallIds.has(item.call_id)) {
+                return false;
+            }
+            return true;
+        });
+    }
+
+    const cleanedItems = removeCompletedFunctionCalls(items);
+
     return (
         <div className="rounded-lg shadow-lg">
             <h4 className={`border-2 border-indigo-900 p-4 font-semibold text-lg bg-indigo-600 text-white ${roundingClass}`}>
                 <FontAwesomeIcon icon={faSpinner} spin />
                 <span className="ml-2">Generating a message at {speed} t/s</span>
             </h4>
-            {items && items.length > 0 && (
+            {cleanedItems && cleanedItems.length > 0 && (
                 <div className="border-x-2 border-b-2 border-indigo-900 p-4 bg-blue-50 rounded-b-lg">
-                    {items.map((item, idx) => {
+                    {cleanedItems.map((item, idx) => {
                         if (item.type === "reasoning") {
                             return <ReasoningItem key={idx} item={item} />;
                         }
                         if (item.type === "message") {
                             return <TextItem key={idx} item={item} />;
                         }
+
+                        if (item.type === "function_call" || item.type === "function_call_output") {
+                            return <FunctionCallItem key={idx} item={item} />;
+                        }
+
+                        
                         // fallback for unknown types
                         return null;
                     })}
@@ -204,6 +228,35 @@ function ReasoningItem({ item }) {
     return (
         <div className="mb-2">
             <CotPanel title="Thinking..." text={content} />
+        </div>
+    );
+}
+
+function FunctionCallItem({ item }) {
+    const { function_name, arguments: args, output } = item;
+    return (
+        <div className="bg-slate-100 border-l-4 border-blue-400 shadow rounded p-4 flex items-start my-3">
+            <div className="mr-3 mt-1 text-blue-500">
+                <FontAwesomeIcon icon={faSpinner} spin />
+            </div>
+            <div className="flex-1">
+                <div className="font-semibold text-blue-800 text-base">
+                    <span className="uppercase tracking-wide">{function_name}</span>
+                </div>
+                <div className="mt-2 pl-1">
+                    <pre className="bg-slate-200 rounded p-2 text-sm overflow-x-auto">
+                        {JSON.stringify(args, null, 2)}
+                    </pre>
+                </div>
+                {output !== undefined && (
+                    <div className="mt-2 pl-1">
+                        <div className="text-green-800 font-semibold">Result:</div>
+                        <pre className="bg-green-100 rounded p-2 text-sm overflow-x-auto">
+                            {output}
+                        </pre>
+                    </div>
+                )}
+            </div>
         </div>
     );
 }
@@ -288,59 +341,36 @@ function removeTableEntry(table, key) {
 
 function processResponseEvent(prevGenerations, task_id, sse_event) {
     console.log('sse event', sse_event)
-    const newGenerations = { ...prevGenerations };
-    const entry = { ...(newGenerations[task_id] || { items: [], initialClock: new Date(), tokenCount: 0 }) };
+
+    // deep copy
+    const newGenerations = structuredClone(prevGenerations);
+    const entry = newGenerations[task_id];
     let isChanged = false;
 
+    // TODO: function_call_output event/item type
     switch (sse_event.type) {
         case "response.output_item.added": {
-            const newItem = { ...sse_event.item };
-            entry.items = [...entry.items, newItem];
-            isChanged = true;
+            isChanged = processItemAdded(entry, sse_event);
+            break;
+        }
+        case "response.output_item.done": {
+            isChanged = processFunctionCall(entry, sse_event);
             break;
         }
         case "response.content_part.added": {
-            // todo: watch out for content_index (may not necessarily be appended to the end)
-            const { output_index, content_index } = sse_event;
-            if (entry.items[output_index]) {
-                const origItem = { ...entry.items[output_index] };
-
-                if (origItem.type === "function_call") {
-                    return prevGenerations;
-                }
-
-                if (!origItem.content) origItem.content = [];
-                // we just initialize newlly added part to empty string
-                origItem.content = [...origItem.content, ""];
-                entry.items = [
-                    ...entry.items.slice(0, output_index),
-                    origItem,
-                    ...entry.items.slice(output_index + 1)
-                ];
-                isChanged = true;
-            }
+            isChanged = processPartAdded(entry, sse_event);
             break;
         }
-        case "response.output_text.delta": {
-            const { output_index, content_index, delta } = sse_event;
-            let index = typeof output_index === "number" ? output_index : entry.items.length - 1;
-            if (index >= 0 && entry.items[index]) {
-                const origItem = { ...entry.items[index] };
-
-                entry.items = [
-                    ...entry.items.slice(0, index),
-                    {   ...origItem,
-                        content: [
-                            ...origItem.content.slice(0, content_index),
-                            origItem.content[content_index] + delta || "",
-                            ...origItem.content.slice(content_index + 1),
-                        ]
-                    },
-                    ...entry.items.slice(index + 1)
-                ];
-                entry.tokenCount = entry.tokenCount + 1;
-                isChanged = true;
-            }
+        case "response.output_text.delta":
+        case "response.reasoning_text.delta": {
+            isChanged = processTextDelta(entry, sse_event);
+            break;
+        }
+        case "response.custom_type.function_call_result": {
+            const newItem = findItem(entry, sse_event);
+            newItem.output = sse_event.item.output;
+            newItem.type = sse_event.item.type;
+            entry.items = [...entry.items, newItem];
             break;
         }
         default:
@@ -352,4 +382,79 @@ function processResponseEvent(prevGenerations, task_id, sse_event) {
         return newGenerations;
     }
     return prevGenerations;
+}
+
+function processItemAdded(entry, sse_event) {
+    const newItem = { ...sse_event.item };
+    entry.items = [...entry.items, newItem];
+    return true;
+}
+
+function processPartAdded(entry, sse_event) {
+    // todo: watch out for content_index (may not necessarily be appended to the end)
+    const { output_index, content_index } = sse_event;
+    const origItem = findItem(entry, sse_event);
+
+    if (!origItem) {
+        return false;
+    }
+
+    if (origItem.type === "function_call") {
+        return false;
+    }
+
+    if (!origItem.content) origItem.content = [];
+    // we just initialize newlly added part to empty string
+    origItem.content = [...origItem.content, ""];
+    entry.items = immutableReplace(entry.items, output_index, origItem);
+    return true;
+
+}
+
+function processTextDelta(entry, sse_event) {
+    const { output_index, content_index, delta } = sse_event;
+    const origItem = findItem(entry, sse_event);
+
+    if (!origItem) {
+        return false;
+    }
+    
+    const newContent = origItem.content[content_index] + delta || "";
+
+    const modifiedItem = {
+        ...origItem,
+        content: immutableReplace(origItem.content, content_index, newContent)
+    };
+
+    entry.items = immutableReplace(entry.items, output_index, modifiedItem);
+
+    entry.tokenCount = entry.tokenCount + 1;
+    return true;
+
+}
+
+function processFunctionCall(entry, sse_event) {
+    const origItem = findItem(entry, sse_event);
+
+    if (origItem && origItem.type === "function_call") {
+        entry.item.arguments = sse_event.item.arguments;
+        return true;
+    }
+    return false;
+}
+
+function findItem(entry, sse_event) {
+    const { output_index, content_index } = sse_event;
+    if (output_index >= 0 && entry.items[output_index]) {
+        return { ...entry.items[output_index] };
+    }
+    return null;
+}
+
+function immutableReplace(arr, pos, element) {
+    return [
+        ...arr.slice(0, pos),
+        element,
+        ...arr.slice(pos + 1)
+    ];
 }

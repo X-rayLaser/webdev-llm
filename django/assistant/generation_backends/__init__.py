@@ -103,6 +103,7 @@ class OpenAICompatibleResponsesBackend(OpenaiHelperMixin, ResponsesBackend):
         self.response = []
 
         while True:
+
             stream = client.responses.create(
                 model=job.model,
                 inputs=job.messages + self.response,
@@ -114,17 +115,26 @@ class OpenAICompatibleResponsesBackend(OpenaiHelperMixin, ResponsesBackend):
             got_func = False
 
             for event in stream:
+
+                print('event', event, 'type', type(event))
+                yield event
+
                 item = event.item
                 if event.type == "response.output_item.done":
                     self.response.append(item)
 
                 if event.type == "response.output_item.done" and item.type == "function_call":
-                    self.process_function_call(item)
+                    result_item = self.process_function_call(item)
+                    self.response.append(result_item)
                     got_func = True
+                    func_result_event = {
+                        "type": "response.custom_type.function_call_result",
+                        "output_index": item.output_index,
+                        "item": result_item
+                    }
+                    yield func_result_event
 
-                print('event', event, 'type', type(event))
-                yield event
-            
+
             if not got_func:
                 break
 
@@ -133,11 +143,11 @@ class OpenAICompatibleResponsesBackend(OpenaiHelperMixin, ResponsesBackend):
         func_args = json.loads(item.arguments)
 
         result = 32 # call function and get result
-        self.response.append({
+        return {
             "type": "function_call_output",
             "call_id": item.call_id,
             "output": str(result)
-        })
+        }
 
 
 def prepare_backend(backend):
