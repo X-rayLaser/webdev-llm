@@ -172,7 +172,9 @@ class OpenAICompatibleResponsesBackend(OpenaiHelperMixin, ResponsesBackend):
     def make_user_item(self, msg):
         content = []
         for entry in msg.get("content", []):
-            if entry["type"] == "text":
+            if isinstance(entry, str):
+                content.append({ "text": entry, "type": "input_text" })
+            elif entry["type"] == "text":
                 content.append({
                     "text": entry.get("text", ""),
                     "type": "input_text"
