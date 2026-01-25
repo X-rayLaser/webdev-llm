@@ -396,7 +396,9 @@ function processResponseEvent(prevGenerations, task_id, sse_event) {
             const newItem = findItem(entry, sse_event);
             newItem.output = sse_event.item.output;
             newItem.type = sse_event.item.type;
-            entry.items = [...entry.items, newItem];
+
+            entry.items.inProgress = [...entry.items.inProgress, newItem];
+
             break;
         }
         default:
@@ -464,6 +466,7 @@ function processFunctionCall(entry, sse_event) {
 
     if (origItem && origItem.type === "function_call") {
         origItem.arguments = sse_event.item.arguments;
+        entry.items.inProgress = immutableReplace(entry.items.inProgress, sse_event.output_index, origItem);
         return true;
     }
     return false;
