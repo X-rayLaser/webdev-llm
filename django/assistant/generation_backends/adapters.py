@@ -31,6 +31,8 @@ class CompletionBackendAdapter(ResponsesBackend):
         
         yield from self.get_text_output_events(generator, leftover)
 
+        yield self.event_factory.response_completed(self.response)
+
     def get_reasoning_events(self, generator, buffer):
         initial_thoughts = ThinkingDetector.strip_tags(buffer)
         item_factory = ResponseItemFactory(item_type="reasoning")
@@ -227,6 +229,20 @@ class EventFactory:
         )
         self.output_index += 1
         return event
+
+    def response_completed(self, complete_items):
+        self.seq_num += 1
+
+        return DataDict({
+            "type": "response.completed",
+            "response": {
+                "object": "response",
+                "status": "completed",
+                "error": None,
+                "output": complete_items
+            },
+            "sequence_number": self.seq_num
+        })
 
     def make_event(self, event_type, **kwargs):
         self.seq_num += 1

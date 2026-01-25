@@ -40,9 +40,10 @@ class CompletionBackendAdapterTests(unittest.TestCase):
         self.assertGreater(len(delta_events), 0, "Should have at least one delta event")
         
         # Last few events should be: output_text.done, content_part.done, output_item.done
-        self.assertEqual(events[-3]["type"], "response.output_text.done")
-        self.assertEqual(events[-2]["type"], "response.content_part.done")
-        self.assertEqual(events[-1]["type"], "response.output_item.done")
+        self.assertEqual(events[-4]["type"], "response.output_text.done")
+        self.assertEqual(events[-3]["type"], "response.content_part.done")
+        self.assertEqual(events[-2]["type"], "response.output_item.done")
+        self.assertEqual(events[-1]["type"], "response.completed")
         
         # Verify sequence numbers are incremental
         seq_nums = [event["sequence_number"] for event in events]
@@ -55,11 +56,13 @@ class CompletionBackendAdapterTests(unittest.TestCase):
         for event in events:
             # All events should have type, output_index, and sequence_number
             self.assertIn("type", event)
-            self.assertIn("output_index", event)
             self.assertIn("sequence_number", event)
-            
-            # output_index should be 0 for first item
-            self.assertEqual(event["output_index"], 0)
+
+            if event.type != "response.completed":
+                self.assertIn("output_index", event)
+
+                # output_index should be 0 for first item
+                self.assertEqual(event["output_index"], 0)
 
     def test_output_item_structure(self):
         """Test that output_item events have correct structure."""
@@ -238,7 +241,8 @@ class CompletionBackendAdapterTests(unittest.TestCase):
         
         # All events should have output_index 0 for first item
         for event in events:
-            self.assertEqual(event["output_index"], 0)
+            if event.type != "response.completed":
+                self.assertEqual(event["output_index"], 0)
     
     def test_item_id_consistency(self):
         """Test that item_id is consistent across all events for the same item."""

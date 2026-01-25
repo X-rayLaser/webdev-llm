@@ -153,8 +153,9 @@ function MessagePreview({ task_id, entry }) {
 }
 
 function GeneratingMessage({ task_id, items, speed }) {
+    const allItems = [...items.completed, ...items.inProgress];
 
-    const roundingClass = items.length > 0 ? "rounded-t-lg" : "rounded-lg";
+    const roundingClass = allItems.length > 0 ? "rounded-t-lg" : "rounded-lg";
 
     // Removes function_call items that have corresponding function_call_output items
     function removeCompletedFunctionCalls(items) {
@@ -171,7 +172,7 @@ function GeneratingMessage({ task_id, items, speed }) {
         });
     }
 
-    const cleanedItems = removeCompletedFunctionCalls(items);
+    const cleanedItems = removeCompletedFunctionCalls(allItems);
 
     return (
         <div className="rounded-lg shadow-lg">
@@ -219,7 +220,7 @@ function TextItem({ item }) {
     )
 }
 
-function ReasoningItem({ item }) {
+export function ReasoningItem({ item }) {
     let content = item.content;
     if (Array.isArray(content)) {
         content = content.join("");
@@ -232,26 +233,57 @@ function ReasoningItem({ item }) {
     );
 }
 
-function FunctionCallItem({ item }) {
-    const { function_name, arguments: args, output } = item;
+export function FunctionCallItem({ item, showSpinner=true }) {
+    const { name, arguments: args, output } = item;
+
+    let argsObject;
+    try {
+        argsObject = typeof args === "string" ? JSON.parse(args) : args;
+    } catch (e) {
+        console.error(e);
+    }
+
     return (
         <div className="bg-slate-100 border-l-4 border-blue-400 shadow rounded p-4 flex items-start my-3">
-            <div className="mr-3 mt-1 text-blue-500">
-                <FontAwesomeIcon icon={faSpinner} spin />
-            </div>
-            <div className="flex-1">
-                <div className="font-semibold text-blue-800 text-base">
-                    <span className="uppercase tracking-wide">{function_name}</span>
+            {showSpinner && (
+                <div className="mr-3 mt-1 text-blue-500">
+                    <FontAwesomeIcon icon={faSpinner} spin />
                 </div>
+            )}
+            <div className="flex-1">
+                {name && (
+                    <div className="font-semibold text-blue-800 text-base">
+                        <span>Function:</span>
+                        <span className="ml-2 tracking-wide">{name}</span>
+                    </div>
+                )}
                 <div className="mt-2 pl-1">
-                    <pre className="bg-slate-200 rounded p-2 text-sm overflow-x-auto">
-                        {JSON.stringify(args, null, 2)}
-                    </pre>
+                    {argsObject && Object.keys(argsObject).length > 0 ? (
+                        <div className="bg-slate-200 w-72 rounded p-2 text-sm overflow-x-auto">
+                            <div className="font-semibold mb-1 text-slate-700">Arguments:</div>
+                            <div>
+                                {Object.entries(argsObject).map(([key, value]) => (
+                                    <div key={key} className="flex flex-row items-start bg-slate-100 rounded p-2 mb-2">
+                                        <span className="pr-2 font-mono text-slate-600 whitespace-nowrap">{key}:</span>
+                                        <pre className="m-0 inline-block whitespace-pre-wrap break-words text-slate-700">
+                                            {typeof value === 'object'
+                                                ? JSON.stringify(value, null, 2)
+                                                : String(value)}
+                                        </pre>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="bg-slate-200 w-72 rounded p-2 text-sm font-semibold mb-1 text-slate-700">
+                            Arguments: None
+                        </div>
+                    )}
                 </div>
                 {output !== undefined && (
                     <div className="mt-2 pl-1">
                         <div className="text-green-800 font-semibold">Result:</div>
-                        <pre className="bg-green-100 rounded p-2 text-sm overflow-x-auto">
+                        <pre className="bg-green-100 rounded p-2 text-sm overflow-x-auto whitespace-pre-wrap break-words">
                             {output}
                         </pre>
                     </div>
@@ -304,7 +336,10 @@ function buildTextGenerationTable(operations, generationType) {
 function createTextGenerationEntry(table, key) {
     const tableCopy = { ...table };
     tableCopy[key] = {
-        items: [],
+        items: {
+            inProgress: [],
+            completed: []
+        },
         initialClock: new Date(),
         tokenCount: 0
     };
@@ -315,21 +350,6 @@ function createTextGenerationEntry(table, key) {
 function createTableEntry(table, key) {
     const tableCopy = { ...table };
     tableCopy[key] = "";
-    return tableCopy;
-}
-
-function incrementTableValue(table, key, newValue) {
-    const tableCopy = { ...table };
-    const { text="", tokenCount=0, initialClock } = {...tableCopy[key]};
-
-    tableCopy[key] = {
-        ...tableCopy[key],
-        text: text + newValue,
-        tokenCount: text === "" ? 0 : tokenCount + 1,
-        // ignore time passed till first token
-        initialClock: text === "" ? new Date() : initialClock
-    };
-
     return tableCopy;
 }
 
@@ -349,6 +369,12 @@ function processResponseEvent(prevGenerations, task_id, sse_event) {
 
     // TODO: function_call_output event/item type
     switch (sse_event.type) {
+        case "response.completed": {
+            if (entry.items && entry.items.inProgress && entry.items.completed) {
+                entry.items.completed = [...entry.items.completed, ...entry.items.inProgress];
+                entry.items.inProgress = [];
+            }
+        }
         case "response.output_item.added": {
             isChanged = processItemAdded(entry, sse_event);
             break;
@@ -386,7 +412,7 @@ function processResponseEvent(prevGenerations, task_id, sse_event) {
 
 function processItemAdded(entry, sse_event) {
     const newItem = { ...sse_event.item };
-    entry.items = [...entry.items, newItem];
+    entry.items.inProgress = [...entry.items.inProgress, newItem];
     return true;
 }
 
@@ -406,7 +432,7 @@ function processPartAdded(entry, sse_event) {
     if (!origItem.content) origItem.content = [];
     // we just initialize newlly added part to empty string
     origItem.content = [...origItem.content, ""];
-    entry.items = immutableReplace(entry.items, output_index, origItem);
+    entry.items.inProgress = immutableReplace(entry.items.inProgress, output_index, origItem);
     return true;
 
 }
@@ -426,7 +452,7 @@ function processTextDelta(entry, sse_event) {
         content: immutableReplace(origItem.content, content_index, newContent)
     };
 
-    entry.items = immutableReplace(entry.items, output_index, modifiedItem);
+    entry.items.inProgress = immutableReplace(entry.items.inProgress, output_index, modifiedItem);
 
     entry.tokenCount = entry.tokenCount + 1;
     return true;
@@ -445,8 +471,8 @@ function processFunctionCall(entry, sse_event) {
 
 function findItem(entry, sse_event) {
     const { output_index, content_index } = sse_event;
-    if (output_index >= 0 && entry.items[output_index]) {
-        return { ...entry.items[output_index] };
+    if (output_index >= 0 && entry.items.inProgress[output_index]) {
+        return { ...entry.items.inProgress[output_index] };
     }
     return null;
 }

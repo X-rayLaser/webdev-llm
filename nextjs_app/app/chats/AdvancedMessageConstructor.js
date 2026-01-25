@@ -14,6 +14,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCopy, faSpinner } from '@fortawesome/free-solid-svg-icons'
 import { fixUrlHost, getHostOrLocalhost, renderMarkdown } from '../utils';
 import DrawingCanvas from './DrawingCanvasNew';
+import { ReasoningItem, FunctionCallItem } from './[id]/WebSocketChat';
+
 
 const textFormFields = [{
     name: "text",
@@ -330,6 +332,12 @@ export function ModalityViewer({ modalityObject, onSuccessfulUpdate, onSuccessfu
         item = <Padding><ImageModality {...props} /></Padding>;
     } else if (modality_type === "code") {
         item = <Padding><CodeModality {...props} /></Padding>;
+    } else if (modality_type === "oai_item" && modalityObject.oai_item.type === "reasoning") {
+            item = <Padding><ReasoningItem item={modalityObject.oai_item} showSpinner={false} /></Padding>
+    } else if (modality_type === "oai_item" && (
+                modalityObject.oai_item.type === "function_call" || 
+                modalityObject.oai_item.type === "function_call_output")) {
+        item = <Padding><FunctionCallItem item={modalityObject.oai_item} showSpinner={false} /></Padding>
     } else if (modality_type === "mixture") {
         let childrenItems = modalityObject.mixture.map((mod, idx) => 
             <div key={idx} className="border-b last:border-b-0"><ModalityViewer 
