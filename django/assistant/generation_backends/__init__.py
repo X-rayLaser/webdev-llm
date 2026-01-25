@@ -2,6 +2,7 @@ import time
 import os
 import json
 import httpx
+import requests
 import openai
 from openai import DefaultHttpxClient
 from .base import CompletionBackend, ChatCompletionJob, ResponsesBackend
@@ -92,6 +93,8 @@ class OpenAICompatibleBackend(OpenaiHelperMixin, CompletionBackend):
 
 
 class OpenAICompatibleResponsesBackend(OpenaiHelperMixin, ResponsesBackend):
+    BASE_MCP_SERVICE_URL = "http://mcp:11854"
+
     def __init__(self) -> None:
         super().__init__()
         self.response = []
@@ -100,8 +103,9 @@ class OpenAICompatibleResponsesBackend(OpenaiHelperMixin, ResponsesBackend):
         client = self.get_openai_client(f"{job.base_url}/v1")
         params = self.prepare_params(job)
 
-        self.response = []
+        tools = self.list_tools()
 
+        self.response = []
 
         messages = self.prepare_oai_messages(job.messages)
 
@@ -112,7 +116,7 @@ class OpenAICompatibleResponsesBackend(OpenaiHelperMixin, ResponsesBackend):
             stream = client.responses.create(
                 model=job.model,
                 input=messages + self.response,
-                #tools=tools,
+                tools=tools,
                 stream=True,
                 extra_body={"cache_prompt": True},
                 **params
@@ -122,7 +126,7 @@ class OpenAICompatibleResponsesBackend(OpenaiHelperMixin, ResponsesBackend):
 
             for event in stream:
 
-                print('event', event, 'type', type(event))
+                print('event', event)
                 yield event
 
                 if event.type == "response.output_item.done":
@@ -144,6 +148,12 @@ class OpenAICompatibleResponsesBackend(OpenaiHelperMixin, ResponsesBackend):
 
             if not got_func:
                 break
+
+    def list_tools(self):
+        url = f"{self.BASE_MCP_SERVICE_URL}/tools"
+        response = requests.get(url)
+        response.raise_for_status()
+        return response.json()
 
     def prepare_oai_messages(self, messages):
         items = []
@@ -194,19 +204,30 @@ class OpenAICompatibleResponsesBackend(OpenaiHelperMixin, ResponsesBackend):
             return dict(entry)
 
     def process_function_call(self, item):
-        func_name = item.name
-        func_args = json.loads(item.arguments)
+        payload = {
+            "name":  item.name,
+            "args": json.loads(item.arguments)
+        }
+        
+        url = f"{self.BASE_MCP_SERVICE_URL}/call_function"
 
-        import time
+        try:
+            response = requests.post(url, json=payload, timeout=30)
+            response.raise_for_status()
+            resp_data = response.json()
+            result_data = resp_data["result"]
+            if 'isError' in result_data and result_data['isError']:
+                error_text = result_data['content'][0]['text']
+                raise Exception(error_text)
 
-        time.sleep(5)
+            result = str(result_data)
+        except Exception as e:
+            result = f"Function call failed: {str(e)}"
 
-        result = 42 # call function and get result
- 
         return DataDict({
             "type": "function_call_output",
             "call_id": item.call_id,
-            "output": str(result)
+            "output": result
         })
 
 
