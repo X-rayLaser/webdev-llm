@@ -159,12 +159,28 @@ function GeneratingMessage({ task_id, items, speed }) {
 
     // Removes function_call items that have corresponding function_call_output items
     function removeCompletedFunctionCalls(items) {
+        const functionCallArgs = Object.fromEntries(
+            items
+                .filter(item => item.type === "function_call" && item.call_id)
+                .map(item => [item.call_id, item.arguments])
+        );
+
+        const mergedItems = items.map(item => {
+            if (item.type === "function_call_output" && item.call_id) {
+                return {
+                    ...item,
+                    arguments: functionCallArgs[item.call_id]
+                };
+            }
+            return item;
+        });
+
         const outputCallIds = new Set(
             items
                 .filter(item => item.type === "function_call_output" && item.call_id)
                 .map(item => item.call_id)
         );
-        return items.filter(item => {
+        return mergedItems.filter(item => {
             if (item.type === "function_call" && item.call_id && outputCallIds.has(item.call_id)) {
                 return false;
             }

@@ -83,7 +83,9 @@ export function RawMessage({ message, generationConfig }) {
         []
     );
 
-    const decoratedModality = decorateWithSources(modality, sources);
+    const decoratedModality = mergeFunctionCalls(
+        decorateWithSources(modality, sources)
+    );
 
     const previousMessage = message.parent;
     let role;
@@ -232,4 +234,56 @@ function Footer({ message }) {
             }
         </div>
     );
+}
+
+
+function mergeFunctionCalls(rootModality) {
+    // Function to test if a modality is for function calling
+    function isFunctionCallingModality(modality, item_type) {
+        return (
+            modality &&
+            modality.modality_type === "oai_item" &&
+            modality.oai_item &&
+            modality.oai_item.type === item_type &&
+            modality.oai_item.call_id
+        );
+    }
+
+    const functionCallArgs = Object.fromEntries(
+        rootModality.mixture
+            .filter(mod => isFunctionCallingModality(mod, "function_call"))
+            .map(mod => [mod.oai_item.call_id, mod.oai_item.arguments])
+    );
+
+    // Exclude function_call modalities for which there is a function_call_output with the same call_id
+    const functionCallOutputCallIds = new Set(
+        rootModality.mixture
+            .filter(mod => isFunctionCallingModality(mod, "function_call_output"))
+            .map(mod => mod.oai_item.call_id)
+    );
+    const filteredMixture = rootModality.mixture.filter(mod => {
+        if (isFunctionCallingModality(mod, "function_call")) {
+            return !functionCallOutputCallIds.has(mod.oai_item.call_id);
+        }
+        return true;
+    });
+
+    const merged = filteredMixture.map(mod => {
+        if (isFunctionCallingModality(mod, "function_call_output")) {
+
+            return {
+                ...mod,
+                oai_item: {
+                    ...mod.oai_item,
+                    arguments: functionCallArgs[mod.oai_item.call_id]
+                }
+            };
+        }
+        
+        return mod;
+    });
+    return {
+        ...rootModality,
+        mixture: merged
+    };
 }

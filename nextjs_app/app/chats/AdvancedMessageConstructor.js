@@ -111,7 +111,6 @@ export default function AdvancedMessageConstructor({ formAction, rootModality=nu
     useEffect(() => {
         if (rootModality) {
             setParent(rootModality.id);
-            // todo: merge function_call and function_call_output modalities with shared call_id
             setModalities(rootModality.mixture);
         }
     }, [rootModality]);
@@ -307,7 +306,6 @@ export default function AdvancedMessageConstructor({ formAction, rootModality=nu
         </div>
     );
 }
-
 
 function Padding({ children }) {
     return (
