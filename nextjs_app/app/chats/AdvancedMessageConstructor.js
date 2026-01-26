@@ -334,7 +334,7 @@ export function ModalityViewer({ modalityObject, onSuccessfulUpdate, onSuccessfu
     } else if (modality_type === "code") {
         item = <Padding><CodeModality {...props} /></Padding>;
     } else if (modality_type === "oai_item" && modalityObject.oai_item.type === "reasoning") {
-            item = <Padding><ReasoningItem item={modalityObject.oai_item} showSpinner={false} /></Padding>
+            item = <Padding><ReasoningItem item={modalityObject.oai_item} header="Thoughts" /></Padding>
     } else if (modality_type === "oai_item" && (
                 modalityObject.oai_item.type === "function_call" || 
                 modalityObject.oai_item.type === "function_call_output")) {

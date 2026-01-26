@@ -184,7 +184,7 @@ function GeneratingMessage({ task_id, items, speed }) {
                 <div className="border-x-2 border-b-2 border-indigo-900 p-4 bg-blue-50 rounded-b-lg">
                     {cleanedItems.map((item, idx) => {
                         if (item.type === "reasoning") {
-                            return <ReasoningItem key={idx} item={item} />;
+                            return <ReasoningItem key={idx} item={item} header="Thinking..." />;
                         }
                         if (item.type === "message") {
                             return <TextItem key={idx} item={item} />;
@@ -205,7 +205,6 @@ function GeneratingMessage({ task_id, items, speed }) {
 }
 
 
-
 function TextItem({ item }) {
     let content = item.content;
     if (Array.isArray(content)) {
@@ -220,15 +219,25 @@ function TextItem({ item }) {
     )
 }
 
-export function ReasoningItem({ item }) {
+export function ReasoningItem({ item, header }) {
     let content = item.content;
     if (Array.isArray(content)) {
         content = content.join("");
     }
 
+    let summary = "";
+    if (Array.isArray(item.summary)) {
+        summary = item.summary.map(s =>
+            (typeof s === "string") ? s : s.text
+        ).join("");
+    } else if (typeof item.summary === "string") {
+        summary = item.summary;
+    }
+
     return (
-        <div className="mb-2">
-            <CotPanel title="Thinking..." text={content} />
+        <div>
+            {content && <CotPanel title={header} text={content} />}
+            {summary && <CotPanel title={header} text={summary} />}
         </div>
     );
 }
@@ -244,7 +253,7 @@ export function FunctionCallItem({ item, showSpinner=true }) {
     }
 
     return (
-        <div className="bg-slate-100 border-l-4 border-blue-400 shadow rounded p-4 flex items-start my-3">
+        <div className="bg-slate-100 border-l-4 border-blue-400 shadow rounded p-4 flex items-start my-1">
             {showSpinner && (
                 <div className="mr-3 mt-1 text-blue-500">
                     <FontAwesomeIcon icon={faSpinner} spin />
@@ -367,7 +376,7 @@ function processResponseEvent(prevGenerations, task_id, sse_event) {
     const entry = newGenerations[task_id];
     let isChanged = false;
 
-    // TODO: function_call_output event/item type
+    // Add support for response.reasoning_summary_text.delta
     switch (sse_event.type) {
         case "response.completed": {
             if (entry.items && entry.items.inProgress && entry.items.completed) {
@@ -390,6 +399,10 @@ function processResponseEvent(prevGenerations, task_id, sse_event) {
         case "response.output_text.delta":
         case "response.reasoning_text.delta": {
             isChanged = processTextDelta(entry, sse_event);
+            break;
+        }
+        case "response.reasoning_summary_text.delta": {
+            isChanged = processReasoningSummaryDelta(entry, sse_event);
             break;
         }
         case "response.custom_type.function_call_result": {
@@ -432,7 +445,7 @@ function processPartAdded(entry, sse_event) {
     }
 
     if (!origItem.content) origItem.content = [];
-    // we just initialize newlly added part to empty string
+    // we just initialize newly added part to empty string
     origItem.content = [...origItem.content, ""];
     entry.items.inProgress = immutableReplace(entry.items.inProgress, output_index, origItem);
     return true;
@@ -459,6 +472,34 @@ function processTextDelta(entry, sse_event) {
     entry.tokenCount = entry.tokenCount + 1;
     return true;
 
+}
+
+// Add handler for reasoning summary deltas
+function processReasoningSummaryDelta(entry, sse_event) {
+    const { output_index, summary_index, delta } = sse_event;
+    const origItem = findItem(entry, sse_event);
+
+    if (!origItem) {
+        return false;
+    }
+
+    if (!origItem.summary) {
+        origItem.summary = [];
+    }
+    // Ensure summary_index exists
+    if (!origItem.summary[summary_index]) {
+        origItem.summary[summary_index] = {
+            "text": ""
+        };
+    }
+
+    origItem.summary[summary_index].text += (delta || "");
+
+    entry.items.inProgress = immutableReplace(entry.items.inProgress, output_index, origItem);
+
+    entry.tokenCount = entry.tokenCount + 1;
+
+    return true;
 }
 
 function processFunctionCall(entry, sse_event) {
