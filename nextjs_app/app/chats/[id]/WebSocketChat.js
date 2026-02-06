@@ -429,6 +429,7 @@ function processResponseEvent(prevGenerations, task_id, sse_event) {
             newItem.type = sse_event.item.type;
 
             entry.items.inProgress = [...entry.items.inProgress, newItem];
+            isChanged = true;
 
             break;
         }
