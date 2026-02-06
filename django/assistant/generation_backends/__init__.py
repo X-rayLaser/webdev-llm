@@ -222,7 +222,7 @@ class OpenAICompatibleResponsesBackend(OpenaiHelperMixin, ResponsesBackend):
                 error_text = result_data['content'][0]['text']
                 raise Exception(error_text)
 
-            result = str(result_data)
+            result = json.dumps(result_data) if isinstance(result_data, dict) else str(result_data)
         except Exception as e:
             result = f"Function call failed: {str(e)}"
 

@@ -249,10 +249,10 @@ function mergeFunctionCalls(rootModality) {
         );
     }
 
-    const functionCallArgs = Object.fromEntries(
+    const functionCallObjects = Object.fromEntries(
         rootModality.mixture
             .filter(mod => isFunctionCallingModality(mod, "function_call"))
-            .map(mod => [mod.oai_item.call_id, mod.oai_item.arguments])
+            .map(mod => [mod.oai_item.call_id, mod.oai_item])
     );
 
     // Exclude function_call modalities for which there is a function_call_output with the same call_id
@@ -275,7 +275,8 @@ function mergeFunctionCalls(rootModality) {
                 ...mod,
                 oai_item: {
                     ...mod.oai_item,
-                    arguments: functionCallArgs[mod.oai_item.call_id]
+                    arguments: functionCallObjects[mod.oai_item.call_id].arguments,
+                    name: functionCallObjects[mod.oai_item.call_id].name
                 }
             };
         }

@@ -159,17 +159,18 @@ function GeneratingMessage({ task_id, items, speed }) {
 
     // Removes function_call items that have corresponding function_call_output items
     function removeCompletedFunctionCalls(items) {
-        const functionCallArgs = Object.fromEntries(
+        const functionCallObjects = Object.fromEntries(
             items
                 .filter(item => item.type === "function_call" && item.call_id)
-                .map(item => [item.call_id, item.arguments])
+                .map(item => [item.call_id, item])
         );
 
         const mergedItems = items.map(item => {
             if (item.type === "function_call_output" && item.call_id) {
                 return {
                     ...item,
-                    arguments: functionCallArgs[item.call_id]
+                    arguments: functionCallObjects[item.call_id].arguments,
+                    name: functionCallObjects[item.call_id].name
                 };
             }
             return item;
@@ -305,18 +306,49 @@ export function FunctionCallItem({ item, showSpinner=true }) {
                         </div>
                     )}
                 </div>
-                {output !== undefined && (
-                    <div className="mt-2 pl-1">
-                        <div className="text-green-800 font-semibold">Result:</div>
-                        <pre className="bg-green-100 rounded p-2 text-sm overflow-x-auto whitespace-pre-wrap break-words">
-                            {output}
-                        </pre>
-                    </div>
-                )}
+                {output !== undefined && <FunctionCallResultCard result={output} />}
             </div>
         </div>
     );
 }
+
+/**
+ * Clean and simple function call result display.
+ * - If input is not valid JSON, show as string.
+ * - If input is JSON with a `content` array of {type, text}, render each text entry in order.
+ */
+export function FunctionCallResultCard({ result, className = "" }) {
+    if (!result) return null;
+
+    let pretty;
+
+    if (typeof result === "string") {
+        console.log("yes it is a string");
+        try {
+            pretty = JSON.stringify(JSON.parse(result), null, 2);
+        } catch (e) {
+            pretty = result;
+        }
+        
+    } else {
+        console.log("no it is not a string");
+        pretty = JSON.stringify(result, null, 2);
+    }
+
+    return (
+        <div className={`my-2 p-4 rounded shadow border bg-slate-50 border-sky-300${className ? ` ${className}` : ""}`}>
+            <div className="font-semibold mb-1 text-base text-sky-800">
+                Result
+            </div>
+            <pre className="bg-slate-100 rounded p-2 text-sm overflow-x-auto whitespace-pre-wrap break-words">
+                {pretty}
+            </pre>
+        </div>
+    );
+}
+
+
+
 
 
 function messageGenerationsReducer(prevGenerations, action) {
