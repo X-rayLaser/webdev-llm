@@ -398,6 +398,8 @@ function processResponseEvent(prevGenerations, task_id, sse_event) {
             if (entry.items && entry.items.inProgress && entry.items.completed) {
                 entry.items.completed = [...entry.items.completed, ...entry.items.inProgress];
                 entry.items.inProgress = [];
+                isChanged = true;
+                break;
             }
         }
         case "response.output_item.added": {
@@ -524,6 +526,8 @@ function processFunctionCall(entry, sse_event) {
     if (origItem && origItem.type === "function_call") {
         origItem.arguments = sse_event.item.arguments;
         entry.items.inProgress = immutableReplace(entry.items.inProgress, sse_event.output_index, origItem);
+        // todo: this is a hack to get the token count right (better use delta events for function call arguments).
+        entry.tokenCount += sse_event.item.arguments.length;
         return true;
     }
     return false;
